@@ -116,13 +116,13 @@ p. User.java is almost not changed from what it is in Play sample_and_tests. The
 
 h3. <a>Migrate JQL query to MongoDB query</a>
 
-JPA Style
+h4. JPA Style
 
 bc.. public Post previous() {
         return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
     } 
     
-p. Morphia style:
+h4. Morphia style:
 
 bc.. public Post previous() {
         return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
@@ -130,7 +130,7 @@ bc.. public Post previous() {
 
 h3. <a>Aggregation with MapReduce</a>
 
-JPA style:
+h4. JPA style:
 
 bc.. public static List<Map> getCloud() {
         List<Map> result = Tag.find(
@@ -139,7 +139,7 @@ bc.. public static List<Map> getCloud() {
         return result;
     }
 
-p. Morphia style:
+h4.. Morphia style:
 
 bc.. private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
     private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
