@@ -4,7 +4,7 @@ The Morphia module bridge play.db.Model to mongodb. This module depends on morph
 
 h2. <a>Motivation</a>
 
-In the begining I was seeking for existing play-mongo plugin. However it lack some features I needed, here are some examples:
+In the begining I want to use existing <a href="http://www.playframework.org/modules/mongo">play-mongo</a> plugin. However it lack some features I needed including:
 * support map (relatively long) java name to (short) mongo db name
 * create (inique) index on field
 * life cycle management: @PreLoad, @PostPersist etc.
@@ -118,13 +118,13 @@ h3. <a>Migrate JQL query to MongoDB query</a>
 
 h4. JPA Style
 
-bc.. public Post previous() {
+bc..     public Post previous() {
         return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
     } 
     
 h4. Morphia style:
 
-bc.. public Post previous() {
+bc..     public Post previous() {
         return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
     }
 
@@ -132,7 +132,7 @@ h3. <a>Aggregation with MapReduce</a>
 
 h4. JPA style:
 
-bc.. public static List<Map> getCloud() {
+bc..     public static List<Map> getCloud() {
         List<Map> result = Tag.find(
             "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
         ).fetch();
@@ -141,7 +141,7 @@ bc.. public static List<Map> getCloud() {
 
 h4.. Morphia style:
 
-bc.. private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
+bc..     private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
     private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
     public static List<Map<String, Integer>> getCloud(Query<? extends Model> query) {
         List<Map<String, Integer>> result = new ArrayList<Map<String, Integer>>();
@@ -157,7 +157,8 @@ bc.. private static final String m_ = "function() {this.tags.forEach(function (t
         }
         return result;
     }
-p. This part is not so elegant. We are relying more mature Java interface to mongo db and see how we can simplify the interface
+    
+p. This part looks not so elegant. I hope it could be simplified in the future.
 
 h2. <a>FAQ</a>
 
