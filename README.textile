@@ -1,6 +1,6 @@
 h1. Morphia module
 
-The Morphia module bridge play.db.Model to mongodb. This module depends on morphia framework project on <a href="http://code.google.com/p/morphia/">googlecode</a>
+The Morphia module bridge play.db.Model to mongodb. This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
 
 h2. <a>Motivation</a>
 
