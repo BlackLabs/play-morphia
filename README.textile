@@ -28,18 +28,15 @@ Morphia module provides complete bridge from play.db.Model to mongo, meaning you
 
 * play.db.Model support
 ** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
-style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated
-into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce.
+style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce.
 
 * Dynamic Id support
 ** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
-if you like use Long (an obvious motivation is CRUD's route file recongnize number only...), you are free to do it. Just add this line in your application.conf: "morphia.id.type=Long"
-Morphia will handle everything for you Long type ID generation. You are free to mark your own Id field with any type (better to be String) like Tag.name. In that case, Morphia will
+if you like use Long (an obvious motivation is CRUD's route file recongnize number only...), you are free to do it. Just add this line in your application.conf: "morphia.id.type=Long" Morphia will handle everything for you Long type ID generation. You are free to mark your own Id field with any type (better to be String) like Tag.name. In that case, Morphia will
 not manage your Id field
 
 * CRUD support
-** Yeah! Morphia support CRUD transparently. However there are some inherited limitation with Embedded entity type: MongoDb prevent Id field for any embedded document, thus 
-you cannot manage embedded entities using CRUD like Comment in YABE sample.
+** Yeah! Morphia support CRUD transparently. However there are some inherited limitation with Embedded entity type: MongoDb prevent Id field for any embedded document, thus you cannot manage embedded entities using CRUD like Comment in YABE sample.
 
 * Data binding and validation
 ** Feel free to your faviourite "Binder.bind(user, "User", params.all());" or "User.edit(user, "User", params.all());", and call "Validation.valid(user);" to validate
@@ -53,9 +50,7 @@ h2. <a>Dependencies</a>
 * Play: Play-1.1 release. It's okay to use the current trunk but not 1.1 beta1
 * Morphia: morphia-0.97 + <a href="http://code.google.com/p/morphia/issues/detail?id=104">this patch</a>. It's safe to use the bundled jar file.
 
-You really really need the latest Play (even late than 1.1beta) and morphia@googlecode (even late than morphia-0.96-SNAPSHOT.jar). In the progress of development, there are many
-interactions with Play and morphia team and have some code changes in the latest trunk of both product. It's safe to use the morphia-0.96-SNAPSHOT.jar file included in this plugin.
-But don't use the one distibuted at http://code.google.com/p/morphia/.
+You really really need the latest Play (even late than 1.1beta) and morphia@googlecode (even late than morphia-0.96-SNAPSHOT.jar). In the progress of development, there are many interactions with Play and morphia team and have some code changes in the latest trunk of both product. It's safe to use the morphia-0.96-SNAPSHOT.jar file included in this plugin. But don't use the one distibuted at http://code.google.com/p/morphia/.
 
 h2. <a>Usage</a>
 
@@ -116,15 +111,19 @@ public class User extends Model {
     }
  
 }
+
 p. User.java is almost not changed from what it is in Play sample_and_tests. The only differences is Model is now play.modules.morphia.Model and Entity becomes com.google.code.morphia.annotations.Entity
 
 h3. <a>Migrate JQL query to MongoDB query</a>
 
 JPA Style
+
 bc.. public Post previous() {
         return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
-    }  
+    } 
+    
 p. Morphia style:
+
 bc.. public Post previous() {
         return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
     }
@@ -132,13 +131,16 @@ bc.. public Post previous() {
 h3. <a>Aggregation with MapReduce</a>
 
 JPA style:
+
 bc.. public static List<Map> getCloud() {
         List<Map> result = Tag.find(
             "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
         ).fetch();
         return result;
     }
+
 p. Morphia style:
+
 bc.. private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
     private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
     public static List<Map<String, Integer>> getCloud(Query<? extends Model> query) {
