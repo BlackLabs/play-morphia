@@ -4,13 +4,12 @@ The Morphia module bridge play.db.Model to mongodb. This module depends on morph
 
 h2. <a>Motivation</a>
 
-In the begining I want to use existing <a href="http://www.playframework.org/modules/mongo">play-mongo</a> plugin. However it lack some features I needed including:
+In the begining I want to use existing <a href="http://www.playframework.org/modules/mongo">play-mongo</a> plugin. However it lack some features I need, including:
 * support map (relatively long) java name to (short) mongo db name
 * create (inique) index on field
 * life cycle management: @PreLoad, @PostPersist etc.
 
-I've come across with <a href="http://code.google.com/p/morphia/">morphia</a> project and feel it is exactly what I needed. I just need to write some code to 
-bridge the existing play.db.Model to morphia. And it comes out this plugin
+I've come across with <a href="http://code.google.com/p/morphia/">morphia</a> project and feel it is exactly what I need. Juust need to write some code to bridge it to existing data model of play framework. And it comes out this plugin.
 
 h2. <a>features</a>
 
