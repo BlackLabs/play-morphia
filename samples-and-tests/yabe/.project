@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Yet Another Blog Engine</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>org.playframework.playclipse.playNature</nature>
+	</natures>
+	<linkedResources><link><name>secure</name><type>2</type><location>j:/play/modules/secure/app</location></link>
+<link><name>conf/secure</name><type>2</type><location>j:/play/modules/secure/conf</location></link>
+<link><name>public/secure</name><type>2</type><location>j:/play/modules/secure/public</location></link>
+<link><name>crud</name><type>2</type><location>j:/play/modules/crud/app</location></link>
+<link><name>conf/crud</name><type>2</type><location>j:/play/modules/crud/conf</location></link>
+<link><name>public/crud</name><type>2</type><location>j:/play/modules/crud/public</location></link>
+</linkedResources>
+</projectDescription>

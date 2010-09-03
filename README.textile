@@ -1,0 +1,176 @@
+h1. Morphia module
+
+p.The Morphia module bridge play.db.Model to mongodb. This module depends on morphia framework project on <a href="http://code.google.com/p/morphia/">googlecode</a>
+
+h2. <a>Motivate</a>
+
+p.In the begining I was seeking for existing play-mongo plugin. However it lack some features I needed, here are some examples:
+* support map (relatively long) java name to (short) mongo db name
+* create (inique) index on field
+* life cycle management: @PreLoad, @PostPersist etc.
+
+p.I've come across with <a href="http://code.google.com/p/morphia/">morphia</a> project and feel it is exactly what I needed. I just need to write some code to 
+bridge the existing play.db.Model to morphia. And it comes out this plugin
+
+h2. <a>features</a>
+
+Morphia module provides complete bridge from play.db.Model to mongo, meaning your application needs very limited change to migrate from JPA/RDBMS to mongodb:
+
+* Annotations:
+** Entity (support short collection name), like javax.persistence.Entity combined with javax.persistence.Table
+** Id, like javax.persistence.Id. Usually you don't need to provide @Id marked fields as MorphiaEnhancer will generate one for you.
+** Property (support short field name), like javax.persistence.Column
+** Indexed (support unique and dropDups), enable you mark fields needs index
+** Transient, mark fields which should be ignored
+** Embedded, mark a entity which should be embedded in another entity, or a field of host entity which is an embedded entity
+** Life cycle annotations: PreLoad, PrePersist, PostLoad, PostPersist...
+** and many other useful annotations you can find at <a href="http://code.google.com/p/morphia/wiki/EntityAnnotation">here</a>
+
+* play.db.Model support
+** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
+style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated
+into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce.
+
+* Dynamic Id support
+** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
+if you like use Long (an obvious motivation is CRUD's route file recongnize number only...), you are free to do it. Just add this line in your application.conf: "morphia.id.type=Long"
+Morphia will handle everything for you Long type ID generation. You are free to mark your own Id field with any type (better to be String) like Tag.name. In that case, Morphia will
+not manage your Id field
+
+* CRUD support
+** Yeah! Morphia support CRUD transparently. However there are some inherited limitation with Embedded entity type: MongoDb prevent Id field for any embedded document, thus 
+you cannot manage embedded entities using CRUD like Comment in YABE sample.
+
+* Data binding and validation
+** Feel free to your faviourite "Binder.bind(user, "User", params.all());" or "User.edit(user, "User", params.all());", and call "Validation.valid(user);" to validate
+http request params.
+
+* Indexing
+** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
+
+h2. <a>Dependencies</a>
+
+* Play: Play-1.1 release. It's okay to use the current trunk but not 1.1 beta1
+* Morphia: morphia-0.97 + <a href="http://code.google.com/p/morphia/issues/detail?id=104">this patch</a>. It's safe to use the bundled jar file.
+
+You really really need the latest Play (even late than 1.1beta) and morphia@googlecode (even late than morphia-0.96-SNAPSHOT.jar). In the progress of development, there are many
+interactions with Play and morphia team and have some code changes in the latest trunk of both product. It's safe to use the morphia-0.96-SNAPSHOT.jar file included in this plugin.
+But don't use the one distibuted at http://code.google.com/p/morphia/.
+
+h2. <a>Usage</a>
+
+h3. <a>Configuration</a>
+
+bc.. ## Morphia module configuration
+# load morphia module
+module.morphia=${play.path}/modules/morphia
+# where your mongodb server located?
+morphia.db.host=ckweb
+# what's your mongodb server port
+morphia.db.port=27017 
+# what's your database name
+morphia.db.name=yabe
+# Authentication to your mongodb server
+#morphia.db.username=user
+#morphia.db.password=pass
+# configure your ID field type
+# could be either ObjectId or Long, default to ObjectId
+morphia.id.type=Long
+
+h3. <a>Create domain model using Morphia</a>
+
+bc.. package models;
+ 
+import play.data.validation.Email;
+import play.data.validation.Required;
+import play.modules.morphia.Model;
+
+import com.google.code.morphia.annotations.Entity;
+ 
+@Entity
+public class User extends Model {
+ 
+    @Email
+    @Required
+    public String email;
+    
+    @Required
+    public String password;
+    
+    public String fullname;
+    
+    public boolean isAdmin;
+    
+    public User(String email, String password, String fullname) {
+        this.email = email;
+        this.password = password;
+        this.fullname = fullname;
+    }
+    
+    public static User connect(String email, String password) {
+        return find("byEmailAndPassword", email, password).first();
+    }
+    
+    public String toString() {
+        return email;
+    }
+ 
+}
+p. User.java is almost not changed from what it is in Play sample_and_tests. The only differences is Model is now play.modules.morphia.Model and Entity becomes com.google.code.morphia.annotations.Entity
+
+h3. <a>Migrate JQL query to MongoDB query</a>
+
+bc.. //JPA style:
+    public Post previous() {
+        return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
+    }
+//Morphia style:
+    public Post previous() {
+        return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
+    }
+
+h3. <a>Aggregation with MapReduce</a>
+
+bc.. //JPA style:
+     public static List<Map> getCloud() {
+        List<Map> result = Tag.find(
+            "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
+        ).fetch();
+        return result;
+    }
+// Morphia style:
+    private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
+    private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
+    public static List<Map<String, Integer>> getCloud(Query<? extends Model> query) {
+        List<Map<String, Integer>> result = new ArrayList<Map<String, Integer>>();
+        Datastore ds = MorphiaPlugin.ds();
+        DBCollection dbCol = ds.getCollection(Post.class);
+        MapReduceOutput out = dbCol.mapReduce(m_, r_, null, query == null ? null : ((QueryImpl<? extends Model>)query).getQueryObject());
+        for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+            DBObject dbo = itr.next();
+            DBObject k_v = (DBObject)dbo.get("value");
+            Map<String, Integer> m = new HashMap<String, Integer>();
+            m.put((String)k_v.get("tag"), ((Double)k_v.get("count")).intValue());
+            result.add(m);
+        }
+        return result;
+    }
+p. This part is not so elegant. We are relying more mature Java interface to mongo db and see how we can simplify the interface
+
+h2. <a>FAQ</a>
+
+p. Why do I get the following error while running my play app in prod mode?
+
+bc.. play.exceptions.JavaExecutionException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.jobs.Job.call(Job.java:119)
+        at Invocation.Job(Play!)
+Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one
+ or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.test.Fixtures.load(Fixtures.java:214)
+        at Bootstrap.doJob(Bootstrap.java:21)
+        at play.jobs.Job.doJobWithResult(Job.java:37)
+        at play.jobs.Job.call(Job.java:110)
+        
+p. Well this is a problem of Play. Check this thread: http://groups.google.com/group/play-framework/browse_thread/thread/a290fabc41f787ec
+
+p. TBD ...
