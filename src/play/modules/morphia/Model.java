@@ -365,7 +365,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * JPA style find method 
      * @param keys should be in style of "byKey1[AndKey2[AndKey3...]]"
-     * @param params number should eithe be one or the same number of keys
+     * @param params number should either be one or the same number of keys
      * @return
      */
     public static MorphiaQuery find(String keys, Object... params) {

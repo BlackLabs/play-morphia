@@ -44,6 +44,21 @@ http request params.
 * Indexing
 ** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
 
+h2. Limitation
+
+* "where" condition not support in the following interface of play.db.Model.Factory implementation: 
+
+bc.. public List<play.db.Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where);
+
+* The generic is not working well, sometimes you need type casting. If someone could help, that would be very appreciate.
+
+* "Or" condition query is doable but the interface might changed in future, use it with caution.
+
+h2. TODO List
+
+* Stablize "Or" condtion query interface
+* Support storing files to GridFS
+
 h2. <a>Dependencies</a>
 
 * Play: Play-1.1 release. It's okay to use the current trunk but not 1.1 beta1
@@ -161,7 +176,7 @@ p. This part looks not so elegant. I hope it could be simplified in the future.
 
 h2. <a>FAQ</a>
 
-p. Why do I get the following error while running my play app in prod mode?
+h3. Why do I get the following error while running my play app in prod mode?
 
 bc.. play.exceptions.JavaExecutionException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
         at play.jobs.Job.call(Job.java:119)
@@ -175,4 +190,24 @@ Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The
         
 p. Well this is a problem of Play. Check <a href="http://groups.google.com/group/play-framework/browse_thread/thread/a290fabc41f787ec">this</a> thread
 
-p. TBD ...
+h3. How to create an "OR" relation query?
+
+bc..     Query q = myPost.createQuery(); // create a Query
+    OrBuilder or = q.or(); // get Or query builder
+    or.add().field("title").contains("mongodb"); // select title contains "mongodb"
+    or.add().field("content").contains("mongodb"); // or content contains "mongodb"    or.add().field("comment").contains("mongodb"); // or c
+    List<play.db.Model> l = new ArrayList<play.db.Model>();
+    l.add(q.order("-postedAt").limit(10).asList()); // sort the result by postedAt desc order and fetch at most 10 items
+    return l;
+
+h3. How to do aggregation?
+
+Scroll up this page until you see "Aggregation with MapReduce".
+
+h3. There is a lot of compilation and runtime errors with this plugin!
+
+Make sure you have checked "Dependences" section already
+
+h3. Why do you choose Morphia? I've heard that GuiceyMongo is faster
+
+Well the goal of Play-Morphia is to provide a way to help Play app developer to migrate their existing apps from RDBMS (via JPA) to MongoDB with least effort. Morphia is by far the best thing I can find provides JPA style (annotation) access to mongodb. If you are developing new Play application, and would like to try a different way, GuiceyMongo might be a good choice for you.

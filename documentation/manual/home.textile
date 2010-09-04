@@ -1,250 +1,213 @@
-h1. Mongo module
+h1. Morphia module
 
-The mongo module adds "MongoDB":http://www.mongodb.org support for the Play! framework.
+The Morphia module bridge play.db.Model to mongodb. This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
 
-h2. <a>Enable the Mongo module for the application</a>
+h2. <a>Motivation</a>
 
-In the **/conf/application.conf** file, enable the Mongo module by adding this line:
+In the begining I want to use existing <a href="http://www.playframework.org/modules/mongo">play-mongo</a> plugin. However it lack some features I need, including:
+* support map (relatively long) java name to (short) mongo db name
+* create (inique) index on field
+* life cycle management: @PreLoad, @PostPersist etc.
 
+I've come across with <a href="http://code.google.com/p/morphia/">morphia</a> project and feel it is exactly what I need. Juust need to write some code to bridge it to existing data model of play framework. And it comes out this plugin.
 
-bc.. # The mongo module
-module.mongo=${play.path}/modules/mongo
+h2. <a>features</a>
 
-# mongodb connection details
-mongo.host=localhost
-mongo.port=27017
-mongo.database=play
+Morphia module provides complete bridge from play.db.Model to mongo, meaning your application needs very limited change to migrate from JPA/RDBMS to mongodb:
 
-mongo.username=test
-mongo.password=test123
-h2. <a>Defining your models</a>
+* Annotations:
+** Entity (support short collection name), like javax.persistence.Entity combined with javax.persistence.Table
+** Id, like javax.persistence.Id. Usually you don't need to provide @Id marked fields as MorphiaEnhancer will generate one for you.
+** Property (support short field name), like javax.persistence.Column
+** Indexed (support unique and dropDups), enable you mark fields needs index
+** Transient, mark fields which should be ignored
+** Embedded, mark a entity which should be embedded in another entity, or a field of host entity which is an embedded entity
+** Life cycle annotations: PreLoad, PrePersist, PostLoad, PostPersist...
+** and many other useful annotations you can find at <a href="http://code.google.com/p/morphia/wiki/EntityAnnotation">here</a>
 
-Creating models to be stored in your Mongo database is very similar to the method of creating
-models in the Play! framework for storage in an SQL database. Provide them with an annotation 
-and have them inherit from a base class, as follows:
+* play.db.Model support
+** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
+style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce.
 
-bc.. @MongoEntity("collectionName")
-public class Car extends MongoModel {
+* Dynamic Id support
+** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
+if you like use Long (an obvious motivation is CRUD's route file recongnize number only...), you are free to do it. Just add this line in your application.conf: "morphia.id.type=Long" Morphia will handle everything for you Long type ID generation. You are free to mark your own Id field with any type (better to be String) like Tag.name. In that case, Morphia will
+not manage your Id field
 
-	public String name;
-	public String colour;
-	public int topSpeed;
-	
+* CRUD support
+** Yeah! Morphia support CRUD transparently. However there are some inherited limitation with Embedded entity type: MongoDb prevent Id field for any embedded document, thus you cannot manage embedded entities using CRUD like Comment in YABE sample.
+
+* Data binding and validation
+** Feel free to your faviourite "Binder.bind(user, "User", params.all());" or "User.edit(user, "User", params.all());", and call "Validation.valid(user);" to validate
+http request params.
+
+* Indexing
+** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
+
+h2. Limitation
+
+* "where" condition not support in the following interface of play.db.Model.Factory implementation: 
+
+bc.. public List<play.db.Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where);
+
+* The generic is not working well, sometimes you need type casting. If someone could help, that would be very appreciate.
+
+* "Or" condition query is doable but the interface might changed in future, use it with caution.
+
+h2. TODO List
+
+* Stablize "Or" condtion query interface
+* Support storing files to GridFS
+
+h2. <a>Dependencies</a>
+
+* Play: Play-1.1 release. It's okay to use the current trunk but not 1.1 beta1
+* Morphia: morphia-0.97 + <a href="http://code.google.com/p/morphia/issues/detail?id=104">this patch</a>. It's safe to use the bundled jar file.
+
+You really really need the latest Play (even late than 1.1beta) and morphia@googlecode (even late than morphia-0.96-SNAPSHOT.jar). In the progress of development, there are many interactions with Play and morphia team and have some code changes in the latest trunk of both product. It's safe to use the morphia-0.96-SNAPSHOT.jar file included in this plugin. But don't use the one distibuted at http://code.google.com/p/morphia/.
+
+h2. <a>Usage</a>
+
+h3. <a>Configuration</a>
+
+bc.. ## Morphia module configuration
+# load morphia module
+module.morphia=${play.path}/modules/morphia
+# where your mongodb server located?
+morphia.db.host=ckweb
+# what's your mongodb server port
+morphia.db.port=27017 
+# what's your database name
+morphia.db.name=yabe
+# Authentication to your mongodb server
+#morphia.db.username=user
+#morphia.db.password=pass
+# configure your ID field type
+# could be either ObjectId or Long, default to ObjectId
+morphia.id.type=Long
+
+h3. <a>Create domain model using Morphia</a>
+
+bc.. package models;
+ 
+import play.data.validation.Email;
+import play.data.validation.Required;
+import play.modules.morphia.Model;
+
+import com.google.code.morphia.annotations.Entity;
+ 
+@Entity
+public class User extends Model {
+ 
+    @Email
+    @Required
+    public String email;
+    
+    @Required
+    public String password;
+    
+    public String fullname;
+    
+    public boolean isAdmin;
+    
+    public User(String email, String password, String fullname) {
+        this.email = email;
+        this.password = password;
+        this.fullname = fullname;
+    }
+    
+    public static User connect(String email, String password) {
+        return find("byEmailAndPassword", email, password).first();
+    }
+    
+    public String toString() {
+        return email;
+    }
+ 
 }
-p. If collectionName is not supplied as a value to the annotation, the collection name will be the 
-same as the class name.
 
-
-h2. <a>Using your models</a>
-
-After defining your models, you can use them in the same way as you would a standard SQL based
-model in Play! framework. The examples below describe how you might use your Mongo based models in a controller.
-
-h3. Saving
-
-Saving is simple.
-
-bc.. Car myCar = new Car("Toyota", "white", 150);
-myCar.save();
-h3. Finding
-
-There are a number of ways to find your models.
-
-bc.. //get all cars
-List<Car> allCars = Car.find().fetch();
-
-//get any five cars
-List<Car> fiveCars = Car.find().fetch(5);
-
-//get any two cars with offset of 3
-List<Car> offsetCars = Car.find().from(3).fetch(2);
-
-//get the third page of 20 cars
-List<Car> pageOfCars = Car.find().fetch(3,20);
-
-//get only one car
-Car c = Car.find().first();
-h3. Query Strings
-
-You can pass query strings when using the find method like so:
-
-bc.. List<Car> toyotas = Car.find("byName", "Toyota").fetch();
-
-List<Car> whiteToyotas = Car.find("byNameAndColour", "Toyota", "white").fetch();
-p. Currently the Mongo module only supports the 'And' query operator.
-
-h3. Ordering
-
-Ordering your results is very simple, allowing the use of a query very similar to the find.
-
-bc.. List<Car> ascendingNameCars = Car.find().order("byName").fetch();
-
-// to perform a descending order, prefix the field with '-'
-List<Car> descendingNameCars = Car.find().order("by-Name").fetch();
-
-h3. Counting your models
-
-Counting your models is again, simple.
-
-bc.. long count = Car.count()
-
-// alternatively, pass a query string
-long toyotaCount = Car.count("byName", "Toyota");
-h3. Deleting
-
-Deleting can be done at the model level, or against the entire collection.
-
-bc.. Car c = Car.find().first();
-c.delete();
-
-// or to delete using a query string
-Car.delete("byName","Toyota");
-
-// or just delete everything
-Car.deleteAll();
-
-
-h3. Relationships
-
-This new mongo module also supports relationships between models. You can choose whether you want to define relationships which are pointing to another collection or whether you want to embed the data inside the document. The following document uses the MongoEmbedded annotation to mark it as embedded. 
-
-
-bc.. @MongoEntity
-public class Driver extends MongoModel {
-	public String name;
-}
-
-// and declare this object a member of your model class
-@MongoEntity("cars")
-public class Car extends MongoModel {
-
-	public String name;
-	public String colour;
-	public int topSpeed;
-
-	@MongoEmbedded
-	public Driver driver;
-	
-}
-p. Now when we save our MongoModel to a mongo database, the driver is stored as an inner JSON document.
-
-bc. <p> Driver Name: ${car.driver.name} </p>
-
-Querying for inner values needs the use of a query object. If you want to query for all cars with "Andrew" as the driver.
-
-bc. DBObject driverName = new BasicDBObject("name", "Andrew");
-Car andrewCar = Car.find("byDriver", driverName).fetch();
-
-
-
-h2. <a>Mongo specific functionality</a>
-
-h3. Mongo Information
-
-Models are automatically saved with a Mongo ObjectId to the specified collection. Both the ObjectId and collection name can be accessed from the model.
-
-bc.. Car myCar = new Car("Toyota", "white", 150);
-myCar.save();
-
-ObjectId id = myCar.get_id();
-String colName = myCar.getCollectionName();
-h3. Mongo indexes
-
-It is possible to create indexes against your models.
-
-bc.. // index the name field of Car
-Car.index("onName");
-
-// create a descending index by prepending the '-' character
-Car.index("on-Name");
-
-// create a composite index by combining field names
-Car.index("onNameAndColour");
-
-// remove an index
-Car.dropIndex("onName);
-
-// remove all indexes (except the mandatory mongo index on _id)
-Car.dropIndexes();
-
-// get the names of all the existing indexes
-String [] indexNames = Car.getIndexes();
-p. Due to the schemaless nature of mongo, it is possible to create an index on a field which does not exist because a document containing that field may be inserted in the future. Ensure you spell your field names correctly.
-
-h3. Authentication and Security
-
-It is possible to run your mongo database in a secure mode, ensuring that a user must authenticate prior to performing operations on secure data. More information on setting up a secure mongo instance can be found on the Mongo website under "Security and Authentication":http://www.mongodb.org/display/DOCS/Security+and+Authentication.
-
-Assuming you have setup your database correctly, you can leverage the authentication functionality of the mongo module as follows:
-
-bc.. # ensure you set the necessary configuration parameters to match authentication details on your database
-mongo.username=test
-mongo.password=test123
-p. Now you can perform the following operations in your controllers.
-
-bc.. //add a user - with read only access
-MongoDB.addUser("username","password", true);
-
-// or write access
-MongoDB.addUser("username2","password2", false);
-
-// authenticate as a user
-boolean success = MongoDB.authenticate("username","password");
-
-// remove a user
-MongoDB.removeUser("username");
-p. Please note that readOnly restrictions will only apply on mongo versions 1.3.2+
-
-
-h2. <a>Currently lacking features</a>
-
-- Fixtures
-- CRUD
-- Using FileUpload with GridFS
-
-
-h2. <a>yabe with MongoDB</a>
-
-As a small technology demo the yabe application has been modified to work with mongodb. You can grab it at TODO
-
-h3. Lacking features/BUGS
-
-Several features are naturally not supported as they have not been ported to 
-
-* Tests are not working as the Fixtures depends on Hibernate (a MongoFixtures class would be needed)
-* The CRUD module is not working either (as it uses the hibernate dependent JPASupport class), you can only show your own posts and add new after logging in.
-
-h3. Document structure
-
-Currently there are two collections, "users" and "posts". Users contains the users who can login, posts contains all the posts including the comments. Comments are embedded, as well as tags.
-
-h3. Importing initial data
-
-All you need is a user, you can easily add it using the mongodb shell.
-
-bc. alex@midnight:~$ mongo yabe
-> db.users.insert({ "email" : "alr@emplify.de", "password" : "test", "fullname" : "Alexander Reelsen", "isAdmin" : true })
-> db.users.find()
-
-Optionally you can also add your own blog entries via the following statement, but they gui is really nicer for this :)
-
-bc. alex@midnight:~$ mongo yabe
-db.posts.insert( { "title" : "My first post", "postedAt" : "Sun May 23 2010 11:26:57 GMT+0200 (CEST)", "content" : "I am so tired, I should twitter about it.", "author" : { "$ref" : "users", "$id" : "4bf842a5feb39117345da5dd" }, tags : [ { name : "firstTag" } , { name : "secondTag" } ] , comments : [ { author : "Guybrush Threepwood", content : "Got malt beer?", postedAt : "Sun May 23 2010 12:26:57 GMT+0200 (CEST)" } ] } )
-
-So this statement adds a new post containing two tags and one comment. It also has a database reference to the author, where you have to put the ObjectId of your freshly created user.
-
-h3. Changes to the original app
-
-Just check the source code, I commented the original lines only out, so you can compare easily.
-
-* All jpa specififc @ManyToOne, @OneToMany, @Lob annotations have been commented out
-* The routes file is changed because ids are now alphanumeric, the search for tags has been put to another URL
-* The application config file contains a mongo db connection
-* Getting an id of any object uses the "_id" instead of the "id" property
-* Post.next() and Post.previous() depend on searching and ordering data results
-* Post.findTaggedWith() uses a MongoDB "$all" matcher
-* The Comment class has no dependency to the post as it is inline
-* Getting the TagCloud uses a Map/Reduce job you might want to check out - in order to get a feeling for this.
-* In Admin.index() controller, when using DBRefs for searching, you must call the toString() method of the ObjectId - never use the object itself as DBRef argument
-
-Never think too complicated on how to get your data, most of the time it is pretty easy once you have freed yourself from the sql mindset.
+p. User.java is almost not changed from what it is in Play sample_and_tests. The only differences is Model is now play.modules.morphia.Model and Entity becomes com.google.code.morphia.annotations.Entity
+
+h3. <a>Migrate JQL query to MongoDB query</a>
+
+h4. JPA Style
+
+bc..     public Post previous() {
+        return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
+    } 
+    
+h4. Morphia style:
+
+bc..     public Post previous() {
+        return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
+    }
+
+h3. <a>Aggregation with MapReduce</a>
+
+h4. JPA style:
+
+bc..     public static List<Map> getCloud() {
+        List<Map> result = Tag.find(
+            "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
+        ).fetch();
+        return result;
+    }
+
+h4.. Morphia style:
+
+bc..     private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
+    private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
+    public static List<Map<String, Integer>> getCloud(Query<? extends Model> query) {
+        List<Map<String, Integer>> result = new ArrayList<Map<String, Integer>>();
+        Datastore ds = MorphiaPlugin.ds();
+        DBCollection dbCol = ds.getCollection(Post.class);
+        MapReduceOutput out = dbCol.mapReduce(m_, r_, null, query == null ? null : ((QueryImpl<? extends Model>)query).getQueryObject());
+        for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+            DBObject dbo = itr.next();
+            DBObject k_v = (DBObject)dbo.get("value");
+            Map<String, Integer> m = new HashMap<String, Integer>();
+            m.put((String)k_v.get("tag"), ((Double)k_v.get("count")).intValue());
+            result.add(m);
+        }
+        return result;
+    }
+    
+p. This part looks not so elegant. I hope it could be simplified in the future.
+
+h2. <a>FAQ</a>
+
+h3. Why do I get the following error while running my play app in prod mode?
+
+bc.. play.exceptions.JavaExecutionException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.jobs.Job.call(Job.java:119)
+        at Invocation.Job(Play!)
+Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one
+ or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.test.Fixtures.load(Fixtures.java:214)
+        at Bootstrap.doJob(Bootstrap.java:21)
+        at play.jobs.Job.doJobWithResult(Job.java:37)
+        at play.jobs.Job.call(Job.java:110)
+        
+p. Well this is a problem of Play. Check <a href="http://groups.google.com/group/play-framework/browse_thread/thread/a290fabc41f787ec">this</a> thread
+
+h3. How to create an "OR" relation query?
+
+bc..     Query q = myPost.createQuery(); // create a Query
+    OrBuilder or = q.or(); // get Or query builder
+    or.add().field("title").contains("mongodb"); // select title contains "mongodb"
+    or.add().field("content").contains("mongodb"); // or content contains "mongodb"    or.add().field("comment").contains("mongodb"); // or c
+    List<play.db.Model> l = new ArrayList<play.db.Model>();
+    l.add(q.order("-postedAt").limit(10).asList()); // sort the result by postedAt desc order and fetch at most 10 items
+    return l;
+
+h3. How to do aggregation?
+
+Scroll up this page until you see "Aggregation with MapReduce".
+
+h3. There is a lot of compilation and runtime errors with this plugin!
+
+Make sure you have checked "Dependences" section already
+
+h3. Why do you choose Morphia? I've heard that GuiceyMongo is faster
+
+Well the goal of Play-Morphia is to provide a way to help Play app developer to migrate their existing apps from RDBMS (via JPA) to MongoDB with least effort. Morphia is by far the best thing I can find provides JPA style (annotation) access to mongodb. If you are developing new Play application, and would like to try a different way, GuiceyMongo might be a good choice for you.
