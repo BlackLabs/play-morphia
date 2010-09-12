@@ -221,13 +221,17 @@ public class Model implements Serializable, play.db.Model {
      * MorphiaEnhancer will override this method for sub class without
      * \@Embedded annotation specified
      * 
+     * If user defined customized \@Id field, it's better to override
+     * this method for the sake of performance. Otherwise framework will
+     * use reflection to get the value
+     * 
      * @return
      */
     public Object getId() {
         return null;
     }
     
-    public void setId(Object id) {
+    public final void setId(Object id) {
         if (null != getId()) {
             throw new IllegalStateException("Cannot set ID to entity with ID presented");
         }
@@ -385,6 +389,15 @@ public class Model implements Serializable, play.db.Model {
     public static <V> MorphiaQuery filter(String property, V value) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+    
+    // -- additional quick access method
+    /**
+     * Return the first element in the data storage. Return null if there is no record found
+     */
+    public static <T extends Model> T get() {
+        throw new UnsupportedOperationException(
+            "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
     /**

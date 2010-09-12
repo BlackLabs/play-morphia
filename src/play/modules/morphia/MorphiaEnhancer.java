@@ -111,8 +111,18 @@ public class MorphiaEnhancer extends Enhancer {
             if (!embedded) {
                 Logger.debug("adding id methods to user defined id entity: %1$s", ctClass.getName());
                 // a general id() method for user marked Id field
-                CtMethod getId = CtMethod.make("public Object getId() { return mf.keyValue(this);}", ctClass);
-                ctClass.addMethod(getId);
+                boolean hasGetId = false;
+                for (CtMethod cm: ctClass.getDeclaredMethods()) {
+                    if ("getId".equals(cm.getName()) && cm.getDeclaringClass().equals(ctClass)) {
+                        // user has defined getId already
+                        hasGetId = true;
+                        break;
+                    }
+                }
+                if (!hasGetId) {
+                    CtMethod getId = CtMethod.make("public Object getId() { return mf.keyValue(this);}", ctClass);
+                    ctClass.addMethod(getId);
+                }
                 // setId - for user marked Id entity, setId method needs to be override 
                 
                 CtMethod isUserDefinedId = CtMethod.make("protected boolean isUserDefinedId_() {return true;}", ctClass);
@@ -161,13 +171,17 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod filter = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery filter(String property, Object value) { return (play.modules.morphia.Model.MorphiaQuery)find().filter(property, value); }",ctClass);
         ctClass.addMethod(filter);
 
+        // get()
+        CtMethod get = CtMethod.make("public static play.modules.morphia.Model get() { return (play.modules.morphia.Model)find().get(); }",ctClass);
+        ctClass.addMethod(get);
+
         // findById
         if (addId) {
             CtMethod findById = CtMethod.make("public static play.modules.morphia.Model findById(java.lang.Object id) { return filter(\"_id\", play.modules.morphia.utils.IdGenerator.processId(id)).get(); }",ctClass);
             ctClass.addMethod(findById);
         } else {
             if (!embedded) {
-                CtMethod findById = CtMethod.make("public static play.modules.morphia.Model findById(java.lang.Object id) { return mf.findById(id); }",ctClass);
+                CtMethod findById = CtMethod.make("public static play.modules.morphia.Model findById(java.lang.Object id) { return (play.modules.morphia.Model)mf.findById(id); }",ctClass);
                 ctClass.addMethod(findById);
             } else {
                 // embedded class will throw out UnsupportedOperationException

@@ -211,3 +211,14 @@ Make sure you have checked "Dependences" section already
 h3. Why do you choose Morphia? I've heard that GuiceyMongo is faster
 
 Well the goal of Play-Morphia is to provide a way to help Play app developer to migrate their existing apps from RDBMS (via JPA) to MongoDB with least effort. Morphia is by far the best thing I can find provides JPA style (annotation) access to mongodb. If you are developing new Play application, and would like to try a different way, GuiceyMongo might be a good choice for you.
+
+h4. How to create Entity with user defined @Id field?
+
+* Add @com.google.code.morphia.annotations.Id annotation to the field you want to use as an ID field, e.g. : @Id name;
+* Override the following methods declared in play.modules.morphia.Model:
+bc.     @Override public Object getId() {return name;}
+    @Override protected void setId_(Object id) {name = id.toString();}
+    protected static Object processId_(Object id) {return id.toString();}
+
+* Make sure you always populated your @Id field before calling model.save(), don't let framework to generate Id for you b/c framework has no knowledge on how to do it
+* It's better to keep your @Id field type to be java.lang.String.
