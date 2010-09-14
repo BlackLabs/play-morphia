@@ -39,7 +39,7 @@ public class MorphiaEnhancer extends Enhancer {
         final CtClass ctClass = makeClass(applicationClass);
 
         // Enhance MongoEntity annotated classes
-        if (hasAnnotation(ctClass, Entity.class.getName())) {
+        if (hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, Embedded.class.getName())) {
             
             boolean addId = true;
             boolean embedded = false;
@@ -49,6 +49,12 @@ public class MorphiaEnhancer extends Enhancer {
                 embedded = true;
             } else {
                 for (CtField cf: ctClass.getDeclaredFields()) {
+                    if (hasAnnotation(cf, Id.class.getName())) {
+                        addId = false;
+                        break;
+                    }
+                }
+                for (CtField cf: ctClass.getFields()) {
                     if (hasAnnotation(cf, Id.class.getName())) {
                         addId = false;
                         break;
@@ -144,7 +150,7 @@ public class MorphiaEnhancer extends Enhancer {
         }
 
         // all - alias of find()
-        CtMethod all = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery all() { return createQuery(); }",ctClass);
+        CtMethod all = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery all() { return new play.modules.morphia.Model.MorphiaQuery("+ className + "); }",ctClass);
         ctClass.addMethod(all);
 
         // create

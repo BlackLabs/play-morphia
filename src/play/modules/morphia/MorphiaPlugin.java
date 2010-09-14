@@ -128,7 +128,14 @@ public class MorphiaPlugin extends PlayPlugin {
 //        }
 //        afterApplicationStart_();
     }
-
+    
+//    @Override
+//    public void detectChange() {        
+//        ds_.getMongo().close();        
+//        onConfigurationRead();
+//        afterApplicationStart();
+//    }
+    
     @Override
     public void afterApplicationStart() {
         List<Class<?>> pending = new ArrayList<Class<?>>();
@@ -316,6 +323,9 @@ public class MorphiaPlugin extends PlayPlugin {
             }
             for (Field f : fields) {
                 if (Modifier.isTransient(f.getModifiers())) {
+                    continue;
+                }
+                if (Modifier.isStatic(f.getModifiers())) {
                     continue;
                 }
                 if (f.isAnnotationPresent(Transient.class)) {

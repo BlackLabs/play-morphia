@@ -30,8 +30,11 @@ import play.mvc.Scope.Params;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Key;
 import com.google.code.morphia.annotations.Embedded;
+import com.google.code.morphia.annotations.PostLoad;
+import com.google.code.morphia.annotations.PostPersist;
 import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
+import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.QueryFieldEnd;
 import com.google.code.morphia.query.QueryImpl;
@@ -300,6 +303,23 @@ public class Model implements Serializable, play.db.Model {
         }
         return oid.equals(((Model) other).getId());
     }
+    
+    // -- helper utilities
+    @Transient
+    private transient boolean saved_ = false;
+    /**
+     * A utility method determine whether this entity is a newly
+     * constructed object in memory or represents a data from mongodb
+     * @return true if this is a memory object which has not been saved to db yet, false otherwise
+     */
+    public final boolean isNew() {
+        return !saved_;
+    }
+    @PostLoad
+    @PostPersist
+    private void setSaved_() {
+        saved_ = true;
+    }
 
     // -- Play JPA style methods
     /**
@@ -417,8 +437,22 @@ public class Model implements Serializable, play.db.Model {
     public static DB db() {
         return ds().getDB();
     }
+    
+    /**
+     * Save and return this enitity
+     * @param <T>
+     * @return
+     */
+    public <T extends Model> T save() {
+        ds().save(this);
+        return (T)this;
+    }
 
-    public Key<? extends Model> save() {
+    /**
+     * Save and return Morphia Key
+     * @return
+     */
+    public Key<? extends Model> save2() {
         return ds().save(this);
     }
 

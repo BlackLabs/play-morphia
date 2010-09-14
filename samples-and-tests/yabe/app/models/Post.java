@@ -92,7 +92,7 @@ public class Post extends Model {
     }
     
     public static List<Post> findTaggedWith(String... tags) {
-        return Post.filter("tags in", tags).asList();
+        return Post.filter("tags all", tags).asList();
     }
     
     public String toString() {
