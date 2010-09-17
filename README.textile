@@ -27,7 +27,7 @@ Morphia module provides complete bridge from play.db.Model to mongo, meaning you
 
 * play.db.Model support
 ** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
-style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce.
+style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce. Note, you can't simply use Fixtures.deleteXX() methods to get rid of testing data, use MorphiaFixtures.deleteXX() instead.
 
 * Dynamic Id support
 ** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
@@ -235,3 +235,7 @@ p. If the relationship is embedded rather than reference, you can safely use "do
 h4. How do I know if an entity object is an new object just constructed in the memory or represents a data (either by save or load from db) in a db?
 
 p. Use obj.isNew()
+
+h4. I try to call Fixtures.deleteAll() in my unit test setup methods, but I found the data is still there, what happened?
+
+p. The deleteAll() methods defined in play.test.Fixtures are hooked with JPA based database, try to use MorphiaFixtures.deleteAll() instead. Actually you are encouraged to use MorphiaFixtures in replace of Fixtures to deal with your Morphia models for all methods call.
