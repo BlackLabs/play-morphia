@@ -21,6 +21,7 @@ import play.Logger;
 import play.Play;
 import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
+import play.data.binding.Binder;
 import play.db.Model.Factory;
 import play.exceptions.UnexpectedException;
 
@@ -235,20 +236,8 @@ public class MorphiaPlugin extends PlayPlugin {
         public Model findById(Object id) {
             if (id == null)
                 return null;
-            Object oid = id;
-            Class<?> kt = keyType();
-            if (ObjectId.class.isAssignableFrom(kt)) {
-                if (!(oid instanceof ObjectId)) oid = new ObjectId(id.toString());
-            } else if (Long.class.isAssignableFrom(kt)) {
-                if (!(oid instanceof Long)) oid = Long.parseLong(id.toString());
-            } else if (Integer.class.isAssignableFrom(kt)) {
-                if (!(oid instanceof Integer)) oid = Integer.parseInt(id.toString());
-            } else {
-                oid = id.toString();
-            }
-            
             try {
-                return ds().find(clazz, keyName(), oid).get();
+                return ds().find(clazz, keyName(), Binder.directBind(id.toString(), Model.Manager.factoryFor(clazz).keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
                 return null;
