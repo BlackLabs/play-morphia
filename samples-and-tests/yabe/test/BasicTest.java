@@ -14,6 +14,7 @@ import org.junit.Test;
 import play.Play;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;
+import play.modules.morphia.utils.MorphiaFixtures;
 import play.test.Fixtures;
 import play.test.UnitTest;
 
@@ -24,10 +25,7 @@ public class BasicTest extends UnitTest {
     
     @Before
     public void setup() {
-        //Fixtures.deleteAll();
-        for (Class clz: Play.classloader.getAssignableClasses(Model.class)) {
-            ds.getCollection(clz).drop();
-        }
+        MorphiaFixtures.deleteAll();
     }
  
     @Test
