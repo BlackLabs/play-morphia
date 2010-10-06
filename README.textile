@@ -1,3 +1,12 @@
+Updates in 1.1b: 
+* Yabe unit test passed 
+* Add isNew() method to Model 
+* Model.save() now return Model object which is comply to JPAModel; Use Model.save2() to return Key<Model> 
+
+Updates in 1.1a:
+* Fix problems with User defined @Id field 
+* Add information to document on how to create user defined @Id field entity 
+
 h1. Morphia module
 
 The Morphia module bridge play.db.Model to mongodb. This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
@@ -186,7 +195,7 @@ Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The
         at play.jobs.Job.doJobWithResult(Job.java:37)
         at play.jobs.Job.call(Job.java:110)
         
-p. Well this is a problem of Play. Check <a href="http://groups.google.com/group/play-framework/browse_thread/thread/a290fabc41f787ec">this</a> thread
+p. This problem happens on Play v1.1-beta1. Please switch to latest 1.1 version
 
 h3. How to create an "OR" relation query?
 
