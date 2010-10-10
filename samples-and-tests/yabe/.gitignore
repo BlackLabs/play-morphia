@@ -1,5 +1,8 @@
+logs
 eclipse
 tmp
 precompiled
+test_results
 .classpath
 .settings
+

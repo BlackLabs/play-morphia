@@ -2,3 +2,4 @@ bin
 build.bat
 .classpath
 .project
+dist
