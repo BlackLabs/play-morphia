@@ -2,7 +2,7 @@ logs
 eclipse
 tmp
 precompiled
-test_results
+test-results
 .classpath
 .settings
 
