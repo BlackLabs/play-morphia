@@ -1,3 +1,6 @@
+Updates in 1.1c:
+* Fix bug in MorphiaFixture: delete(Class<Model>) -> delete(Class<? extends Model)
+
 Updates in 1.1b: 
 * Yabe unit test passed 
 * Add isNew() method to Model 
@@ -9,7 +12,11 @@ Updates in 1.1a:
 
 h1. Morphia module
 
-The Morphia module bridge play.db.Model to mongodb. This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
+The Morphia module bridge play.db.Model to mongodb. 
+<script type="text/javascript" src="http://www.ohloh.net/p/485871/widgets/project_users_logo.js"></script>
+
+This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
+<script type="text/javascript" src="http://www.ohloh.net/p/484627/widgets/project_partner_badge.js"></script>
 
 h2. <a>Motivation</a>
 

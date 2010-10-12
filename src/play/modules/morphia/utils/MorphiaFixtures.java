@@ -26,8 +26,8 @@ public class MorphiaFixtures extends Fixtures {
         }
     }
     
-    public static void delete(List<Class<Model>> classes) {
-        for (Class<Model> type: classes) {
+    public static void delete(List<Class<? extends Model>> classes) {
+        for (Class<? extends Model> type: classes) {
             ds().getCollection(type).drop();
         }
     }
