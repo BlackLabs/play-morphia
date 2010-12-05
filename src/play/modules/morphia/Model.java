@@ -17,7 +17,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.bson.types.CodeWScope;
-import org.bson.types.ObjectId;
 
 import play.Logger;
 import play.Play;
@@ -35,8 +34,11 @@ import com.google.code.morphia.annotations.PostPersist;
 import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.query.Criteria;
+import com.google.code.morphia.query.CriteriaContainer;
+import com.google.code.morphia.query.CriteriaContainerImpl;
+import com.google.code.morphia.query.FieldEnd;
 import com.google.code.morphia.query.Query;
-import com.google.code.morphia.query.QueryFieldEnd;
 import com.google.code.morphia.query.QueryImpl;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -49,7 +51,9 @@ import com.mongodb.DBCollection;
  */
 public class Model implements Serializable, play.db.Model {
 
-    // -- play.db.Model interface
+	private static final long serialVersionUID = -719759872826848048L;
+	
+	// -- play.db.Model interface
     @Override
     public Object _key() {
         return getId();
@@ -62,7 +66,7 @@ public class Model implements Serializable, play.db.Model {
 
     @Override
     public void _delete() {
-        delete();
+    	ds().delete(this);
     }
 
     // -- porting from play.db.GenericModel
@@ -123,11 +127,11 @@ public class Model implements Serializable, play.db.Model {
                             keyName = f.keyName();
                         }
                         if (multiple && Collection.class.isAssignableFrom(field.getType())) {
-                            Collection l = new ArrayList();
+                            Collection<Model> l = new ArrayList<Model>();
                             if (SortedSet.class.isAssignableFrom(field.getType())) {
-                                l = new TreeSet();
+                                l = new TreeSet<Model>();
                             } else if (Set.class.isAssignableFrom(field.getType())) {
-                                l = new HashSet();
+                                l = new HashSet<Model>();
                             }
                             Logger.debug("Collection intialized: %1$s", l.getClass().getName());
                             /*
@@ -141,7 +145,7 @@ public class Model implements Serializable, play.db.Model {
                                         if (_id.equals("")) {
                                             continue;
                                         }
-                                        Query q = ds().createQuery(c).filter(keyName, new ObjectId(_id));
+                                        Query<Model> q = ds().createQuery(c).filter(keyName, processId_(_id));
                                         try {
                                             l.add(q.get());
                                         } catch (Exception e) {
@@ -150,6 +154,8 @@ public class Model implements Serializable, play.db.Model {
                                         }
                                     }
                                 }
+                            } else {
+                                Logger.debug("multiple embedded objects not supported yet");
                             }
                             bw.set(field.getName(), o, l);
                             Logger.debug("Entity[%1$s]'s field[%2$s] has been set to %3$s", o.getClass().getName(), field.getName(), l);
@@ -157,7 +163,7 @@ public class Model implements Serializable, play.db.Model {
                             String[] ids = params.get(name + "." + field.getName() + "." + keyName);
                             if (ids != null && ids.length > 0 && !ids[0].equals("")) {
                                 params.remove(name + "." + field.getName() + "." + keyName);
-                                Query q = ds().createQuery(c).filter(keyName, processId_(ids[0]));
+                                Query<Model> q = ds().createQuery(c).filter(keyName, processId_(ids[0]));
                                 try {
                                     Object to = q.get();
                                     bw.set(field.getName(), o, to);
@@ -168,6 +174,10 @@ public class Model implements Serializable, play.db.Model {
                             } else if (ids != null && ids.length > 0 && ids[0].equals("")) {
                                 bw.set(field.getName(), o, null);
                                 params.remove(name + "." + field.getName() + "." + keyName);
+                            } else {
+                                String name0 = name + "." + field.getName();
+                                Object o0 = Model.create(field.getType(), name0, params, null);
+                                bw.set(field.getName(), o, o0);
                             }
                         }
                     }
@@ -180,7 +190,8 @@ public class Model implements Serializable, play.db.Model {
         }
     }
 
-    public <T extends Model> T edit(String name, Map<String, String[]> params) {
+    @SuppressWarnings("unchecked")
+	public <T extends Model> T edit(String name, Map<String, String[]> params) {
         edit(this, name, params, new Annotation[0]);
         return (T) this;
     }
@@ -248,7 +259,8 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException("Please override this method for user marked Id field entity: " + this.getClass().getName());
     }
     
-    @PrePersist
+    @SuppressWarnings("unused")
+	@PrePersist
     private void generateId_() {
         if (isEmbedded_()) return;
         if (null == getId()) {
@@ -315,7 +327,8 @@ public class Model implements Serializable, play.db.Model {
     public final boolean isNew() {
         return !saved_;
     }
-    @PostLoad
+    @SuppressWarnings("unused")
+	@PostLoad
     @PostPersist
     private void setSaved_() {
         saved_ = true;
@@ -325,18 +338,20 @@ public class Model implements Serializable, play.db.Model {
     /**
      * This method has no effect at all
      */
-    public <T extends Model> T merge() {
+    @SuppressWarnings("unchecked")
+	public <T extends Model> T merge() {
         return (T) this;
     }
     
     /**
      * Refresh the entity state.
      */
-    public <T extends Model> T refresh() {
+    @SuppressWarnings("unchecked")
+	public <T extends Model> T refresh() {
         return (T) ds().get(this);
     }
     
-    public static MorphiaQuery all() {
+    public static <T extends Model> MorphiaQuery all() {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -346,7 +361,7 @@ public class Model implements Serializable, play.db.Model {
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
-    public static MorphiaQuery createQuery() {
+    public static <T extends Model> MorphiaQuery createQuery() {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -361,14 +376,14 @@ public class Model implements Serializable, play.db.Model {
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
-    public void delete() {
-        ds().delete(this);
+    @SuppressWarnings("unchecked")
+	public <T extends Model> T delete() {
+        _delete();
+        return (T) this;
     }
 
-    public static long delete(Query query) {
-        long l = query.countAll();
-        ds().delete(query);
-        return l;
+    public static long delete(MorphiaQuery query) {
+        return query.delete();
     }
 
     /**
@@ -381,7 +396,7 @@ public class Model implements Serializable, play.db.Model {
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
-    public static MorphiaQuery find() {
+    public static <T extends Model> MorphiaQuery find() {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -392,7 +407,7 @@ public class Model implements Serializable, play.db.Model {
      * @param params number should either be one or the same number of keys
      * @return
      */
-    public static MorphiaQuery find(String keys, Object... params) {
+    public static <T extends Model> MorphiaQuery find(String keys, Object... params) {
         throw new UnsupportedOperationException(
             "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");        
     }
@@ -406,7 +421,7 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException("Embedded entity does not support this method");
     }
 
-    public static <V> MorphiaQuery filter(String property, V value) {
+    public static <T extends Model> MorphiaQuery filter(String property, Object value) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -439,11 +454,12 @@ public class Model implements Serializable, play.db.Model {
     }
     
     /**
-     * Save and return this enitity
+     * Save and return this entity
      * @param <T>
      * @return
      */
-    public <T extends Model> T save() {
+    @SuppressWarnings("unchecked")
+	public <T extends Model> T save() {
         ds().save(this);
         return (T)this;
     }
@@ -456,57 +472,47 @@ public class Model implements Serializable, play.db.Model {
         return ds().save(this);
     }
 
-    public static class MorphiaQuery extends QueryImpl implements Query{
-        
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static class MorphiaQuery  {
         public static Datastore ds() {
             return MorphiaPlugin.ds();
         }
 
-        @SuppressWarnings("rawtypes")
         private Query<? extends Model> q_;
         
-        public MorphiaQuery(Class clazz) {
-            super(clazz, ds().getCollection(clazz), ds());
+        // constructor for clone() usage
+        private MorphiaQuery() {}
+        
+        public MorphiaQuery(Class<? extends Model> clazz) {
+            //super(clazz, ds().getCollection(clazz), ds());
             q_ = ds().createQuery(clazz);
         }
 
-        public MorphiaQuery(Class clazz, DBCollection coll, Datastore ds) {
-            super(clazz, coll, ds);
+		public MorphiaQuery(Class<? extends Model> clazz, DBCollection coll, Datastore ds) {
+            //super(clazz, coll, ds);
             q_ = new QueryImpl(clazz, coll, ds);
         }
 
-        public MorphiaQuery(Class clazz, DBCollection coll, Datastore ds, int offset, int limit) {
-            super(clazz, coll, ds, offset, limit);
+        public MorphiaQuery(Class<? extends Model> clazz, DBCollection coll, Datastore ds, int offset, int limit) {
+            //super(clazz, coll, ds, offset, limit);
             q_ = new QueryImpl(clazz, coll, ds, offset, limit);
         }
 
-//        public Query<?> getRealQuery() {
-//            return q_;
-//        }
-        public void delete() {
+        public long delete() {
+        	long l = count();
             ds().delete(this);
+            return l;
         }
 
-        @Override
-        public String toString() {
-            return q_.toString();
-        }
-
-        // -- Play style queries
+        /**
+         * Alias of countAll()
+         * @return
+         */
         public long count() {
             return q_.countAll();
         }
 
-        @SuppressWarnings("unchecked")
-        public <T extends Model> T first() {
-            return (T) get();
-        }
-
-        @SuppressWarnings("unchecked")
-        public List<? extends Model> fetch(int max) {
-            return q_.limit(max).asList();
-        }
-        
         /**
          * Used to simulate JPA.find("byXXAndYY", ...);
          * @param query should be in style "Key1[AndKey2[AndKey3]]" Note, no "by" prefixed
@@ -533,6 +539,48 @@ public class Model implements Serializable, play.db.Model {
             return this;
         }
 
+        @Override
+        public String toString() {
+            return q_.toString();
+        }
+
+        // ---------------------------------------------------------------------------
+        // JPAQuery style interfaces
+        // ---------------------------------------------------------------------------
+        public <T> T first() {
+            return (T) get();
+        }
+
+        /**
+         * Set the position to start
+         * @param position Position of the first element
+         * @return A new query
+         */
+        public <T> MorphiaQuery from(int position) {
+            q_.offset(position);
+            return this;
+        }
+
+        /**
+         * Retrieve all results of the query
+         * 
+         * This is a correspondence to JPAQuery's fetch(), which however, 
+         * used as another method signature of Morphia Query
+         * @return A list of entities
+         */
+        public <T extends Model> List<T> fetchAll() {
+        	return (List<T>) q_.asList();
+        }
+
+        /**
+         * Retrieve results of the query
+         * @param max Max results to fetch
+         * @return A list of entities
+         */
+        public <T extends Model> List<T> fetch(int max) {
+            return (List<T>) q_.limit(max).asList();
+        }
+        
         /**
          * Retrieve a page of result
          * 
@@ -542,138 +590,173 @@ public class Model implements Serializable, play.db.Model {
          *            (page length)
          * @return a list of entities
          */
-        @SuppressWarnings("unchecked")
-        public List<? extends Model> fetch(int page, int length) {
+        public <T extends Model> List<T> fetch(int page, int length) {
             if (page < 1) {
                 page = 1;
             }
-            q_.offset((page - 1) * length);
-            q_.limit(length);
-            return q_.asList();
+            return (List<T>) q_.offset((page - 1) * length).limit(length).asList();
         }
 
-        public MorphiaQuery from(int position) {
-            return (MorphiaQuery) offset(position);
-        }
+
+        // ---------------------------------------------------------------------------
+        // Morphia Query, QueryResults, Criteria, CriteriaContainer interface
+        // ---------------------------------------------------------------------------
+
+        // for the sake of enhancement
+        public Model _get() { return (Model)q_.get(); }
         
-        // -- Morphia Query interface
-        @Override
-        public List asKeyList() {
-            return q_.asKeyList();
-        }
+        public <T extends Model> T get() {return (T) q_.get();}
 
-        @Override
-        public List asList() {
-            return q_.asList();
-        }
+		public <T extends Model> MorphiaQuery filter(String condition, Object value) {
+			q_.filter(condition, value);
+			return this;
+		}
 
-        @Override
-        public long countAll() {
-            return q_.countAll();
-        }
+		public <T extends Model> Key<T> getKey() {
+			return (Key<T>) q_.getKey();
+		}
 
-        @Override
-        public Query disableValidation() {
-            q_.disableValidation();
-            return this;
-        }
+		public <T extends Model> Iterator<T> iterator() {
+			return (Iterator<T>) q_.iterator();
+		}
 
-        @Override
-        public Query enableValidation() {
-            q_.enableValidation();
-            return this;
-        }
+		public <T extends Model> List<T> asList() {
+			return (List<T>) q_.asList();
+		}
 
-        @Override
-        public Iterable fetch() {
-            return q_.fetch();
-        }
+		public <T extends Model> List<Key<T>> asKeyList() {
+			return ((Query<T>)q_).asKeyList();
+		}
 
-        @Override
-        public Model get() {
-            return q_.get();
-        }
+		public <T extends Model> Iterable<T> fetch() {
+			return (Iterable<T>) q_.fetch();
+		}
 
-        @Override
-        public Class getEntityClass() {
-            return q_.getEntityClass();
-        }
+		public <T extends Model> Iterable<T> fetchEmptyEntities() {
+			return (Iterable<T>) q_.fetchEmptyEntities();
+		}
 
-        @Override
-        public Key getKey() {
-            return q_.getKey();
-        }
+		public <T extends Model> FieldEnd<? extends Query<T>> field(String field) {
+			return (FieldEnd<? extends Query<T>>) q_.field(field);
+		}
 
-        @Override
-        public Iterable fetchEmptyEntities() {
-            return q_.fetchEmptyEntities();
-        }
+		public <T extends Model> Iterable<Key<T>> fetchKeys() {
+			return ((Query<T>)q_).fetchKeys();
+		}
 
-        @Override
-        public Iterable fetchKeys() {
-            return q_.fetchKeys();
-        }
+		public <T extends Model> FieldEnd<? extends CriteriaContainerImpl> criteria(String field) {
+			return q_.criteria(field);
+		}
 
-        @Override
-        public QueryFieldEnd field(String fieldExpr) {
-            return new QueryFieldEndImpl(fieldExpr, this);
-        }
+		public <T extends Model> CriteriaContainer and(Criteria... criteria) {
+			return q_.and(criteria);
+		}
 
-        @Override
-        public Query filter(String condition, Object value) {
-            q_.filter(condition, value);
-            return this;
-        }
+		public long countAll() {
+			return q_.countAll();
+		}
 
-        public Query hintIndex(String idxName) {
-            q_.hintIndex(idxName);
-            return this;
-        }
+		public <T extends Model> CriteriaContainer or(Criteria... criteria) {
+			return q_.or(criteria);
+		}
 
-        @Override
-        public Iterator iterator() {
-            return q_.iterator();
-        }
+		public <T extends Model> MorphiaQuery where(String js) {
+			q_.where(js);
+			return this;
+		}
 
-        public Query limit(int value) {
-            q_.limit(value);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery where(CodeWScope js) {
+			q_.where(js);
+			return this;
+		}
 
-        public Query offset(int value) {
-            q_.offset(value);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery order(String condition) {
+			q_.order(condition);
+			return this;
+		}
 
-        public Query order(String condition) {
-            q_.order(condition);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery limit(int value) {
+			q_.limit(value);
+			return this;
+		}
 
-        public Query retrievedFields(boolean include, String... fields) {
-            q_.retrievedFields(include, fields);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery batchSize(int value) {
+			q_.batchSize(value);
+			return this;
+		}
 
-        @Override
-        public Query where(String js) {
-            q_.where(js);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery offset(int value) {
+			q_.offset(value);
+			return this;
+		}
 
-        @Override
-        public Query where(CodeWScope js) {
-            q_.where(js);
-            return this;
-        }
+		@Deprecated
+		public <T extends Model> MorphiaQuery skip(int value) {
+			q_.skip(value);
+			return this;
+		}
 
-        @Override
-        @Deprecated
-        public Query skip(int value) {
-            q_.skip(value);
-            return this;
-        }
+		public <T extends Model> MorphiaQuery enableValidation() {
+			q_.enableValidation();
+			return this;
+		}
 
+		public <T extends Model> MorphiaQuery disableValidation() {
+			q_.disableValidation();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery hintIndex(String idxName) {
+			q_.hintIndex(idxName);
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery retrievedFields(boolean include,
+				String... fields) {
+			q_.retrievedFields(include, fields);
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery enableSnapshotMode() {
+			q_.enableSnapshotMode();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery disableSnapshotMode() {
+			q_.disableSnapshotMode();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery queryNonPrimary() {
+			q_.queryNonPrimary();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery queryPrimaryOnly() {
+			q_.queryPrimaryOnly();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery disableTimeout() {
+			q_.disableTimeout();
+			return this;
+		}
+
+		public <T extends Model> MorphiaQuery enableTimeout() {
+			q_.enableTimeout();
+			return this;
+		}
+
+		public Class<? extends Model> getEntityClass() {
+			return q_.getEntityClass();
+		}
+
+		@Override
+		public MorphiaQuery clone() {
+			MorphiaQuery mq = new MorphiaQuery();
+			mq.q_ = q_.clone();
+			return mq;
+		}
     }
 
 }

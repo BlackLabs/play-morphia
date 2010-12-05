@@ -19,19 +19,19 @@ public class Application extends Controller {
     }
  
     public static void index() {
-        Post frontPost = (Post) Post.find().order("-postedAt").get();
-        List<Post> olderPosts = (List<Post>) Post.find().order("-postedAt").offset(1).limit(10).asList();
+        Post frontPost = Post.find().order("-postedAt").first();
+        List<Post> olderPosts = Post.find().order("-postedAt").offset(1).limit(10).asList();
         render(frontPost, olderPosts);
     }
     
-    public static void show(Long id) {
+    public static void show(String id) {
         Post post = Post.findById(id);
         String randomID = Codec.UUID();
         render(post, randomID);
     }
     
     public static void postComment(
-        Long postId, 
+        String postId, 
         @Required(message="Author is required") String author, 
         @Required(message="A message is required") String content, 
         @Required(message="Please type the code") String code, 

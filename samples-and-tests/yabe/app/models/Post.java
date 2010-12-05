@@ -46,7 +46,7 @@ public class Post extends Model {
     
     public Post(User author, String title, String content) { 
         this.comments = new ArrayList<Comment>();
-        this.tags = new TreeSet();  
+        this.tags = new TreeSet();
         this.author = author;
         this.title = title;
         this.content = content;

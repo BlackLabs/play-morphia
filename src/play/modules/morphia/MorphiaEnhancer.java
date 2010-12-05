@@ -13,7 +13,6 @@ import play.classloading.enhancers.Enhancer;
 import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
-import com.google.code.morphia.annotations.Transient;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
@@ -158,11 +157,11 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(create);
 
         // createQuery
-        CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return new play.modules.morphia.Model.MorphiaQuery("+ className + "); }",ctClass);
+        CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
 
         // find -- alias: all()
-        CtMethod find = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find() { return createQuery(); }",ctClass);
+        CtMethod find = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find() { return all(); }",ctClass);
         ctClass.addMethod(find);
         
         // find(String keys, Object... params)
@@ -174,20 +173,20 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(findAll);
 
         // filter(property, value)
-        CtMethod filter = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery filter(String property, Object value) { return (play.modules.morphia.Model.MorphiaQuery)find().filter(property, value); }",ctClass);
+        CtMethod filter = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery filter(String property, Object value) { return find().filter(property, value); }",ctClass);
         ctClass.addMethod(filter);
 
         // get()
-        CtMethod get = CtMethod.make("public static play.modules.morphia.Model get() { return (play.modules.morphia.Model)find().get(); }",ctClass);
+        CtMethod get = CtMethod.make("public static Model get() { return find().get(); }",ctClass);
         ctClass.addMethod(get);
 
         // findById
         if (addId) {
-            CtMethod findById = CtMethod.make("public static play.modules.morphia.Model findById(java.lang.Object id) { return filter(\"_id\", play.modules.morphia.utils.IdGenerator.processId(id)).get(); }",ctClass);
+            CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return filter(\"_id\", play.modules.morphia.utils.IdGenerator.processId(id))._get(); }",ctClass);
             ctClass.addMethod(findById);
         } else {
             if (!embedded) {
-                CtMethod findById = CtMethod.make("public static play.modules.morphia.Model findById(java.lang.Object id) { return (play.modules.morphia.Model)mf.findById(id); }",ctClass);
+                CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return mf.findById(id); }",ctClass);
                 ctClass.addMethod(findById);
             } else {
                 // embedded class will throw out UnsupportedOperationException

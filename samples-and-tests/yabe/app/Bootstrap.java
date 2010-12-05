@@ -4,13 +4,12 @@ import java.text.ParseException;
 import models.Comment;
 import models.Post;
 import models.User;
-import play.Play;
 import play.jobs.Job;
 import play.jobs.OnApplicationStart;
 import play.test.Fixtures;
  
 @OnApplicationStart
-public class Bootstrap extends Job {
+public class Bootstrap extends Job<Object> {
  
     public void doJob() {
         
@@ -35,7 +34,7 @@ public class Bootstrap extends Job {
                 e.printStackTrace();
             }
             
-            Post secondBobPost = (Post) Post.filter("author", bob).field("title").endsWith("YABE").get();
+            Post secondBobPost = (Post)Post.filter("author", bob).field("title").endsWith("YABE").get();
             Comment c3 = new Comment(secondBobPost, "Tom", "This post is useless ?");
             try {
                 c3.postedAt = df.parse("2009-04-05");

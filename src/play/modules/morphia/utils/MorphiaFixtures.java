@@ -10,9 +10,11 @@ import play.test.Fixtures;
 import com.google.code.morphia.Datastore;
 
 public class MorphiaFixtures extends Fixtures {
-    private static Datastore ds() {
+    
+	private static Datastore ds() {
         return MorphiaPlugin.ds();
     }
+    
     public static void deleteAll() {
         Datastore ds = ds();
         for (Class<Model> clz: Play.classloader.getAssignableClasses(Model.class)) {

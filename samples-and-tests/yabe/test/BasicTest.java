@@ -11,8 +11,6 @@ import models.User;
 import org.junit.Before;
 import org.junit.Test;
 
-import play.Play;
-import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;
 import play.modules.morphia.utils.MorphiaFixtures;
 import play.test.Fixtures;
@@ -34,7 +32,7 @@ public class BasicTest extends UnitTest {
         new User("bob@gmail.com", "secret", "Bob").save();
 
         // Retrieve the user with bob username
-        User bob = User.find("byEmail", "bob@gmail.com").first();
+        User bob = User.<User>find("byEmail", "bob@gmail.com").first();
 
         // Test 
         assertNotNull(bob);
@@ -65,7 +63,7 @@ public class BasicTest extends UnitTest {
         assertEquals(1, Post.count());
 
         // Retrieve all post created by bob
-        List<Post> bobPosts = Post.find("byAuthor", bob).asList();
+        List<Post> bobPosts = Post.<Post>find("byAuthor", bob).asList();
 
         // Tests
         assertEquals(1, bobPosts.size());
@@ -92,7 +90,7 @@ public class BasicTest extends UnitTest {
         new Comment(bobPost, "Tom", "I knew that !").save();
 
         // Retrieve all comments
-        List<Comment> bobPostComments = Comment.find("byPost", bobPost).asList();
+        List<Comment> bobPostComments = Comment.<Comment>find("byPost", bobPost).asList();
 
         // Tests
         assertEquals(2, bobPostComments.size());
@@ -129,7 +127,7 @@ public class BasicTest extends UnitTest {
         assertEquals(2, bobPost.comments.size());
 
         // Retrieve the bob post
-        bobPost = Post.find("byAuthor", bob).first();
+        bobPost = Post.<Post>find("byAuthor", bob).first();
         assertNotNull(bobPost);
 
         // Navigate to comments
@@ -161,8 +159,8 @@ public class BasicTest extends UnitTest {
         assertNull(User.connect("tom@gmail.com", "secret"));
 
         // Find all bob posts
-        User u = User.filter("email", "bob@gmail.com").first();
-        List<Post> bobPosts = Post.filter("author", u).asList();
+        User u = User.<User>filter("email", "bob@gmail.com").first();
+        List<Post> bobPosts = Post.<Post>filter("author", u).asList();
         assertEquals(2, bobPosts.size());
 
         // Find all comments related to bob posts
@@ -229,7 +227,7 @@ public class BasicTest extends UnitTest {
         bob.save();
         assertFalse(bob.isNew());
         
-        User b2 = User.filter("email", "bob@gmail.com").first();
+        //User b2 = User.<User>filter("email", "bob@gmail.com").get();
         assertFalse(bob.isNew());
     }
  

@@ -33,7 +33,7 @@ import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
-import com.google.code.morphia.query.OrBuilder;
+import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
@@ -44,6 +44,8 @@ import com.mongodb.Mongo;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
+	public static final String VERSION = "1.2";
+	
     public static final String PREFIX = "morphia.db.";
 
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
@@ -108,6 +110,9 @@ public class MorphiaPlugin extends PlayPlugin {
             try {
                 idType_ = IdType.valueOf(s);
                 Logger.debug("ID Type set to : %1$s", idType_.name());
+                if ("1.2".equals(VERSION) && idType_ == IdType.Long) {
+                	Logger.warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
+                }
             } catch (Exception e) {
                 Logger.warn(e, "Error configure morphia id type: %1$s. Id type set to default: ObjectId.", s);
             }
@@ -173,12 +178,12 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
         
-        Logger.info("Morphia initialized");
+        Logger.info("Morphia[%1$s] initialized", VERSION);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Object bind(String name, Class clazz, java.lang.reflect.Type type, Annotation[] annotations, Map<String, String[]> params) {
+    public Object bind(String name, @SuppressWarnings("rawtypes") Class clazz, java.lang.reflect.Type type, Annotation[] annotations, Map<String, String[]> params) {
         if (Model.class.isAssignableFrom(clazz)) {
             String keyName = modelFactory(clazz).keyName();
             String idKey = name + "." + keyName;
@@ -255,13 +260,14 @@ public class MorphiaPlugin extends PlayPlugin {
             if (null != orderBy) q = q.order(orderBy);
 
             if (keywords != null && !keywords.equals("")) {
-                OrBuilder<? extends Model> or = q.or();
+            	List<Criteria> cl = new ArrayList<Criteria>();
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    or.add().field(f).contains(keywords);
+                	cl.add(q.criteria(f).contains(keywords));
                 }
+                q.or(cl.toArray(new Criteria[]{}));
             }
 
-            if (null != where || !"".equals(where)) {
+            if (null != where && !"".equals(where)) {
                 Logger.warn("'where' condition not supported yet, it will be discarded: %1$s", where);
             }
             List<play.db.Model> l = new ArrayList<play.db.Model>();
@@ -271,7 +277,7 @@ public class MorphiaPlugin extends PlayPlugin {
         
         private List<String> fillSearchFieldsIfEmpty_(List<String> l) {
             if (l == null) {
-                l = new ArrayList();
+                l = new ArrayList<String>();
             }
             if (l.isEmpty()) {
                 for (Model.Property property : listProperties()) {
@@ -286,10 +292,11 @@ public class MorphiaPlugin extends PlayPlugin {
             Query<?> q = ds().createQuery(clazz);
 
             if (keywords != null && !keywords.equals("")) {
+            	List<Criteria> cl = new ArrayList<Criteria>();
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    //TODO: how to support OR relationship
-                    q = q.field(f).contains(keywords);
+                	cl.add(q.criteria(f).contains(keywords));
                 }
+                q.or(cl.toArray(new Criteria[]{}));
             }
 
             if (null != where || !"".equals(where)) {
@@ -420,5 +427,5 @@ public class MorphiaPlugin extends PlayPlugin {
         }
 
     }
-
+    
 }
