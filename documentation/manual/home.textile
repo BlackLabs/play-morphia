@@ -1,4 +1,4 @@
-Updates in 1.2:
+Updates in 1.2beta:
 * Upgrade Morphia Library to 0.98, mongodb driver to 2.3
 * Better generic support in Model query methods. Now you don't need type cast for methods return a of entities. But if you use field or criteria in your expression, type cast is still needed
 * Support new Or query interface which is released since morphia-0.97

@@ -8,8 +8,6 @@ import play.data.validation.Validation;
 import play.mvc.Before;
 import play.mvc.Controller;
 import play.mvc.With;
-
-import com.google.code.morphia.emul.org.bson.types.ObjectId;
  
 @With(Secure.class)
 public class Admin extends Controller {
@@ -32,7 +30,8 @@ public class Admin extends Controller {
     // See http://groups.google.com/group/play-framework/browse_thread/thread/8fa3cbd25b635ed3/542eee6d20a73d53?lnk=gst&q=unbind+stackOverflowError#542eee6d20a73d53
     public static void form(String id) {
         if(id != null) {
-            Post post = Post.findById(new ObjectId(id));
+            //Post post = Post.findById(new ObjectId(id)); // uncomment if IdType is ObjectId
+        	Post post = Post.findById(id); // uncomment if IdType is Long
             render(post);
         }
         render();
@@ -46,7 +45,8 @@ public class Admin extends Controller {
             post = new Post(author, title, content);
         } else {
             // Retrieve post
-            post = Post.findById(new ObjectId(id));
+            //post = Post.findById(new ObjectId(id));
+        	post = Post.findById(id);
             post.title = title;
             post.content = content;
             post.tags.clear();

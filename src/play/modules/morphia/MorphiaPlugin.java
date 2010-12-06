@@ -44,7 +44,7 @@ import com.mongodb.Mongo;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-	public static final String VERSION = "1.2";
+	public static final String VERSION = "1.2beta";
 	
     public static final String PREFIX = "morphia.db.";
 
@@ -110,7 +110,7 @@ public class MorphiaPlugin extends PlayPlugin {
             try {
                 idType_ = IdType.valueOf(s);
                 Logger.debug("ID Type set to : %1$s", idType_.name());
-                if ("1.2".equals(VERSION) && idType_ == IdType.Long) {
+                if ("1.2beta".equals(VERSION) && idType_ == IdType.Long) {
                 	Logger.warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
                 }
             } catch (Exception e) {
