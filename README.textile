@@ -6,9 +6,8 @@ Updates in 1.2beta:
 Note using Long as IdType (configured with "morphia.id.type") and you have @Reference annotation in your model entities, then you will be in trouble. Check <a href="http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973">this</a> thread for detail. Yabe sample has been updated and now use ObjectId as ID type for the same reason
 
 Known Issues: 
-1. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/4">java.lang.IllegalArgumentException when loading entities with referenced field</a>
-2. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/5">StackOverflowError with unbind</a>
-3. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/6">Play reload cause MappingException</a>
+1. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/5">StackOverflowError with unbind</a>
+2. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/6">Play reload cause MappingException</a>
 
 Updates in 1.1c:
 * Fix bug in MorphiaFixture: delete(Class<Model>) -> delete(Class<? extends Model)
