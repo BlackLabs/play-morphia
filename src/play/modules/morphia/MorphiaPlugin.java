@@ -83,7 +83,7 @@ public class MorphiaPlugin extends PlayPlugin {
     @Override
     public void onConfigurationRead() {
         if (configured_) return;
-        Logger.debug("Morphia> reading configuration");
+        Logger.trace("Morphia> reading configuration");
         Properties c = Play.configuration;
         Mongo m;
         String host = c.getProperty(PREFIX + "host", "localhost");
@@ -135,6 +135,12 @@ public class MorphiaPlugin extends PlayPlugin {
 //        afterApplicationStart_();
     }
     
+    @Override
+    public void onApplicationStart() {
+    	configured_ = false;
+    	onConfigurationRead();
+    }
+    
 //    @Override
 //    public void detectChange() {        
 //        ds_.getMongo().close();        
@@ -151,7 +157,7 @@ public class MorphiaPlugin extends PlayPlugin {
             Class<?> clz = c.javaClass;
             if (clz.isAnnotationPresent(Entity.class)) {
                 try {
-                    Logger.trace(">> mapping class: %1$s", clz.getName());
+                    Logger.debug(">> mapping class: %1$s", clz.getName());
                     m_.map(clz);
                 } catch (ConstraintViolationException e) {
                     Logger.error(e, "error mapping class [%1$s]", clz);

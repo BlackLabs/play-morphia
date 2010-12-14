@@ -1,5 +1,9 @@
+Updates in 1.2beta-2:
+* Fix bug: Play reload cause MappingException (https://github.com/greenlaw110/play-morphia/issues#issue/6)
+* Supress some debug information (change debug to trace) in MorphiaEnhancer and MorphiaPlugin
+
 Updates in 1.2beta:
-* Upgrade Morphia Library to 0.98, mongodb driver to 2.3
+* Upgrade Morphia Library to 0.99-SNAPSHOT, mongodb driver to 2.3
 * Better generic support in Model query methods. Now you don't need type cast for methods return a of entities. But if you use field or criteria in your expression, type cast is still needed
 * Support new Or query interface which is released since morphia-0.97
 
@@ -8,6 +12,10 @@ Note using Long as IdType (configured with "morphia.id.type") and you have @Refe
 Known Issues: 
 1. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/5">StackOverflowError with unbind</a>
 2. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/6">Play reload cause MappingException</a>
+
+Updates in 1.1d:
+* Fix bug: Play reload cause MappingException (https://github.com/greenlaw110/play-morphia/issues#issue/6)
+* Supress some debug information (change debug to trace) in MorphiaEnhancer and MorphiaPlugin
 
 Updates in 1.1c:
 * Fix bug in MorphiaFixture: delete(Class<Model>) -> delete(Class<? extends Model)

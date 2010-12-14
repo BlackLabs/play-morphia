@@ -26,7 +26,7 @@ public class MorphiaEnhancer extends Enhancer {
 
     @Override
     public void enhanceThisClass(ApplicationClass applicationClass) throws Exception {
-        Logger.debug("Morphia> start to enhance class:" + applicationClass.name);
+        //Logger.debug("Morphia> start to enhance class:" + applicationClass.name);
         // We won't enhance class before we get ID_type information
         enhanceThisClass_(applicationClass);
     }
@@ -74,7 +74,7 @@ public class MorphiaEnhancer extends Enhancer {
      * @throws Exception
      */
     private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean embedded) throws Exception {
-        Logger.debug("Morphia: enhancing MorphiaEntity: " + ctClass.getName());
+        Logger.trace("Morphia: enhancing MorphiaEntity: " + ctClass.getName());
 
         // Don't need to fully qualify types when compiling methods below
         classPool.importPackage(PACKAGE_NAME);
@@ -94,9 +94,9 @@ public class MorphiaEnhancer extends Enhancer {
 
         // id field
         if (addId) {
-            Logger.debug("Adding id methods to system managed ID entity: %1$s", ctClass.getName());
+            Logger.trace("Adding id methods to system managed ID entity: %1$s", ctClass.getName());
             // create an id field
-            Logger.debug("type name: %1$s", play.modules.morphia.utils.IdGenerator.getIdTypeName());
+            Logger.trace("type name: %1$s", play.modules.morphia.utils.IdGenerator.getIdTypeName());
             CtField idField = new CtField(classPool.get(play.modules.morphia.utils.IdGenerator.getIdTypeName()), "_id", ctClass);
             idField.setModifiers(Modifier.PRIVATE);
             AnnotationsAttribute aa = new AnnotationsAttribute(ctClass.getClassFile().getConstPool(),
@@ -105,7 +105,7 @@ public class MorphiaEnhancer extends Enhancer {
             aa.addAnnotation(idAnn);
             idField.getFieldInfo().addAttribute(aa);
             ctClass.addField(idField);
-            Logger.debug("ID field added to entity[%2$s]: %1$s", idField.getSignature(), ctClass.getName());
+            Logger.trace("ID field added to entity[%2$s]: %1$s", idField.getSignature(), ctClass.getName());
             // id()
             CtMethod getId = CtMethod.make("public Object getId() { return _id;}", ctClass);
             ctClass.addMethod(getId);
@@ -114,7 +114,7 @@ public class MorphiaEnhancer extends Enhancer {
             ctClass.addMethod(setId);
         } else {
             if (!embedded) {
-                Logger.debug("adding id methods to user defined id entity: %1$s", ctClass.getName());
+                Logger.trace("adding id methods to user defined id entity: %1$s", ctClass.getName());
                 // a general id() method for user marked Id field
                 boolean hasGetId = false;
                 for (CtMethod cm: ctClass.getDeclaredMethods()) {
@@ -134,7 +134,7 @@ public class MorphiaEnhancer extends Enhancer {
                 ctClass.addMethod(isUserDefinedId);
                 
             } else {
-                Logger.debug("adding id methods to embedded entity: %1$s", ctClass.getName());
+                Logger.trace("adding id methods to embedded entity: %1$s", ctClass.getName());
                 // -- embedded
                 // getId() use Model default
                 // CtMethod getId = CtMethod.make("public Object getId() { return null;}", ctClass);
