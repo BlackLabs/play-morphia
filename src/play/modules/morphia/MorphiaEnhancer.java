@@ -38,7 +38,7 @@ public class MorphiaEnhancer extends Enhancer {
         final CtClass ctClass = makeClass(applicationClass);
 
         // Enhance MongoEntity annotated classes
-        if (hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, Embedded.class.getName())) {
+        if (hasAnnotation(ctClass, Entity.class.getName()) /*|| hasAnnotation(ctClass, Embedded.class.getName())*/) {
             
             boolean addId = true;
             boolean embedded = false;
@@ -186,7 +186,7 @@ public class MorphiaEnhancer extends Enhancer {
             ctClass.addMethod(findById);
         } else {
             if (!embedded) {
-                CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return mf.findById(id); }",ctClass);
+                CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return (Model)mf.findById(id); }",ctClass);
                 ctClass.addMethod(findById);
             } else {
                 // embedded class will throw out UnsupportedOperationException

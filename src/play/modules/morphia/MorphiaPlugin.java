@@ -44,8 +44,12 @@ import com.mongodb.Mongo;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-	public static final String VERSION = "1.2beta";
+	 public static final String VERSION = "1.2beta";
 	
+   private static String msg_(String msg, Object... args) {
+      return String.format("MorphiaPlugin-" + VERSION + "> %1$s", String.format(msg, args));
+   }
+
     public static final String PREFIX = "morphia.db.";
 
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
@@ -139,6 +143,7 @@ public class MorphiaPlugin extends PlayPlugin {
     public void onApplicationStart() {
     	configured_ = false;
     	onConfigurationRead();
+      Logger.info(msg_("loaded"));
     }
     
 //    @Override
@@ -184,7 +189,7 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
         
-        Logger.info("Morphia[%1$s] initialized", VERSION);
+        Logger.info(msg_("initialized"));
     }
 
     @Override
@@ -273,8 +278,8 @@ public class MorphiaPlugin extends PlayPlugin {
                 q.or(cl.toArray(new Criteria[]{}));
             }
 
-            if (null != where && !"".equals(where)) {
-                Logger.warn("'where' condition not supported yet, it will be discarded: %1$s", where);
+            if (null != where && !"".equals(where.trim()) && !"null".equalsIgnoreCase(where.trim())) {
+                Logger.warn("'where' condition not supported yet, it will be ignored: %1$s", where);
             }
             List<play.db.Model> l = new ArrayList<play.db.Model>();
             l.addAll(q.asList());
@@ -305,7 +310,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 q.or(cl.toArray(new Criteria[]{}));
             }
 
-            if (null != where || !"".equals(where)) {
+            if (null != where && !"".equals(where.trim()) && !"null".equalsIgnoreCase(where.trim())) {
                 Logger.warn("'where' condition not supported yet, it will be discarded: %1$s", where);
             }
             return q.countAll();
