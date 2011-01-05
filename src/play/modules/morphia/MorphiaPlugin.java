@@ -291,9 +291,10 @@ public class MorphiaPlugin extends PlayPlugin {
                 l = new ArrayList<String>();
             }
             if (l.isEmpty()) {
-                for (Model.Property property : listProperties()) {
-                    if (property.isSearchable) l.add(property.name);
-                }
+                listAllSearchableFields_(clazz, l, null);
+//                for (Model.Property property : listProperties()) {
+//                    if (property.isSearchable) l.add(property.name);
+//                }
             }
             return l;
         }
@@ -344,6 +345,43 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
             return properties;
+        }
+        // enumerable all searchable fields including embedded recursively
+        private static void listAllSearchableFields_(Class<?> clazz, List<String>l, String prefix) {
+            Set<Field> fields = new HashSet<Field>();
+            Class<?> tclazz = clazz;
+            while (!tclazz.equals(Object.class)) {
+                Collections.addAll(fields, tclazz.getDeclaredFields());
+                tclazz = tclazz.getSuperclass();
+            }
+            for (Field f: fields) {
+                if (Modifier.isTransient(f.getModifiers())) {
+                    continue;
+                }
+                if (Modifier.isStatic(f.getModifiers())) {
+                    continue;
+                }
+                if (f.isAnnotationPresent(Transient.class)) {
+                    continue;
+                }
+                if (f.isAnnotationPresent(Embedded.class)) {
+                    if (Collection.class.isAssignableFrom(f.getType())) {
+                        final Class<?> fieldType = (Class<?>) ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0];
+                        if (fieldType.isAnnotationPresent(Embedded.class)) {
+                            listAllSearchableFields_(fieldType, l, null == prefix ? f.getName() + "." : prefix + f.getName() + ".");
+                        }
+                    } else if (Map.class.isAssignableFrom(f.getType())) {
+                        // TODO
+                    } else {
+                        listAllSearchableFields_(f.getType(), l, null == prefix ? f.getName() + "." : prefix + f.getName() + ".");
+                    }
+                    continue;
+                }
+                
+                if (f.getType().equals(String.class)) {
+                    l.add(prefix == null ? f.getName() : prefix + f.getName());
+                }
+            }
         }
 
         public String keyName() {
