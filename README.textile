@@ -1,3 +1,7 @@
+Updates in 1.2beta-3:
+* Fixed issues: 7,8,9, see http://github.com/greenlaw110/play-morphia/issues
+* Add new configuration: morphia.defaultWriteConcern
+
 Updates in 1.2beta-2:
 * Fix bug: Play reload cause MappingException (https://github.com/greenlaw110/play-morphia/issues#issue/6)
 * Supress some debug information (change debug to trace) in MorphiaEnhancer and MorphiaPlugin
@@ -117,6 +121,8 @@ morphia.db.name=yabe
 # configure your ID field type
 # could be either ObjectId or Long, default to ObjectId
 morphia.id.type=Long
+# Set default write concern, see http://api.mongodb.org/java/current/com/mongodb/class-use/WriteConcern.html
+#morphia.defaultWriteConcern=safe
 
 h3. <a>Create domain model using Morphia</a>
 
@@ -271,3 +277,7 @@ p. Use obj.isNew()
 h3. I try to call Fixtures.deleteAll() in my unit test setup methods, but I found the data is still there, what happened?
 
 p. The deleteAll() methods defined in play.test.Fixtures are hooked with JPA based database, try to use MorphiaFixtures.deleteAll() instead. Actually you are encouraged to use MorphiaFixtures in replace of Fixtures to deal with your Morphia models for all methods call.
+
+h3. Why setting morphia.defaultWriteConcern does not work?
+
+p. A <a href='http://code.google.com/p/morphia/issues/detail?id=209'>bug</a> of current version (at the time v0.99) of morphia suppress this setting
