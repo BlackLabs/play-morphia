@@ -37,6 +37,7 @@ import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
+import com.mongodb.WriteConcern;
 
 /**
  * The plugin for the Morphia module.
@@ -44,11 +45,12 @@ import com.mongodb.Mongo;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-	 public static final String VERSION = "1.2beta";
-	
-   private static String msg_(String msg, Object... args) {
-      return String.format("MorphiaPlugin-" + VERSION + "> %1$s", String.format(msg, args));
-   }
+    public static final String VERSION = "1.2beta";
+
+    private static String msg_(String msg, Object... args) {
+        return String.format("MorphiaPlugin-" + VERSION + "> %1$s",
+                String.format(msg, args));
+    }
 
     public static final String PREFIX = "morphia.db.";
 
@@ -56,20 +58,19 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private static Morphia m_ = null;
     private static Datastore ds_ = null;
-    
+
     private static boolean configured_ = false;
-    
+
     public static boolean configured() {
         return configured_;
     }
-    
+
     public static enum IdType {
-        Long,
-        ObjectId
+        Long, ObjectId
     }
-    
+
     private static IdType idType_ = IdType.ObjectId;
-    
+
     public static IdType getIdType() {
         return idType_;
     }
@@ -80,13 +81,15 @@ public class MorphiaPlugin extends PlayPlugin {
 
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
-        onConfigurationRead(); //ensure configuration be read before enhancement
+        onConfigurationRead(); // ensure configuration be read before
+                               // enhancement
         e_.enhanceThisClass(applicationClass);
     }
 
     @Override
     public void onConfigurationRead() {
-        if (configured_) return;
+        if (configured_)
+            return;
         Logger.trace("Morphia> reading configuration");
         Properties c = Play.configuration;
         Mongo m;
@@ -101,11 +104,13 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         String dbName = c.getProperty(PREFIX + "name");
         DB db = m.getDB(dbName);
-        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
+        if (c.containsKey(PREFIX + "username")
+                && c.containsKey(PREFIX + "password")) {
             String username = c.getProperty(PREFIX + "username");
             String password = c.getProperty(PREFIX + "password");
             if (!db.authenticate(username, password.toCharArray())) {
-                throw new RuntimeException("MongoDB authentication failed: " + dbName);
+                throw new RuntimeException("MongoDB authentication failed: "
+                        + dbName);
             }
         }
         if (c.containsKey("morphia.id.type")) {
@@ -115,46 +120,49 @@ public class MorphiaPlugin extends PlayPlugin {
                 idType_ = IdType.valueOf(s);
                 Logger.debug("ID Type set to : %1$s", idType_.name());
                 if ("1.2beta".equals(VERSION) && idType_ == IdType.Long) {
-                	Logger.warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
+                    Logger.warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
                 }
             } catch (Exception e) {
-                Logger.warn(e, "Error configure morphia id type: %1$s. Id type set to default: ObjectId.", s);
+                Logger.warn(
+                        e,
+                        "Error configure morphia id type: %1$s. Id type set to default: ObjectId.",
+                        s);
             }
         }
         m_ = new Morphia();
         ds_ = m_.createDatastore(m, dbName);
-        
+
         configured_ = true;
-        
-//        // now it's time to enhance the model classes
-//        ApplicationClass ac = null;
-//        try {
-//            for (ApplicationClass ac0: Play.classes.all()) {
-//                ac = ac0;
-//                new MorphiaEnhancer().enhanceThisClass_(ac);
-//            }
-//        } catch (Exception e) {
-//            throw new UnexpectedException("Error enhancing class: " + ac.name);
-//        }
-//        afterApplicationStart_();
+
+        // // now it's time to enhance the model classes
+        // ApplicationClass ac = null;
+        // try {
+        // for (ApplicationClass ac0: Play.classes.all()) {
+        // ac = ac0;
+        // new MorphiaEnhancer().enhanceThisClass_(ac);
+        // }
+        // } catch (Exception e) {
+        // throw new UnexpectedException("Error enhancing class: " + ac.name);
+        // }
+        // afterApplicationStart_();
     }
-    
+
     @Override
     public void onApplicationStart() {
-    	configured_ = false;
-    	onConfigurationRead();
-      Logger.info(msg_("loaded"));
+        configured_ = false;
+        onConfigurationRead();
+        configureDs_();
+        Logger.info(msg_("loaded"));
     }
-    
-//    @Override
-//    public void detectChange() {        
-//        ds_.getMongo().close();        
-//        onConfigurationRead();
-//        afterApplicationStart();
-//    }
-    
-    @Override
-    public void afterApplicationStart() {
+
+    // @Override
+    // public void detectChange() {
+    // ds_.getMongo().close();
+    // onConfigurationRead();
+    // afterApplicationStart();
+    // }
+
+    private void configureDs_() {
         List<Class<?>> pending = new ArrayList<Class<?>>();
         Map<Class<?>, Integer> retries = new HashMap<Class<?>, Integer>();
         List<ApplicationClass> cs = Play.classes.all();
@@ -182,26 +190,38 @@ public class MorphiaPlugin extends PlayPlugin {
                     Logger.error(e, "error mapping class [%1$s]", clz);
                     int retry = retries.get(clz);
                     if (retry > 2) {
-                        throw new RuntimeException("too many errories mapping Morphia Entity classes");
+                        throw new RuntimeException(
+                                "too many errories mapping Morphia Entity classes");
                     }
                     retries.put(clz, retries.get(clz) + 1);
                 }
             }
         }
         
+        ds().ensureIndexes();
+        
+        String writeConcern = Play.configuration.getProperty("morphia.defaultWriteConcern");
+        if (null != writeConcern) {
+            ds().setDefaultWriteConcern(WriteConcern.valueOf(writeConcern));
+        }
         Logger.info(msg_("initialized"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Object bind(String name, @SuppressWarnings("rawtypes") Class clazz, java.lang.reflect.Type type, Annotation[] annotations, Map<String, String[]> params) {
+    public Object bind(String name, @SuppressWarnings("rawtypes") Class clazz,
+            java.lang.reflect.Type type, Annotation[] annotations,
+            Map<String, String[]> params) {
         if (Model.class.isAssignableFrom(clazz)) {
             String keyName = modelFactory(clazz).keyName();
             String idKey = name + "." + keyName;
-            if (params.containsKey(idKey) && params.get(idKey).length > 0 && params.get(idKey)[0] != null && params.get(idKey)[0].trim().length() > 0) {
+            if (params.containsKey(idKey) && params.get(idKey).length > 0
+                    && params.get(idKey)[0] != null
+                    && params.get(idKey)[0].trim().length() > 0) {
                 String id = params.get(idKey)[0];
                 try {
-                    Object o = ds().createQuery(clazz).filter(keyName, new ObjectId(id)).get();
+                    Object o = ds().createQuery(clazz)
+                            .filter(keyName, new ObjectId(id)).get();
                     return Model.edit(o, name, params, annotations);
                 } catch (Exception e) {
                     return null;
@@ -223,14 +243,16 @@ public class MorphiaPlugin extends PlayPlugin {
     @SuppressWarnings("unchecked")
     @Override
     public Model.Factory modelFactory(Class<? extends play.db.Model> modelClass) {
-        if (Model.class.isAssignableFrom(modelClass) && modelClass.isAnnotationPresent(Entity.class)) {
-            return MorphiaModelLoader.getFactory((Class<? extends Model>) modelClass);
+        if (Model.class.isAssignableFrom(modelClass)
+                && modelClass.isAnnotationPresent(Entity.class)) {
+            return MorphiaModelLoader
+                    .getFactory((Class<? extends Model>) modelClass);
         }
         return null;
     }
 
     public static class MorphiaModelLoader implements Model.Factory {
-        
+
         private static Map<Class<? extends Model>, Model.Factory> m_ = new HashMap<Class<? extends Model>, Factory>();
 
         private Class<? extends Model> clazz;
@@ -239,11 +261,12 @@ public class MorphiaPlugin extends PlayPlugin {
             this.clazz = clazz;
             m_.put(clazz, this);
         }
-        
+
         public static Model.Factory getFactory(Class<? extends Model> clazz) {
             synchronized (m_) {
                 Model.Factory f = m_.get(clazz);
-                if (null == f) f = new MorphiaModelLoader(clazz);
+                if (null == f)
+                    f = new MorphiaModelLoader(clazz);
                 return f;
             }
         }
@@ -253,66 +276,80 @@ public class MorphiaPlugin extends PlayPlugin {
             if (id == null)
                 return null;
             try {
-                return ds().find(clazz, keyName(), Binder.directBind(id.toString(), Model.Manager.factoryFor(clazz).keyType())).get();
+                return ds().find(
+                        clazz,
+                        keyName(),
+                        Binder.directBind(id.toString(), Model.Manager
+                                .factoryFor(clazz).keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
                 return null;
             }
         }
-        
+
         @Override
-        public List<play.db.Model> fetch(int offset, int size, String orderBy, String order,
-                List<String> searchFields, String keywords, String where) {
+        public List<play.db.Model> fetch(int offset, int size, String orderBy,
+                String order, List<String> searchFields, String keywords,
+                String where) {
             if (orderBy == null)
                 orderBy = keyName();
             if ("DESC".equalsIgnoreCase(order))
                 orderBy = null == orderBy ? null : "-" + orderBy;
-            Query<? extends Model> q = ds().createQuery(clazz).offset(offset).limit(size);
-            if (null != orderBy) q = q.order(orderBy);
+            Query<? extends Model> q = ds().createQuery(clazz).offset(offset)
+                    .limit(size);
+            if (null != orderBy)
+                q = q.order(orderBy);
 
             if (keywords != null && !keywords.equals("")) {
-            	List<Criteria> cl = new ArrayList<Criteria>();
+                List<Criteria> cl = new ArrayList<Criteria>();
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                	cl.add(q.criteria(f).contains(keywords));
+                    cl.add(q.criteria(f).contains(keywords));
                 }
-                q.or(cl.toArray(new Criteria[]{}));
+                q.or(cl.toArray(new Criteria[] {}));
             }
 
-            if (null != where && !"".equals(where.trim()) && !"null".equalsIgnoreCase(where.trim())) {
-                Logger.warn("'where' condition not supported yet, it will be ignored: %1$s", where);
+            if (null != where && !"".equals(where.trim())
+                    && !"null".equalsIgnoreCase(where.trim())) {
+                Logger.warn(
+                        "'where' condition not supported yet, it will be ignored: %1$s",
+                        where);
             }
             List<play.db.Model> l = new ArrayList<play.db.Model>();
             l.addAll(q.asList());
             return l;
         }
-        
+
         private List<String> fillSearchFieldsIfEmpty_(List<String> l) {
             if (l == null) {
                 l = new ArrayList<String>();
             }
             if (l.isEmpty()) {
                 listAllSearchableFields_(clazz, l, null);
-//                for (Model.Property property : listProperties()) {
-//                    if (property.isSearchable) l.add(property.name);
-//                }
+                // for (Model.Property property : listProperties()) {
+                // if (property.isSearchable) l.add(property.name);
+                // }
             }
             return l;
         }
 
         @Override
-        public Long count(List<String> searchFields, String keywords, String where) {
+        public Long count(List<String> searchFields, String keywords,
+                String where) {
             Query<?> q = ds().createQuery(clazz);
 
             if (keywords != null && !keywords.equals("")) {
-            	List<Criteria> cl = new ArrayList<Criteria>();
+                List<Criteria> cl = new ArrayList<Criteria>();
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                	cl.add(q.criteria(f).contains(keywords));
+                    cl.add(q.criteria(f).contains(keywords));
                 }
-                q.or(cl.toArray(new Criteria[]{}));
+                q.or(cl.toArray(new Criteria[] {}));
             }
 
-            if (null != where && !"".equals(where.trim()) && !"null".equalsIgnoreCase(where.trim())) {
-                Logger.warn("'where' condition not supported yet, it will be discarded: %1$s", where);
+            if (null != where && !"".equals(where.trim())
+                    && !"null".equalsIgnoreCase(where.trim())) {
+                Logger.warn(
+                        "'where' condition not supported yet, it will be discarded: %1$s",
+                        where);
             }
             return q.countAll();
         }
@@ -346,15 +383,17 @@ public class MorphiaPlugin extends PlayPlugin {
             }
             return properties;
         }
+
         // enumerable all searchable fields including embedded recursively
-        private static void listAllSearchableFields_(Class<?> clazz, List<String>l, String prefix) {
+        private static void listAllSearchableFields_(Class<?> clazz,
+                List<String> l, String prefix) {
             Set<Field> fields = new HashSet<Field>();
             Class<?> tclazz = clazz;
             while (!tclazz.equals(Object.class)) {
                 Collections.addAll(fields, tclazz.getDeclaredFields());
                 tclazz = tclazz.getSuperclass();
             }
-            for (Field f: fields) {
+            for (Field f : fields) {
                 if (Modifier.isTransient(f.getModifiers())) {
                     continue;
                 }
@@ -366,18 +405,25 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
                 if (f.isAnnotationPresent(Embedded.class)) {
                     if (Collection.class.isAssignableFrom(f.getType())) {
-                        final Class<?> fieldType = (Class<?>) ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0];
+                        final Class<?> fieldType = (Class<?>) ((ParameterizedType) f
+                                .getGenericType()).getActualTypeArguments()[0];
                         if (fieldType.isAnnotationPresent(Embedded.class)) {
-                            listAllSearchableFields_(fieldType, l, null == prefix ? f.getName() + "." : prefix + f.getName() + ".");
+                            listAllSearchableFields_(fieldType, l,
+                                    null == prefix ? f.getName() + "." : prefix
+                                            + f.getName() + ".");
                         }
                     } else if (Map.class.isAssignableFrom(f.getType())) {
                         // TODO
                     } else {
-                        listAllSearchableFields_(f.getType(), l, null == prefix ? f.getName() + "." : prefix + f.getName() + ".");
+                        listAllSearchableFields_(
+                                f.getType(),
+                                l,
+                                null == prefix ? f.getName() + "." : prefix
+                                        + f.getName() + ".");
                     }
                     continue;
                 }
-                
+
                 if (f.getType().equals(String.class)) {
                     l.add(prefix == null ? f.getName() : prefix + f.getName());
                 }
@@ -419,8 +465,9 @@ public class MorphiaPlugin extends PlayPlugin {
                     c = c.getSuperclass();
                 }
             } catch (Exception e) {
-                throw new UnexpectedException("Error while determining the object @Id for an object of type "
-                        + c);
+                throw new UnexpectedException(
+                        "Error while determining the object @Id for an object of type "
+                                + c);
             }
             return null;
         }
@@ -448,14 +495,15 @@ public class MorphiaPlugin extends PlayPlugin {
                     modelProperty.choices = new Model.Choices() {
                         @SuppressWarnings({ "unchecked" })
                         public List<Object> list() {
-                            return (List<Object>) ds().createQuery(field.getType()).asList();
+                            return (List<Object>) ds().createQuery(
+                                    field.getType()).asList();
                         }
                     };
                 }
             }
             if (Collection.class.isAssignableFrom(field.getType())) {
-                final Class<?> fieldType = (Class<?>) ((ParameterizedType) field.getGenericType())
-                        .getActualTypeArguments()[0];
+                final Class<?> fieldType = (Class<?>) ((ParameterizedType) field
+                        .getGenericType()).getActualTypeArguments()[0];
                 if (field.isAnnotationPresent(Reference.class)) {
                     modelProperty.isRelation = true;
                     modelProperty.isMultiple = true;
@@ -463,7 +511,8 @@ public class MorphiaPlugin extends PlayPlugin {
                     modelProperty.choices = new Model.Choices() {
                         @SuppressWarnings("unchecked")
                         public List<Object> list() {
-                            return (List<Object>) ds().createQuery(field.getType()).asList();
+                            return (List<Object>) ds().createQuery(
+                                    field.getType()).asList();
                         }
                     };
                 }
@@ -476,5 +525,5 @@ public class MorphiaPlugin extends PlayPlugin {
         }
 
     }
-    
+
 }

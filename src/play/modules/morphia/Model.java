@@ -42,6 +42,7 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.QueryImpl;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.WriteConcern;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -445,7 +446,7 @@ public class Model implements Serializable, play.db.Model {
             "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
    }
 
-   public static <T extends Model> List<T> findAll() {
+   public static <T> List<T> findAll() {
       throw new UnsupportedOperationException(
             "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
    }
@@ -517,6 +518,10 @@ public class Model implements Serializable, play.db.Model {
       }
 
       private Query<? extends Model> q_;
+      
+      public Query<? extends Model> getMorphiaQuery() {
+          return q_;
+      }
 
       // constructor for clone() usage
       private MorphiaQuery() {
@@ -541,7 +546,7 @@ public class Model implements Serializable, play.db.Model {
 
       public long delete() {
          long l = count();
-         ds().delete(this);
+         ds().delete(this.q_);
          return l;
       }
 

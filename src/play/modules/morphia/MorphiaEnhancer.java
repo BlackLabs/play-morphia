@@ -169,7 +169,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(find2);
         
         // findAll
-        CtMethod findAll = CtMethod.make("public java.util.List findAll() {return all().asList();}", ctClass);
+        CtMethod findAll = CtMethod.make("public static java.util.List findAll() {return all().asList();}", ctClass);
         ctClass.addMethod(findAll);
 
         // filter(property, value)
