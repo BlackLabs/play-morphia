@@ -197,10 +197,11 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
         }
-        
+
         ds().ensureIndexes();
-        
-        String writeConcern = Play.configuration.getProperty("morphia.defaultWriteConcern");
+
+        String writeConcern = Play.configuration
+                .getProperty("morphia.defaultWriteConcern");
         if (null != writeConcern) {
             ds().setDefaultWriteConcern(WriteConcern.valueOf(writeConcern));
         }
@@ -276,11 +277,8 @@ public class MorphiaPlugin extends PlayPlugin {
             if (id == null)
                 return null;
             try {
-                return ds().find(
-                        clazz,
-                        keyName(),
-                        Binder.directBind(id.toString(), Model.Manager
-                                .factoryFor(clazz).keyType())).get();
+                return ds().find(clazz, keyName(),
+                        Binder.directBind(id.toString(), keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
                 return null;
@@ -308,12 +306,8 @@ public class MorphiaPlugin extends PlayPlugin {
                 q.or(cl.toArray(new Criteria[] {}));
             }
 
-            if (null != where && !"".equals(where.trim())
-                    && !"null".equalsIgnoreCase(where.trim())) {
-                Logger.warn(
-                        "'where' condition not supported yet, it will be ignored: %1$s",
-                        where);
-            }
+            processWhere(q, where);
+
             List<play.db.Model> l = new ArrayList<play.db.Model>();
             l.addAll(q.asList());
             return l;
@@ -345,13 +339,90 @@ public class MorphiaPlugin extends PlayPlugin {
                 q.or(cl.toArray(new Criteria[] {}));
             }
 
-            if (null != where && !"".equals(where.trim())
-                    && !"null".equalsIgnoreCase(where.trim())) {
-                Logger.warn(
-                        "'where' condition not supported yet, it will be discarded: %1$s",
-                        where);
-            }
+            processWhere(q, where);
             return q.countAll();
+        }
+
+        /*
+         * Support the following syntax at the moment: property = 'val' property
+         * in ('val1', 'val2' ...) prop1 ... and prop2 ...
+         */
+        public static void processWhere(Query<?> q, String where) {
+            if (null != where) {
+                where = where.trim();
+            } else {
+                where = "";
+            }
+            if ("".equals(where) || "null".equalsIgnoreCase(where))
+                return;
+            if (where.startsWith("function")) {
+                q.where(where);
+                return;
+            }
+            String[] propValPairs = where.split("(and|&&)");
+            for (String propVal : propValPairs) {
+                if (propVal.contains("=")) {
+                    String[] sa = propVal.split("=");
+                    if (sa.length != 2) {
+                        throw new IllegalArgumentException(
+                                "invalid where clause: " + where);
+                    }
+                    String prop = sa[0];
+                    String val = sa[1];
+                    Logger.trace("where prop val pair found: %1$s = %2$s",
+                            prop, val);
+                    prop = prop.replaceAll("[\"' ]", "");
+                    if (val.matches("[\"'].*[\"']")) {
+                        // string value
+                        val = val.replaceAll("[\"' ]", "");
+                        q.filter(prop, val);
+                    } else {
+                        // possible string, number or boolean value
+                        if (val.matches("[-+]?\\d+\\.\\d+")) {
+                            q.filter(prop, Float.parseFloat(val));
+                        } else if (val.matches("[-+]?\\d+")) {
+                            q.filter(prop, Integer.parseInt(val));
+                        } else if (val
+                                .matches("(false|true|FALSE|TRUE|False|True)")) {
+                            q.filter(prop, Boolean.parseBoolean(val));
+                        } else {
+                            q.filter(prop, val);
+                        }
+                    }
+                } else if (propVal.contains("in")) {
+                    String[] sa = propVal.split("in");
+                    if (sa.length != 2) {
+                        throw new IllegalArgumentException(
+                                "invalid where clause: " + where);
+                    }
+                    String prop = sa[0].trim();
+                    String val0 = sa[1].trim();
+                    if (!val0.matches("\\(.*\\)")) {
+                        throw new IllegalArgumentException(
+                                "invalid where clause: " + where);
+                    }
+                    val0 = val0.replaceAll("[\\(\\)]", "");
+                    String[] vals = val0.split(",");
+                    List<Object> l = new ArrayList<Object>();
+                    for (String val : vals) {
+                        // possible string, number or boolean value
+                        if (val.matches("[-+]?\\d+\\.\\d+")) {
+                            l.add(Float.parseFloat(val));
+                        } else if (val.matches("[-+]?\\d+")) {
+                            l.add(Integer.parseInt(val));
+                        } else if (val
+                                .matches("(false|true|FALSE|TRUE|False|True)")) {
+                            l.add(Boolean.parseBoolean(val));
+                        } else {
+                            l.add(val);
+                        }
+                    }
+                    q.filter(prop + " in ", l);
+                } else {
+                    throw new IllegalArgumentException("invalid where clause: "
+                            + where);
+                }
+            }
         }
 
         public void deleteAll() {

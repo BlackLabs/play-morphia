@@ -1,3 +1,11 @@
+Updates in 1.2beta-5:
+* Fix issue: https://github.com/greenlaw110/play-morphia/issues#issue/12
+* Support simple where clause in MorphiaPlugin.MorphiaModelLoader.fetch|count
+
+Updates in 1.2beta-4:
+* morphia lib updated to 0.99 release
+* mongo driver updated to 0.24 release
+
 Updates in 1.2beta-3:
 * Fixed issues: 7,8,9, see http://github.com/greenlaw110/play-morphia/issues
 * Add new configuration: morphia.defaultWriteConcern
@@ -67,6 +75,8 @@ Morphia module provides complete bridge from play.db.Model to mongo, meaning you
 * play.db.Model support
 ** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
 style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce. Note, you can't simply use Fixtures.deleteXX() methods to get rid of testing data, use MorphiaFixtures.deleteXX() instead.
+** (new in 1.2beta-5) simple where string support in Model.Factory.fetch|count:
+*** where string could be one of: "prop = val", "prop in (val1, val2, ...)", "prop1 = val1 and prop2 = val2 and prop3 in (val1, val2, val3, ..) ..."
 
 * Dynamic Id support
 ** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
