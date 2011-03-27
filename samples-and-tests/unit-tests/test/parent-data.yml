@@ -1,0 +1,8 @@
+## YAML Template.
+---
+
+ Parent(p1):
+   name: Lady
+   child.age: 7
+
+ 

@@ -1,12 +1,39 @@
-15:24:07,169 INFO  ~ Starting W:\_lgl\play-morphia\samples-and-tests\unit-tests
-15:24:07,180 INFO  ~ Module morphia is available (W:\_lgl\play-morphia\samples-and-tests\unit-tests\..\..)
-15:24:07,767 WARN  ~ You're running Play! in DEV mode
+10:22:49,050 INFO  ~ Starting /home/goof/code/play-morphia/samples-and-tests/unit-tests
+10:22:49,112 INFO  ~ Module morphia is available (/home/goof/code/play-morphia/samples-and-tests/unit-tests/../..)
+10:22:53,452 WARN  ~ You're running Play! in DEV mode
 ~
 ~ Go to http://localhost:9000/@tests to run the tests
 ~
-15:24:08,027 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
-15:24:12,553 INFO  ~ Connected to jdbc:hsqldb:mem:playembed
-15:24:12,623 INFO  ~ MorphiaPlugin-1.2beta> loaded
-15:24:12,658 INFO  ~ Application 'Morphia Unit Tests' is now started !
-15:24:12,658 DEBUG ~ >> mapping class: models.Account
-15:24:12,735 INFO  ~ MorphiaPlugin-1.2beta> initialized
+10:22:54,344 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
+10:22:59,912 INFO  ~ Connected to jdbc:hsqldb:mem:playembed
+10:22:59,990 DEBUG ~ >> mapping class: models.Account
+10:23:00,286 DEBUG ~ >> mapping class: models.Parent
+10:23:05,420 ERROR ~ 
+
+@66076cdo0
+Internal Server Error (500) for request GET /@tests.list
+
+Oops: DuplicateKey
+An unexpected error occured caused by exception DuplicateKey: E11000 duplicate key error index: test.Account.$login_1  dup key: { : "loginxyz" }
+
+play.exceptions.UnexpectedException: Unexpected Error
+	at play.Play.start(Play.java:448)
+	at play.Play.detectChanges(Play.java:533)
+	at play.Invoker$Invocation.init(Invoker.java:100)
+	at Invocation.HTTP Request(Play!)
+Caused by: com.mongodb.MongoException$DuplicateKey: E11000 duplicate key error index: test.Account.$login_1  dup key: { : "loginxyz" }
+	at com.mongodb.DBTCPConnector._checkWriteError(DBTCPConnector.java:135)
+	at com.mongodb.DBTCPConnector.say(DBTCPConnector.java:157)
+	at com.mongodb.DBTCPConnector.say(DBTCPConnector.java:141)
+	at com.mongodb.DBApiLayer$MyCollection.insert(DBApiLayer.java:225)
+	at com.mongodb.DBApiLayer$MyCollection.createIndex(DBApiLayer.java:310)
+	at com.mongodb.DBCollection.ensureIndex(DBCollection.java:368)
+	at com.google.code.morphia.DatastoreImpl.ensureIndex(DatastoreImpl.java:245)
+	at com.google.code.morphia.DatastoreImpl.ensureIndexes(DatastoreImpl.java:310)
+	at com.google.code.morphia.DatastoreImpl.ensureIndexes(DatastoreImpl.java:279)
+	at com.google.code.morphia.DatastoreImpl.ensureIndexes(DatastoreImpl.java:340)
+	at com.google.code.morphia.DatastoreImpl.ensureIndexes(DatastoreImpl.java:333)
+	at play.modules.morphia.MorphiaPlugin.configureDs_(MorphiaPlugin.java:201)
+	at play.modules.morphia.MorphiaPlugin.onApplicationStart(MorphiaPlugin.java:154)
+	at play.Play.start(Play.java:426)
+	... 3 more

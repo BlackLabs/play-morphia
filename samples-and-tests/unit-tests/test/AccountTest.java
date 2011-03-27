@@ -1,4 +1,3 @@
-import java.util.List;
 
 import models.Account;
 
@@ -6,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import play.modules.morphia.MorphiaPlugin;
+import play.modules.morphia.utils.MorphiaFixtures;
 import play.test.UnitTest;
 
 public class AccountTest extends UnitTest {
