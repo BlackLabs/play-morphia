@@ -13,7 +13,7 @@ public class ParentTest extends UnitTest  {
     public void setUp() {
         // following line does not work with beta 2, but fixed in beta 3
 //        Parent.deleteAll();
-        MorphiaFixtures.deleteAll();
+        Parent.deleteAll();
     }
 
 
@@ -44,8 +44,6 @@ public class ParentTest extends UnitTest  {
     public void morphiaLoad() {
         MorphiaFixtures.load("../test/parent-data.yml");
         Assert.assertEquals("Should be One Parent", 1, Parent.count());
-
-        //TODO: do some test
         
     }
 

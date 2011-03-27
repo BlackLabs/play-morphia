@@ -10,6 +10,7 @@ public class Parent extends Model {
 
     public String name;
     @Valid
+    @Embedded
     public Child child;
 
 }
