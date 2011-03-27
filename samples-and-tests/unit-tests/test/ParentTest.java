@@ -7,10 +7,6 @@ import org.junit.Test;
 import play.modules.morphia.utils.MorphiaFixtures;
 import play.test.UnitTest;
 
-/**
- *
- * @author goof
- */
 public class ParentTest extends UnitTest  {
 
     @Before
@@ -37,10 +33,10 @@ public class ParentTest extends UnitTest  {
         gary.name = "Gary";
 //        gary.child = new Child();
 //        gary.child.age = 2;
-        // the wrong way
-//        Child kid = new Child();
-//        kid.age = 2;
-//        gary.child = kid;
+        // fails to add embedded
+        Child kid = new Child();
+        kid.age = 2;
+        gary.child = kid;
         Assert.assertTrue("Gary should save ok with a kid", gary.validateAndSave());
     }
 
