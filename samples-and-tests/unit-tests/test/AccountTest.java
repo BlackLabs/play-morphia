@@ -15,7 +15,7 @@ public class AccountTest extends UnitTest {
     public void setup() {
         Account.deleteAll();
     }
-
+    
     @Test
     public void testDeleteAll() {
         Account before = new Account("loginxyz", "a@a.a");

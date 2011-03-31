@@ -1,3 +1,8 @@
+Updates in 1.2beta-6
+* Support filter (where clause) in Model.Factory.count and Model.Factory.fetch
+* Add @Global annotated ObjectIdBinder to app. This could fix issue #5
+* Revert morphia library to 0.99-Snapshot as a workaround for issue #16
+
 Updates in 1.2beta-5:
 * Fix issue: https://github.com/greenlaw110/play-morphia/issues#issue/12
 * Support simple where clause in MorphiaPlugin.MorphiaModelLoader.fetch|count
@@ -96,8 +101,6 @@ http request params.
 h2. Limitation
 
 * The generic is not working well, sometimes you need type casting. If someone could help, that would be very appreciate.
-* "Or" condition query is doable but the interface might changed in future, use it with caution.
-* "where" condition not support in the following interface of play.db.Model.Factory implementation: 
 
 bc.. public List<play.db.Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where);
 

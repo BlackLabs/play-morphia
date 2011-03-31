@@ -389,8 +389,8 @@ public class MorphiaPlugin extends PlayPlugin {
                             q.filter(prop, val);
                         }
                     }
-                } else if (propVal.contains("in")) {
-                    String[] sa = propVal.split("in");
+                } else if (propVal.contains(" in ")) {
+                    String[] sa = propVal.split(" in ");
                     if (sa.length != 2) {
                         throw new IllegalArgumentException(
                                 "invalid where clause: " + where);
