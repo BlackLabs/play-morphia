@@ -42,7 +42,6 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.QueryImpl;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.WriteConcern;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
