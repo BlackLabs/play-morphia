@@ -1,10 +1,15 @@
-11 Mar 2011 14:58:20,529 INFO  ~ Starting W:\_lgl\play-morphia\samples-and-tests\unit-tests
-11 Mar 2011 14:58:20,533 WARN  ~ Declaring modules in application.conf is deprecated. Use dependencies.yml instead (module.morphia)
-11 Mar 2011 14:58:20,534 INFO  ~ Module morphia is available (W:\_lgl\play-morphia\samples-and-tests\unit-tests\..\..)
-11 Mar 2011 14:58:21,315 WARN  ~ You're running Play! in DEV mode
-11 Mar 2011 14:58:21,408 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
-11 Mar 2011 14:58:25,035 INFO  ~ Connected to jdbc:h2:mem:play;MODE=MYSQL
-11 Mar 2011 14:58:25,169 DEBUG ~ >> mapping class: models.Account
-11 Mar 2011 14:58:25,851 INFO  ~ MorphiaPlugin-1.2beta> initialized
-11 Mar 2011 14:58:25,851 INFO  ~ MorphiaPlugin-1.2beta> loaded
-11 Mar 2011 14:58:25,855 INFO  ~ Application 'Morphia Unit Tests' is now started !
+17 Apr 2011 14:29:35,119 INFO  ~ Starting c:\w\_lgl\play-morphia\samples-and-tests\unit-tests
+17 Apr 2011 14:29:35,129 WARN  ~ Declaring modules in application.conf is deprecated. Use dependencies.yml instead (module.morphia)
+17 Apr 2011 14:29:35,130 INFO  ~ Module morphia is available (c:\w\_lgl\play-morphia\samples-and-tests\unit-tests\..\..)
+17 Apr 2011 14:29:35,969 WARN  ~ You're running Play! in DEV mode
+17 Apr 2011 14:29:36,352 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
+17 Apr 2011 14:29:50,614 INFO  ~ Connected to jdbc:h2:mem:play;MODE=MYSQL
+17 Apr 2011 14:29:50,727 DEBUG ~ >> mapping class: models.Extend
+17 Apr 2011 14:29:50,767 DEBUG ~ >> mapping class: models.Account
+17 Apr 2011 14:29:50,972 INFO  ~ MorphiaPlugin-1.2beta> initialized
+17 Apr 2011 14:29:50,972 INFO  ~ MorphiaPlugin-1.2beta> loaded
+17 Apr 2011 14:29:50,999 INFO  ~ Application 'Morphia Unit Tests' is now started !
+17 Apr 2011 14:33:34,371 DEBUG ~ >> mapping class: models.Extend
+17 Apr 2011 14:33:34,375 DEBUG ~ >> mapping class: models.Account
+17 Apr 2011 14:33:34,378 INFO  ~ MorphiaPlugin-1.2beta> initialized
+17 Apr 2011 14:33:34,379 INFO  ~ MorphiaPlugin-1.2beta> loaded

@@ -15,11 +15,41 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.playframework.playclipse.playNature</nature>
 	</natures>
-	<linkedResources><link><name>secure</name><type>2</type><location>j:/play/modules/secure/app</location></link>
-<link><name>conf/secure</name><type>2</type><location>j:/play/modules/secure/conf</location></link>
-<link><name>public/secure</name><type>2</type><location>j:/play/modules/secure/public</location></link>
-<link><name>crud</name><type>2</type><location>j:/play/modules/crud/app</location></link>
-<link><name>conf/crud</name><type>2</type><location>j:/play/modules/crud/conf</location></link>
-<link><name>public/crud</name><type>2</type><location>j:/play/modules/crud/public</location></link>
-</linkedResources>
+	<linkedResources>
+		<link>
+			<name>crud</name>
+			<type>2</type>
+			<location>J:/play/modules/crud/app</location>
+		</link>
+		<link>
+			<name>play-morphia</name>
+			<type>2</type>
+			<location>C:/w/_lgl/play-morphia/app</location>
+		</link>
+		<link>
+			<name>secure</name>
+			<type>2</type>
+			<location>J:/play/modules/secure/app</location>
+		</link>
+		<link>
+			<name>conf/crud</name>
+			<type>2</type>
+			<location>J:/play/modules/crud/conf</location>
+		</link>
+		<link>
+			<name>conf/secure</name>
+			<type>2</type>
+			<location>J:/play/modules/secure/conf</location>
+		</link>
+		<link>
+			<name>public/crud</name>
+			<type>2</type>
+			<location>J:/play/modules/crud/public</location>
+		</link>
+		<link>
+			<name>public/secure</name>
+			<type>2</type>
+			<location>J:/play/modules/secure/public</location>
+		</link>
+	</linkedResources>
 </projectDescription>

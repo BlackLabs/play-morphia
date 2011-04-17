@@ -1,3 +1,6 @@
+Updates in 1.2.1beta-1
+* Make it compatible with play-1.2.x
+
 Updates in 1.2beta-6
 * Support filter (where clause) in Model.Factory.count and Model.Factory.fetch
 * Add @Global annotated ObjectIdBinder to app. This could fix issue #5

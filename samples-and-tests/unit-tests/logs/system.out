@@ -1,14 +1,18 @@
-14:58:20,529 INFO  ~ Starting W:\_lgl\play-morphia\samples-and-tests\unit-tests
-14:58:20,533 WARN  ~ Declaring modules in application.conf is deprecated. Use dependencies.yml instead (module.morphia)
-14:58:20,534 INFO  ~ Module morphia is available (W:\_lgl\play-morphia\samples-and-tests\unit-tests\..\..)
-14:58:21,315 WARN  ~ You're running Play! in DEV mode
+Listening for transport dt_socket at address: 8000
+21:27:56,003 INFO  ~ Starting c:\w\_lgl\play-morphia\samples-and-tests\unit-tests
+21:27:56,008 WARN  ~ Declaring modules in application.conf is deprecated. Use dependencies.yml instead (module.morphia)
+21:27:56,009 INFO  ~ Module morphia is available (c:\w\_lgl\play-morphia\samples-and-tests\unit-tests\..\..)
+21:27:56,641 WARN  ~ You're running Play! in DEV mode
 ~
 ~ Go to http://localhost:9000/@tests to run the tests
 ~
-14:58:21,408 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
-14:58:25,035 INFO  ~ Connected to jdbc:h2:mem:play;MODE=MYSQL
-14:58:25,169 DEBUG ~ >> mapping class: models.Account
-14:58:25,851 INFO  ~ MorphiaPlugin-1.2beta> initialized
-14:58:25,851 INFO  ~ MorphiaPlugin-1.2beta> loaded
-14:58:25,855 INFO  ~ Application 'Morphia Unit Tests' is now started !
+21:27:56,737 INFO  ~ Listening for HTTP on port 9000 (Waiting a first request to start) ...
+21:27:59,552 INFO  ~ Connected to jdbc:h2:mem:play;MODE=MYSQL
+21:27:59,575 DEBUG ~ >> mapping class: models.Extend
+21:27:59,626 DEBUG ~ >> mapping class: models.Account
+21:27:59,653 INFO  ~ MorphiaPlugin-1.2beta> initialized
+21:27:59,653 INFO  ~ MorphiaPlugin-1.2beta> loaded
+21:27:59,656 INFO  ~ Application 'Morphia Unit Tests' is now started !
+21:28:01,274 INFO  ~ count: 2
+21:28:01,276 INFO  ~ count2: 2
 @KILLED
