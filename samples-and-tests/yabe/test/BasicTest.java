@@ -12,8 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import play.modules.morphia.MorphiaPlugin;
-import play.modules.morphia.utils.MorphiaFixtures;
 import play.test.Fixtures;
+import play.test.MorphiaFixtures;
 import play.test.UnitTest;
 
 import com.google.code.morphia.Datastore;
