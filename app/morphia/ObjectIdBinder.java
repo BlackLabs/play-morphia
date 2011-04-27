@@ -13,7 +13,7 @@ public class ObjectIdBinder implements TypeBinder<ObjectId> {
 
     @SuppressWarnings("rawtypes")
 	@Override
-    public Object bind(String name, Annotation[] annotations, String value, Class actualClass, Type genericType) throws Exception {
+    public Object bind(String name, Annotation[] annotations, String value, Class actualClass) throws Exception {
         return new ObjectId(value);
     }
     

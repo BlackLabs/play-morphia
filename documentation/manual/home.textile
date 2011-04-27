@@ -1,5 +1,5 @@
-Updates in 1.2.1beta-1
-* Make it compatible with play-1.2.x
+Updates in 1.2beta-7
+* Move MorphiaFixtures from play.modules.morphia.utils to play.test
 
 Updates in 1.2beta-6
 * Support filter (where clause) in Model.Factory.count and Model.Factory.fetch
