@@ -16,7 +16,6 @@ public class MorphiaFixtures extends Fixtures {
     }
     
     public static void deleteAll() {
-    	idCache.clear();
         Datastore ds = ds();
         for (Class<Model> clz: Play.classloader.getAssignableClasses(Model.class)) {
             ds.getCollection(clz).drop();
@@ -24,14 +23,12 @@ public class MorphiaFixtures extends Fixtures {
     }
     
     public static void delete(Class<? extends Model> ... types) {
-    	idCache.clear();
         for (Class<? extends Model> type: types) {
             ds().getCollection(type).drop();
         }
     }
     
     public static void delete(List<Class<? extends Model>> classes) {
-    	idCache.clear();
         for (Class<? extends Model> type: classes) {
             ds().getCollection(type).drop();
         }
