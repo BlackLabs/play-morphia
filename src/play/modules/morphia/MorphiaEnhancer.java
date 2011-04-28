@@ -13,6 +13,7 @@ import play.classloading.enhancers.Enhancer;
 import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
+import com.google.code.morphia.annotations.PrePersist;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
@@ -39,9 +40,10 @@ public class MorphiaEnhancer extends Enhancer {
 
         // Enhance MongoEntity annotated classes
         if (hasAnnotation(ctClass, Entity.class.getName()) /*|| hasAnnotation(ctClass, Embedded.class.getName())*/) {
-            
+        	
             boolean addId = true;
             boolean embedded = false;
+        	boolean autoTS = hasAnnotation(ctClass, AutoTimestamp.class.getName());
             // if the class has Embedded annotation or any field has been annotated with @Id already
             if (hasAnnotation(ctClass, Embedded.class.getName())) {
                 addId = false;
@@ -61,7 +63,7 @@ public class MorphiaEnhancer extends Enhancer {
                 }
             }
             
-            enhance_(ctClass, applicationClass, addId, embedded);
+            enhance_(ctClass, applicationClass, addId, embedded, autoTS);
         } else {
             return;
         }
@@ -73,7 +75,7 @@ public class MorphiaEnhancer extends Enhancer {
      * @param ctClass
      * @throws Exception
      */
-    private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean embedded) throws Exception {
+    private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean embedded, boolean autoTS) throws Exception {
         Logger.trace("Morphia: enhancing MorphiaEntity: " + ctClass.getName());
 
         // Don't need to fully qualify types when compiling methods below
@@ -146,6 +148,32 @@ public class MorphiaEnhancer extends Enhancer {
                 CtMethod isEmbedded = CtMethod.make("protected boolean isEmbedded_() {return true;}", ctClass);
                 ctClass.addMethod(isEmbedded);
             }
+        }
+        
+        // create timestamp?
+        if (autoTS) {
+        	Logger.trace("create timestamp fields automatically");
+        	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
+        	createdField.setModifiers(Modifier.PRIVATE);
+        	ctClass.addField(createdField);
+        	
+        	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
+        	modifiedField.setModifiers(Modifier.PRIVATE);
+        	ctClass.addField(modifiedField);
+        	
+        	CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
+            AnnotationsAttribute aa = new AnnotationsAttribute(ctClass.getClassFile().getConstPool(),
+                    AnnotationsAttribute.visibleTag);
+            Annotation prePersistAnn = new Annotation(PrePersist.class.getName(), ctClass.getClassFile().getConstPool());
+            aa.addAnnotation(prePersistAnn);
+            persistTs.getMethodInfo().addAttribute(aa);
+            ctClass.addMethod(persistTs);
+        	
+            CtMethod getCreated = CtMethod.make("public long _getCreated() { return _created; }", ctClass);
+            ctClass.addMethod(getCreated);
+
+            CtMethod getModified = CtMethod.make("public long _getModified() { return _modified; }", ctClass);
+            ctClass.addMethod(getModified);
         }
 
         // all - alias of find()

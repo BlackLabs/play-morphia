@@ -509,6 +509,15 @@ public class Model implements Serializable, play.db.Model {
    public Key<? extends Model> save2() {
       return ds().save(this);
    }
+   
+   // -- auto timestamp methods
+   public long _getCreated() {
+	   throw new UnsupportedOperationException("Please annotate model with @AutoTimestamp annotation");
+   }
+   
+   public long _getModified() {
+	   throw new UnsupportedOperationException("Please annotate model with @AutoTimestamp annotation");
+   }
 
    @SuppressWarnings({ "rawtypes", "unchecked" })
    public static class MorphiaQuery {

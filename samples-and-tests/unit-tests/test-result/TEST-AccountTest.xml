@@ -1,17 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-
-<testsuite failures="1" time="0.09" errors="0" skipped="0" tests="2" name="AccountTest">
-  <testcase classname="AccountTest" name="testDeleteAll" time="0.053">
-      </testcase>
-  <testcase classname="AccountTest" name="testFindAll" time="0.026">
-      </testcase>
-  <testcase classname="AccountTest" name="testUnique" time="0.011">
-                  <failure type="" message="Failure, ">
-          In /test/AccountTest.java, line 47
-          
-                      assertFalse(true); :
-          
-        </failure>
-        }
-                  </testcase>
-</testsuite>

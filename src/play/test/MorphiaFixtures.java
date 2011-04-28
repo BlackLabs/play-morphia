@@ -1,11 +1,12 @@
 package play.test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import play.Play;
+import play.classloading.ApplicationClasses;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;
-import play.test.Fixtures;
 
 import com.google.code.morphia.Datastore;
 
@@ -15,7 +16,7 @@ public class MorphiaFixtures extends Fixtures {
         return MorphiaPlugin.ds();
     }
     
-    public static void deleteAll() {
+    public static void deleteDatabase() {
     	idCache.clear();
         Datastore ds = ds();
         for (Class<Model> clz: Play.classloader.getAssignableClasses(Model.class)) {
@@ -37,7 +38,13 @@ public class MorphiaFixtures extends Fixtures {
         }
     }
     
+    @SuppressWarnings("unchecked")
     public static void deleteAllModels() {
-        deleteAll();
+        List<Class<? extends Model>> mongoClasses = new ArrayList<Class<? extends Model>>();
+        for (ApplicationClasses.ApplicationClass c : Play.classes.getAssignableClasses(play.db.Model.class)) {
+        	Class<?> jc = c.javaClass;
+        	mongoClasses.add((Class<? extends Model>)jc);
+        }
+        MorphiaFixtures.delete(mongoClasses);
     }
 }

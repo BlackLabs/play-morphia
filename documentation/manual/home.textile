@@ -1,5 +1,7 @@
 Updates in 1.2.1beat2
+* "test" db used if no database configured and a warning issued
 * clear idCache when calling MorphiaFixtures.deleteX
+* support auto timestamp
 
 Updates in 1.2.1beta1
 * Make it compatible with play-1.2.x
@@ -82,6 +84,9 @@ Morphia module provides complete bridge from play.db.Model to mongo, meaning you
 ** Embedded, mark a entity which should be embedded in another entity, or a field of host entity which is an embedded entity
 ** Life cycle annotations: PreLoad, PrePersist, PostLoad, PostPersist...
 ** and many other useful annotations you can find at <a href="http://code.google.com/p/morphia/wiki/EntityAnnotation">here</a>
+** AutoTimestamp, this is play-morphia (rather than morphia) annotation. When your model is annotated with this annotation, the plugin will automatically add two fields to the class:
+*** public long _created; // the field get filled with System.currentTimeMills() when an new model is saved. To access the field, call myModel._getCreated()
+*** public long _modified; // the field get filled with System.currentTimeMills() whenever a model is saved. To access the field, call myModel._getModified()
 
 * play.db.Model support
 ** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 

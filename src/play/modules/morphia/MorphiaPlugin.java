@@ -103,6 +103,10 @@ public class MorphiaPlugin extends PlayPlugin {
             throw new RuntimeException(e.getMessage());
         }
         String dbName = c.getProperty(PREFIX + "name");
+        if (null == dbName) {
+        	Logger.warn("mongodb name not configured! using [test] db");
+        	dbName = "test";
+        }
         DB db = m.getDB(dbName);
         if (c.containsKey(PREFIX + "username")
                 && c.containsKey(PREFIX + "password")) {
