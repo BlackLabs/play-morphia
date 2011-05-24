@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.bson.types.ObjectId;
 
@@ -37,6 +39,7 @@ import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
+import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 
 /**
@@ -45,7 +48,7 @@ import com.mongodb.WriteConcern;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2beta";
+    public static final String VERSION = "1.2.1";
 
     private static String msg_(String msg, Object... args) {
         return String.format("MorphiaPlugin-" + VERSION + "> %1$s",
@@ -56,7 +59,7 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
 
-    private static Morphia m_ = null;
+    private static Morphia morphia_ = null;
     private static Datastore ds_ = null;
 
     private static boolean configured_ = false;
@@ -79,6 +82,20 @@ public class MorphiaPlugin extends PlayPlugin {
         return ds_;
     }
 
+    private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
+
+    public static Datastore ds(String dbName) {
+        Datastore ds = dataStores_.get(dbName);
+        if (null == ds) {
+            Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
+            ds = dataStores_.putIfAbsent(dbName, ds0);
+            if (null == ds) {
+                ds = ds0;
+            }
+        }
+        return ds;
+    }
+
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
         onConfigurationRead(); // ensure configuration be read before
@@ -86,17 +103,18 @@ public class MorphiaPlugin extends PlayPlugin {
         e_.enhanceThisClass(applicationClass);
     }
 
+    private static Mongo mongo_;
+
     @Override
     public void onConfigurationRead() {
         if (configured_)
             return;
         Logger.trace("Morphia> reading configuration");
         Properties c = Play.configuration;
-        Mongo m;
         String host = c.getProperty(PREFIX + "host", "localhost");
         String port = c.getProperty(PREFIX + "port", "27017");
         try {
-            m = new Mongo(host, Integer.parseInt(port));
+            mongo_ = new Mongo(host, Integer.parseInt(port));
             Logger.trace("MongoDB host: %1$s", host);
             Logger.trace("MongoDB port: %1$s", port);
         } catch (UnknownHostException e) {
@@ -104,10 +122,10 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
-        	Logger.warn("mongodb name not configured! using [test] db");
-        	dbName = "test";
+            Logger.warn("mongodb name not configured! using [test] db");
+            dbName = "test";
         }
-        DB db = m.getDB(dbName);
+        DB db = mongo_.getDB(dbName);
         if (c.containsKey(PREFIX + "username")
                 && c.containsKey(PREFIX + "password")) {
             String username = c.getProperty(PREFIX + "username");
@@ -133,8 +151,9 @@ public class MorphiaPlugin extends PlayPlugin {
                         s);
             }
         }
-        m_ = new Morphia();
-        ds_ = m_.createDatastore(m, dbName);
+        morphia_ = new Morphia();
+        ds_ = morphia_.createDatastore(mongo_, dbName);
+        dataStores_.put(dbName, ds_);
 
         configured_ = true;
 
@@ -159,6 +178,16 @@ public class MorphiaPlugin extends PlayPlugin {
         Logger.info(msg_("loaded"));
     }
 
+    @Override
+    public void onInvocationException(Throwable e) {
+        if (e instanceof MongoException.Network) {
+            // try restart morphia plugin
+            Logger.error("MongoException.Network encountered. Trying to restart mongo...");
+            configured_ = false;
+            onConfigurationRead();
+        }
+    }
+
     // @Override
     // public void detectChange() {
     // ds_.getMongo().close();
@@ -175,7 +204,7 @@ public class MorphiaPlugin extends PlayPlugin {
             if (clz.isAnnotationPresent(Entity.class)) {
                 try {
                     Logger.debug(">> mapping class: %1$s", clz.getName());
-                    m_.map(clz);
+                    morphia_.map(clz);
                 } catch (ConstraintViolationException e) {
                     Logger.error(e, "error mapping class [%1$s]", clz);
                     pending.add(clz);
@@ -188,7 +217,7 @@ public class MorphiaPlugin extends PlayPlugin {
             for (Class<?> clz : pending) {
                 try {
                     Logger.trace(">> mapping class: ", clz.getName());
-                    m_.map(clz);
+                    morphia_.map(clz);
                     pending.remove(clz);
                 } catch (ConstraintViolationException e) {
                     Logger.error(e, "error mapping class [%1$s]", clz);

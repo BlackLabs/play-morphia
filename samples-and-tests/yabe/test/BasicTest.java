@@ -23,7 +23,7 @@ public class BasicTest extends UnitTest {
     
     @Before
     public void setup() {
-        MorphiaFixtures.deleteAll();
+        MorphiaFixtures.deleteDatabase();
     }
  
     @Test

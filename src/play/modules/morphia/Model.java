@@ -410,6 +410,17 @@ public class Model implements Serializable, play.db.Model {
       _delete();
       return (T) this;
    }
+   
+   /**
+    * store (ie insert) the entity.
+    */
+   public boolean create() {
+       if (isNew()) {
+           _save();
+           return true;
+       }
+       return false;
+   }
 
    public static long delete(MorphiaQuery query) {
       return query.delete();

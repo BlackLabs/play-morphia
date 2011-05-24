@@ -1,3 +1,6 @@
+Updates in 1.2.1beta3
+* Limited support for multiple mongodb databases
+
 Updates in 1.2.1beat2
 * "test" db used if no database configured and a warning issued
 * clear idCache when calling MorphiaFixtures.deleteX

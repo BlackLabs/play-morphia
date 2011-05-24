@@ -68,7 +68,7 @@ public class MorphiaEnhancer extends Enhancer {
             return;
         }
     }
-
+    
     /**
      * Enhance classes marked with the MongoEntity annotation.
      * 
