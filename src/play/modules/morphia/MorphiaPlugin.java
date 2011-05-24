@@ -95,6 +95,10 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         return ds;
     }
+    
+    public static Morphia morphia() {
+        return morphia_;
+    }
 
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
