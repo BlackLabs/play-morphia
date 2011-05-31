@@ -26,6 +26,15 @@ public class AccountTest extends UnitTest {
     }
 
     @Test
+    public void testDelete() {
+        Account before = new Account("loginxyz", "a@a.a");
+        before.save();
+        Assert.assertEquals(1, Account.count());
+        before.delete();
+        Assert.assertEquals(0, Account.count());
+    }
+
+    @Test
     public void testFindAll() {
         Account.findAll();
     }

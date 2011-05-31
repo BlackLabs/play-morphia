@@ -37,13 +37,13 @@ public class MorphiaEnhancer extends Enhancer {
         // if (!MorphiaPlugin.configured()) return;
 
         final CtClass ctClass = makeClass(applicationClass);
-
+        
         // Enhance MongoEntity annotated classes
-        if (hasAnnotation(ctClass, Entity.class.getName()) /*|| hasAnnotation(ctClass, Embedded.class.getName())*/) {
+        if (hasAnnotation(ctClass, Entity.class.getName()) && !hasAnnotation(ctClass, Model.ByPass.class.getName())) {
         	
             boolean addId = true;
             boolean embedded = false;
-        	boolean autoTS = hasAnnotation(ctClass, AutoTimestamp.class.getName());
+        	boolean autoTS = hasAnnotation(ctClass, Model.AutoTimestamp.class.getName());
             // if the class has Embedded annotation or any field has been annotated with @Id already
             if (hasAnnotation(ctClass, Embedded.class.getName())) {
                 addId = false;

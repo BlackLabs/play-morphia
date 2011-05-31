@@ -11,8 +11,7 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Reference;
  
 @Embedded
-@Entity
-public class Comment extends Model {
+public class Comment {
  
     @Required
     public String author;
@@ -37,6 +36,7 @@ public class Comment extends Model {
         this.postedAt = new Date();
         
         post.addComment(this);
+        post.save();
     }
     
     public String toString() {

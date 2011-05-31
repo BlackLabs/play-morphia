@@ -1,3 +1,6 @@
+Updates in 1.2.1beta4
+* Upgrade morphia to 1.0-snapshot and mongo lib to 2.6.1
+
 Updates in 1.2.1beta3
 * Limited support for multiple mongodb databases
 

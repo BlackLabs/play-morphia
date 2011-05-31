@@ -2,6 +2,10 @@ package play.modules.morphia;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -820,14 +824,24 @@ public class Model implements Serializable, play.db.Model {
          return this;
       }
 
+      @Deprecated
       public <T extends Model> MorphiaQuery disableTimeout() {
-         q_.disableTimeout();
-         return this;
+          return disableCursorTimeout();
+      }
+      
+      public <T extends Model> MorphiaQuery disableCursorTimeout() {
+          q_.disableCursorTimeout();
+          return this;
       }
 
+      @Deprecated
       public <T extends Model> MorphiaQuery enableTimeout() {
-         q_.enableTimeout();
-         return this;
+          return enableCursorTimeout();
+      }
+      
+      public <T extends Model> MorphiaQuery enableCursorTimeout() {
+          q_.enableCursorTimeout();
+          return this;
       }
 
       public Class<? extends Model> getEntityClass() {
@@ -840,6 +854,16 @@ public class Model implements Serializable, play.db.Model {
          mq.q_ = q_.clone();
          return mq;
       }
+   }
+
+   @Retention(RetentionPolicy.RUNTIME)
+   @Target(ElementType.TYPE)
+   public @interface ByPass {
+   }
+
+   @Retention(RetentionPolicy.RUNTIME)
+   @Target({ElementType.TYPE})
+   public @interface AutoTimestamp {
    }
 
 }

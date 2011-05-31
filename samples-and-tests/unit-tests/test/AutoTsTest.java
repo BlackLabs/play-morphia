@@ -30,9 +30,9 @@ public class AutoTsTest extends UnitTest {
         assertTrue(model._getCreated() >= ts);
         assertTrue(model._getModified() >= ts);
         Thread.sleep(1);
+        ts = System.currentTimeMillis();
         model.content = "world";
         model.save();
-        ts = System.currentTimeMillis();
         assertTrue(model._getCreated() < ts);
         assertTrue(model._getModified() >= ts);
     }
