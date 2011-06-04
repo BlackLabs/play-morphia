@@ -26,6 +26,7 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 import play.data.binding.Binder;
 import play.db.Model.Factory;
 import play.exceptions.UnexpectedException;
+import play.modules.morphia.utils.StringUtil;
 
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Morphia;
@@ -85,6 +86,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
 
     public static Datastore ds(String dbName) {
+        if (StringUtil.isEmpty(dbName)) return ds();
         Datastore ds = dataStores_.get(dbName);
         if (null == ds) {
             Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
@@ -318,6 +320,7 @@ public class MorphiaPlugin extends PlayPlugin {
                         Binder.directBind(id.toString(), keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
+                Logger.debug(e, "cannot find entity[%s] with id: %s", clazz.getName(), id);
                 return null;
             }
         }

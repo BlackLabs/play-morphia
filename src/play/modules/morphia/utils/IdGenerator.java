@@ -78,11 +78,11 @@ public class IdGenerator {
     
     public static ObjectId processObjectId(Object id) {
         if (id instanceof ObjectId) return (ObjectId)id;
-        return new ObjectId(id.toString());
+        return null == id ? null : new ObjectId(id.toString());
     }
     
     public static Long processLongId(Object id) {
         if (id instanceof Long) return (Long)id;
-        return Long.parseLong(id.toString());
+        return null == id ? null : Long.parseLong(id.toString());
     }
 }

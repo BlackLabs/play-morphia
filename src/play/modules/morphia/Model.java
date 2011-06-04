@@ -512,7 +512,7 @@ public class Model implements Serializable, play.db.Model {
     */
    @SuppressWarnings("unchecked")
    public <T extends Model> T save() {
-      ds().save(this);
+      save2();
       return (T) this;
    }
 

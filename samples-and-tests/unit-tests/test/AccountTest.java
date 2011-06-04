@@ -38,6 +38,26 @@ public class AccountTest extends UnitTest {
     public void testFindAll() {
         Account.findAll();
     }
+    
+    @Test
+    public void testIdAfterSaved() {
+        Account acc = new Account("loginxyz", "a@a.a");
+        acc.save();
+        assertNotNull(acc.getId());
+    }
+    
+    @Test
+    public void testFindByNullId() {
+        Account acc = new Account("loginxyz", "a@a.a");
+        acc.save();
+        Object id = acc.getId();
+        assertNotNull(id);
+        acc = Account.findById(acc.getId());
+        assertEquals(acc.login, "loginxyz");
+        assertNull(Account.findById(null));
+        //assertNotNull(Account.findById(acc.getId()).get());
+        //assertNull(Account.findById(null));
+    }
 
     @Test
     public void testUnique() {
