@@ -9,6 +9,7 @@ import javassist.bytecode.annotation.Annotation;
 import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
+import play.modules.morphia.Model.NoId;
 
 import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
@@ -48,6 +49,8 @@ public class MorphiaEnhancer extends Enhancer {
             if (hasAnnotation(ctClass, Embedded.class.getName())) {
                 addId = false;
                 embedded = true;
+            } else if (hasAnnotation(ctClass, NoId.class.getName())) {
+                addId = false;
             } else {
                 for (CtField cf: ctClass.getDeclaredFields()) {
                     if (hasAnnotation(cf, Id.class.getName())) {
@@ -187,6 +190,10 @@ public class MorphiaEnhancer extends Enhancer {
         // createQuery
         CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
+        
+        // disableValidation
+        CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
+        ctClass.addMethod(disableValidation);
 
         // find -- alias: all()
         CtMethod find = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find() { return all(); }",ctClass);

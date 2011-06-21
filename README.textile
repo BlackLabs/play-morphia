@@ -1,3 +1,7 @@
+Updates in 1.2.1beta5
+* Add disableValidation() to Model. This is useful when your different subtype model have different fields
+* Add @NoId annotation. This help to resolve issue discussed in https://groups.google.com/forum/#!topic/play-framework/hPWJCvefPoI/discussion
+
 Updates in 1.2.1beta4
 * Upgrade morphia to 1.0-snapshot and mongo lib to 2.6.1
 
@@ -314,3 +318,7 @@ p. The deleteAll() methods defined in play.test.Fixtures are hooked with JPA bas
 h3. Why setting morphia.defaultWriteConcern does not work?
 
 p. A <a href='http://code.google.com/p/morphia/issues/detail?id=209'>bug</a> of current version (at the time v0.99) of morphia suppress this setting
+
+h3. I get duplicate ID field error. 
+
+p. If you define sub type models Morphia will probably enhance and add @Id field to both sub type and parent type. Therefore you got 2 @Id field in sub type model. To resolve the problem, annotate your sub type or parent type with @NoId annotation (available in morphia-1.2.1beta5)
