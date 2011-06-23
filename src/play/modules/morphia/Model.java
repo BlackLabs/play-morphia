@@ -400,6 +400,11 @@ public class Model implements Serializable, play.db.Model {
       throw new UnsupportedOperationException(
             "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
    }
+   
+   public static <T extends Model> MorphiaQuery disableValidation() {
+       throw new UnsupportedOperationException(
+               "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+   }
 
    public static long count() {
       throw new UnsupportedOperationException(
@@ -614,7 +619,7 @@ public class Model implements Serializable, play.db.Model {
          // super(clazz, coll, ds, offset, limit);
          q_ = new QueryImpl(clazz, coll, ds, offset, limit);
       }
-
+      
       public long delete() {
          long l = count();
          ds().delete(q_);
@@ -912,6 +917,18 @@ public class Model implements Serializable, play.db.Model {
    @Retention(RetentionPolicy.RUNTIME)
    @Target({ElementType.TYPE})
    public @interface AutoTimestamp {
+   }
+
+   /**
+    * NoID is used to annotate on sub types which is sure to get ID field from
+    * parent type
+    * 
+    * @see https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
+    * @author luog
+    */
+   @Retention(RetentionPolicy.RUNTIME)
+   @Target({ElementType.TYPE})
+   public @interface NoId {
    }
 
 }
