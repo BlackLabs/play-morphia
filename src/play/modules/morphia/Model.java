@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
 
 import play.Logger;
@@ -46,7 +47,7 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.QueryImpl;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.gridfs.GridFSInputFile;
+import com.mongodb.gridfs.GridFSDBFile;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -529,31 +530,47 @@ public class Model implements Serializable, play.db.Model {
    }
 
    public void saveBlobs() {
+       Set<Field> fields = getAllFields();
+       for (Field field : fields) {
+           if (field.getType().equals(Blob.class)) {
+               try {
+                Blob blob = (Blob) field.get(this);
+                if (blob == null) {
+                    continue;
+                }
+                GridFSDBFile file = blob.getGridFSFile();
+                String name = String.format("%s_%s_%s", this.getClass().getSimpleName(), StringUtils.capitalize(field.getName()), getId().toString());
+                file.put("name", name);
+                file.save();
+                Logger.debug("Saved blob field of entity %s under name %s", this.getClass().getSimpleName(), name);
+//                field.set(this, null); // This makes sure the getter regets the file form mongodb, not sure if this is useful
+            } catch (Exception e) {
+                Logger.error(e, "Exception while saving blobs");
+            }
+           }
+       }
+   }
+
+   private Set<Field> getAllFields() {
        Set<Field> fields = new HashSet<Field>();
        Class<?> clazz = this.getClass();
        while (!clazz.equals(Object.class)) {
           Collections.addAll(fields, clazz.getDeclaredFields());
           clazz = clazz.getSuperclass();
        }
-       for (Field field : fields) {
-           if (field.getType().equals(Blob.class)) {
-               try {
-                // TODO: Store file here?
-                Blob blob = (Blob) field.get(this);
-                if (blob == null) {
-                    continue;
-                }
-                GridFSInputFile file = MorphiaPlugin.gridFs().createFile(blob.get());
-                file.setContentType(blob.type());
-                String name = String.format("%s_%s_%s", this.getClass().getSimpleName(), field.getName(), getId().toString());
-                file.setFilename(name);
-                file.put("name", name);
-                file.save();
-            } catch (Exception e) {
-                Logger.error(e, "Got exception");
-            }
+       return fields;
+   }
+
+   public Blob binaryFieldGet(String field) {
+       String fieldName = String.format("%s_%s_%s", this.getClass().getSimpleName(), StringUtils.capitalize(field), getId().toString());
+       Logger.debug("binaryFieldGet(): %s new: %s", fieldName, isNew());
+       if (!isNew()) {
+           Blob b = new Blob(fieldName);
+           if (b.exists()) {
+               return b;
            }
        }
+       return null;
    }
 
    // -- auto timestamp methods

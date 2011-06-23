@@ -493,7 +493,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 if (Modifier.isStatic(f.getModifiers())) {
                     continue;
                 }
-                if (f.isAnnotationPresent(Transient.class)) {
+                if (f.isAnnotationPresent(Transient.class) && !f.getType().equals(Blob.class)) {
                     continue;
                 }
                 Model.Property mp = buildProperty(f);

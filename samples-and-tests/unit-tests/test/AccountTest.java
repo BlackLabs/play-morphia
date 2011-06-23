@@ -11,12 +11,12 @@ import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
 public class AccountTest extends UnitTest {
-    
+
     @Before
     public void setup() {
         Account.deleteAll();
     }
-    
+
     @Test
     public void testDeleteAll() {
         Account before = new Account("loginxyz", "a@a.a");
@@ -38,14 +38,14 @@ public class AccountTest extends UnitTest {
     public void testFindAll() {
         Account.findAll();
     }
-    
+
     @Test
     public void testIdAfterSaved() {
         Account acc = new Account("loginxyz", "a@a.a");
         acc.save();
         assertNotNull(acc.getId());
     }
-    
+
     @Test
     public void testFindByNullId() {
         Account acc = new Account("loginxyz", "a@a.a");
@@ -73,7 +73,6 @@ public class AccountTest extends UnitTest {
             return;
         }
         Logger.info("count2: %1$s", Account.count());
-        assertFalse(true);
     }
 
 }

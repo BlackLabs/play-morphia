@@ -19,11 +19,36 @@ import play.test.UnitTest;
 
 public class UserTest extends UnitTest {
 
+    private Blob blob;
+
     @Before
-    public void setup() {
+    public void setup() throws FileNotFoundException {
         User.deleteAll();
         MorphiaPlugin.ds().getDB().getCollection(MorphiaPlugin.gridFs().getBucketName() + ".files").drop();
         MorphiaPlugin.ds().getDB().getCollection(MorphiaPlugin.gridFs().getBucketName() + ".chunks").drop();
+
+        blob = new Blob(new File("test/googlelogo.png"), "image/png");
+    }
+
+    @Test
+    public void checkFieldAccessibility() throws Exception {
+        User u = new User();
+        u.name = "alex";
+        u.photo = blob;
+        u = u.save();
+
+        Object name = u.getClass().getField("name").get(u);
+        assertNotNull(name);
+        assertEquals("alex", name);;
+
+        assertNotNull(u.photo);
+        assertThatPhotoBlobIsValid(u.photo);
+        // TODO: Weird case. In this example it works, whereas in CRUD.attachment() this code always returns null
+        // I am unable to find out, what is broken in the CRUD code right now
+        // My first shot was about the propertiesEnhancer and its changing of field accessors. But why is this code working then?
+        Object att = u.getClass().getField("photo").get(u);
+        assertNotNull(att);
+        assertThatPhotoBlobIsValid((Blob) att);
     }
 
     @Test
@@ -41,8 +66,6 @@ public class UserTest extends UnitTest {
     public void testStoreUserWithAttachment() throws IOException {
         User u = new User();
         u.name = "alex";
-        Blob blob = new Blob();
-        blob.set(new FileInputStream("test/googlelogo.png"), "image/png");
         u.photo = blob;
         u = u.save();
 
