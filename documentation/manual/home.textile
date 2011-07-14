@@ -1,3 +1,6 @@
+Updates in 1.2.1beta6
+* Fix bug: IllegalStateException of "User defined ID should be populated before persist" when saving a subtype model with @Id fields defined in parent type
+
 Updates in 1.2.1beta5
 * Add disableValidation() to Model. This is useful when your different subtype model have different fields
 * Add @NoId annotation. This help to resolve issue discussed in https://groups.google.com/forum/#!topic/play-framework/hPWJCvefPoI/discussion
