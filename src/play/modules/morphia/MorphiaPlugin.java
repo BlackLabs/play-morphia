@@ -623,7 +623,7 @@ public class MorphiaPlugin extends PlayPlugin {
                         @SuppressWarnings("unchecked")
                         public List<Object> list() {
                             return (List<Object>) ds().createQuery(
-                                    field.getType()).asList();
+                                    fieldType).asList();
                         }
                     };
                 }
