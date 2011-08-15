@@ -27,6 +27,7 @@ import play.Play;
 import play.data.binding.BeanWrapper;
 import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
+import play.modules.morphia.MorphiaPlugin.MorphiaModelLoader;
 import play.modules.morphia.utils.IdGenerator;
 import play.mvc.Scope.Params;
 
@@ -128,10 +129,10 @@ public class Model implements Serializable, play.db.Model {
                Class<Model> c = (Class<Model>) Play.classloader
                      .loadClass(relation);
                if (Model.class.isAssignableFrom(c)) {
+                  MorphiaPlugin.MorphiaModelLoader f = (MorphiaModelLoader) MorphiaPlugin.MorphiaModelLoader
+                        .getFactory(c);
                   String keyName = null;
                   if (!isEmbedded) {
-                     play.db.Model.Factory f = MorphiaPlugin.MorphiaModelLoader
-                           .getFactory((Class<? extends Model>) o.getClass());
                      keyName = f.keyName();
                   }
                   if (multiple
@@ -157,10 +158,9 @@ public class Model implements Serializable, play.db.Model {
                               if (_id.equals("")) {
                                  continue;
                               }
-                              Query<Model> q = ds().createQuery(c).filter(
-                                    keyName, processId_(_id));
                               try {
-                                 l.add(q.get());
+                                 l.add(f.findById(_id));
+                                 
                               } catch (Exception e) {
                                  Validation.addError(
                                        name + "." + field.getName(),
@@ -181,10 +181,8 @@ public class Model implements Serializable, play.db.Model {
                      String[] ids = params.get(name1);
                      if (ids != null && ids.length > 0 && !ids[0].equals("")) {
                         params.remove(name1);
-                        Query<Model> q = ds().createQuery(c).filter(keyName,
-                              processId_(ids[0]));
                         try {
-                           Object to = q.get();
+                           Object to = f.findById(ids[0]);
                            bw.set(field.getName(), o, to);
                         } catch (Exception e) {
                            Validation.addError(name0, "validation.notFound",
