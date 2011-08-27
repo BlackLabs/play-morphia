@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
 
 import play.Logger;
@@ -46,11 +47,12 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.QueryImpl;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.gridfs.GridFSDBFile;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
  * of these declarations are provided by the MorphiaEnhancer.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class Model implements Serializable, play.db.Model {
@@ -228,7 +230,7 @@ public class Model implements Serializable, play.db.Model {
    /**
     * MorphiaEnhancer will override this method for sub class with \@Embedded
     * annotation specified
-    * 
+    *
     * @return
     */
    protected boolean isEmbedded_() {
@@ -238,7 +240,7 @@ public class Model implements Serializable, play.db.Model {
    /**
     * MorphiaEnhancer will override this method for sub class with \@Id
     * annotation specified
-    * 
+    *
     * @return
     */
    protected boolean isUserDefinedId_() {
@@ -247,7 +249,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Any sub class with \@Id annotation specified need to rewrite this method
-    * 
+    *
     * @return
     */
    protected static Object processId_(Object id) {
@@ -257,11 +259,11 @@ public class Model implements Serializable, play.db.Model {
    /**
     * MorphiaEnhancer will override this method for sub class without \@Embedded
     * annotation specified
-    * 
+    *
     * If user defined customized \@Id field, it's better to override this method
     * for the sake of performance. Otherwise framework will use reflection to
     * get the value
-    * 
+    *
     * @return
     */
    public Object getId() {
@@ -352,7 +354,7 @@ public class Model implements Serializable, play.db.Model {
    /**
     * A utility method determine whether this entity is a newly constructed
     * object in memory or represents a data from mongodb
-    * 
+    *
     * @return true if this is a memory object which has not been saved to db
     *         yet, false otherwise
     */
@@ -419,7 +421,7 @@ public class Model implements Serializable, play.db.Model {
       _delete();
       return (T) this;
    }
-   
+
    /**
     * store (ie insert) the entity.
     */
@@ -437,7 +439,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Shortcut to Model.delete(find())
-    * 
+    *
     * @return
     */
    public static long deleteAll() {
@@ -452,7 +454,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * JPA style find method
-    * 
+    *
     * @param keys
     *           should be in style of "byKey1[AndKey2[AndKey3...]]"
     * @param params
@@ -493,7 +495,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Return Morphia Datastore instance
-    * 
+    *
     * @return
     */
    public static Datastore ds() {
@@ -502,7 +504,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Return MongoDB DB instance
-    * 
+    *
     * @return
     */
    public static DB db() {
@@ -511,7 +513,7 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Save and return this entity
-    * 
+    *
     * @param <T>
     * @return
     */
@@ -523,18 +525,64 @@ public class Model implements Serializable, play.db.Model {
 
    /**
     * Save and return Morphia Key
-    * 
+    *
     * @return
     */
    public Key<? extends Model> save2() {
-      return ds().save(this);
+      Key<? extends Model> k = ds().save(this);
+      saveBlobs();
+      return k;
    }
-   
+
+   public void saveBlobs() {
+       Set<Field> fields = getAllFields();
+       for (Field field : fields) {
+           if (field.getType().equals(Blob.class)) {
+               try {
+                Blob blob = (Blob) field.get(this);
+                if (blob == null) {
+                    continue;
+                }
+                GridFSDBFile file = blob.getGridFSFile();
+                String name = String.format("%s_%s_%s", this.getClass().getSimpleName(), StringUtils.capitalize(field.getName()), getId().toString());
+                file.put("name", name);
+                file.save();
+                Logger.debug("Saved blob field of entity %s under name %s", this.getClass().getSimpleName(), name);
+//                field.set(this, null); // This makes sure the getter regets the file form mongodb, not sure if this is useful
+            } catch (Exception e) {
+                Logger.error(e, "Exception while saving blobs");
+            }
+           }
+       }
+   }
+
+   private Set<Field> getAllFields() {
+       Set<Field> fields = new HashSet<Field>();
+       Class<?> clazz = this.getClass();
+       while (!clazz.equals(Object.class)) {
+          Collections.addAll(fields, clazz.getDeclaredFields());
+          clazz = clazz.getSuperclass();
+       }
+       return fields;
+   }
+
+   public Blob binaryFieldGet(String field) {
+       String fieldName = String.format("%s_%s_%s", this.getClass().getSimpleName(), StringUtils.capitalize(field), getId().toString());
+       Logger.debug("binaryFieldGet(): %s new: %s", fieldName, isNew());
+       if (!isNew()) {
+           Blob b = new Blob(fieldName);
+           if (b.exists()) {
+               return b;
+           }
+       }
+       return null;
+   }
+
    // -- auto timestamp methods
    public long _getCreated() {
 	   throw new UnsupportedOperationException("Please annotate model with @AutoTimestamp annotation");
    }
-   
+
    public long _getModified() {
 	   throw new UnsupportedOperationException("Please annotate model with @AutoTimestamp annotation");
    }
@@ -546,7 +594,7 @@ public class Model implements Serializable, play.db.Model {
       }
 
       private Query<? extends Model> q_;
-      
+
       public Query<? extends Model> getMorphiaQuery() {
           return q_;
       }
@@ -574,13 +622,13 @@ public class Model implements Serializable, play.db.Model {
       
       public long delete() {
          long l = count();
-         ds().delete(this.q_);
+         ds().delete(q_);
          return l;
       }
 
       /**
        * Alias of countAll()
-       * 
+       *
        * @return
        */
       public long count() {
@@ -589,7 +637,7 @@ public class Model implements Serializable, play.db.Model {
 
       /**
        * Used to simulate JPA.find("byXXAndYY", ...);
-       * 
+       *
        * @param query
        *           should be in style "Key1[AndKey2[AndKey3]]" Note, no "by"
        *           prefixed
@@ -635,7 +683,7 @@ public class Model implements Serializable, play.db.Model {
 
       /**
        * Set the position to start
-       * 
+       *
        * @param position
        *           Position of the first element
        * @return A new query
@@ -647,10 +695,10 @@ public class Model implements Serializable, play.db.Model {
 
       /**
        * Retrieve all results of the query
-       * 
+       *
        * This is a correspondence to JPAQuery's fetch(), which however, used as
        * another method signature of Morphia Query
-       * 
+       *
        * @return A list of entities
        */
       public <T extends Model> List<T> fetchAll() {
@@ -659,7 +707,7 @@ public class Model implements Serializable, play.db.Model {
 
       /**
        * Retrieve results of the query
-       * 
+       *
        * @param max
        *           Max results to fetch
        * @return A list of entities
@@ -670,7 +718,7 @@ public class Model implements Serializable, play.db.Model {
 
       /**
        * Retrieve a page of result
-       * 
+       *
        * @param page
        *           Page number (start at 1)
        * @param length
@@ -690,7 +738,7 @@ public class Model implements Serializable, play.db.Model {
 
       // for the sake of enhancement
       public Model _get() {
-         return (Model) q_.get();
+         return q_.get();
       }
 
       public <T extends Model> T get() {
@@ -833,7 +881,7 @@ public class Model implements Serializable, play.db.Model {
       public <T extends Model> MorphiaQuery disableTimeout() {
           return disableCursorTimeout();
       }
-      
+
       public <T extends Model> MorphiaQuery disableCursorTimeout() {
           q_.disableCursorTimeout();
           return this;
@@ -843,7 +891,7 @@ public class Model implements Serializable, play.db.Model {
       public <T extends Model> MorphiaQuery enableTimeout() {
           return enableCursorTimeout();
       }
-      
+
       public <T extends Model> MorphiaQuery enableCursorTimeout() {
           q_.enableCursorTimeout();
           return this;
