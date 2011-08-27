@@ -8,7 +8,6 @@ import org.apache.commons.lang.RandomStringUtils;
 
 import play.modules.morphia.Blob;
 import play.mvc.Controller;
-import play.mvc.Scope.Session;
 
 public class Application extends Controller {
 

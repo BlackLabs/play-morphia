@@ -144,8 +144,8 @@ public class MorphiaEnhancer extends Enhancer {
                     CtMethod getId = CtMethod.make("public Object getId() { return mf.keyValue(this);}", ctClass);
                     ctClass.addMethod(getId);
                 }
-                // setId - for user marked Id entity, setId method needs to be override 
-                
+                // setId - for user marked Id entity, setId method needs to be override
+
                 CtMethod isUserDefinedId = CtMethod.make("protected boolean isUserDefinedId_() {return super.isUserDefinedId_();}", ctClass);
                 ctClass.addMethod(isUserDefinedId);
 
@@ -201,7 +201,7 @@ public class MorphiaEnhancer extends Enhancer {
         // createQuery
         CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
-        
+
         // disableValidation
         CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
         ctClass.addMethod(disableValidation);
@@ -264,10 +264,11 @@ public class MorphiaEnhancer extends Enhancer {
 
     private void addGetterToAllBlobFields(CtClass ctClass) throws CannotCompileException, NotFoundException {
         for (CtMethod method: ctClass.getMethods()) {
-            boolean isSynthetic = isSynthetic(method);
+            // boolean isSynthetic = isSynthetic(method);
             boolean isGetter = method.getName().startsWith("get");
             boolean isReturningBlob = method.getReturnType().getName().equals("play.modules.morphia.Blob");
-            if (isSynthetic && isGetter && isReturningBlob) {
+            // if (isSynthetic && isGetter && isReturningBlob) {
+            if (isGetter && isReturningBlob) {
                 String fieldName = method.getName().substring(3);
                 Logger.debug("Adding blob getter for field %s", fieldName);
                 String methodStr = String.format("public Blob %s() { return binaryFieldGet(\"%s\"); }", method.getName(), StringUtils.uncapitalize(fieldName), fieldName);
