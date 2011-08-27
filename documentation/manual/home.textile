@@ -1,3 +1,9 @@
+Updates in 1.2.2beta1
+* This is an important and purely community driven release which includes the following updates:
+** Support GridFS, thanks Alexander Reelsen (alr@emplify.de) for his contribution!
+** Added a morphiaFixture tag. This allows models to be loaded and deleted from within Selenium test cases. Thanks Agile Consulting (http://www.agileconsulting.biz) for their contribution
+** Bug fix: Choices list for Reference Collection was always empty. Thanks Lepnio (https://github.com/lepnio) for his contribution
+
 Updates in 1.2.1beta6
 * Fix bug: IllegalStateException of "User defined ID should be populated before persist" when saving a subtype model with @Id fields defined in parent type
 
@@ -123,22 +129,9 @@ http request params.
 * Indexing
 ** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
 
-h2. Limitation
-
-* The generic is not working well, sometimes you need type casting. If someone could help, that would be very appreciate.
-
-bc.. public List<play.db.Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where);
-
-h2. TODO List
-
-* Support storing files to GridFS
-
 h2. <a>Dependencies</a>
 
-* Play: Play-1.1 release. It's okay to use the current trunk but not 1.1 beta1
-* Morphia: morphia-0.97 + <a href="http://code.google.com/p/morphia/issues/detail?id=104">this patch</a>. It's safe to use the bundled jar file.
-
-You really really need the latest Play (even late than 1.1beta) and morphia@googlecode (even late than morphia-0.96-SNAPSHOT.jar). In the progress of development, there are many interactions with Play and morphia team and have some code changes in the latest trunk of both product. It's safe to use the morphia-0.96-SNAPSHOT.jar file included in this plugin. But don't use the one distibuted at http://code.google.com/p/morphia/.
+* Play: Play-1.2
 
 h2. <a>Usage</a>
 
@@ -169,7 +162,7 @@ bc.. package models;
 import play.data.validation.Email;
 import play.data.validation.Required;
 import play.modules.morphia.Model;
-
+import play.modules.morphia.Blob;
 import com.google.code.morphia.annotations.Entity;
  
 @Entity
@@ -186,10 +179,15 @@ public class User extends Model {
     
     public boolean isAdmin;
     
-    public User(String email, String password, String fullname) {
+    // Blob type field support start from v1.2.2beta1
+    public Blob photo;
+    
+    // image Type could be something like "image/jpeg" etc.
+    public User(String email, String password, String fullname, File photo, String imageType) {
         this.email = email;
         this.password = password;
         this.fullname = fullname;
+        this.photo = new Blob(photo, imageType);
     }
     
     public static User connect(String email, String password) {
