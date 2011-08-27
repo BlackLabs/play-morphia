@@ -144,9 +144,9 @@ public class MorphiaEnhancer extends Enhancer {
                     CtMethod getId = CtMethod.make("public Object getId() { return mf.keyValue(this);}", ctClass);
                     ctClass.addMethod(getId);
                 }
-                // setId - for user marked Id entity, setId method needs to be override
-
-                CtMethod isUserDefinedId = CtMethod.make("protected boolean isUserDefinedId_() {return true;}", ctClass);
+                // setId - for user marked Id entity, setId method needs to be override 
+                
+                CtMethod isUserDefinedId = CtMethod.make("protected boolean isUserDefinedId_() {return super.isUserDefinedId_();}", ctClass);
                 ctClass.addMethod(isUserDefinedId);
 
             } else {

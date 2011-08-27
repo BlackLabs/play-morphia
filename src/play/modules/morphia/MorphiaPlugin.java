@@ -50,7 +50,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.1beta5";
+    public static final String VERSION = "1.2.1beta6";
 
     private static String msg_(String msg, Object... args) {
         return String.format("MorphiaPlugin-" + VERSION + "> %1$s",
@@ -130,7 +130,7 @@ public class MorphiaPlugin extends PlayPlugin {
             Logger.trace("MongoDB host: %1$s", host);
             Logger.trace("MongoDB port: %1$s", port);
         } catch (UnknownHostException e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException("unknown db host: " + e.getMessage());
         }
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
@@ -632,7 +632,7 @@ public class MorphiaPlugin extends PlayPlugin {
                         @SuppressWarnings("unchecked")
                         public List<Object> list() {
                             return (List<Object>) ds().createQuery(
-                                    field.getType()).asList();
+                                    fieldType).asList();
                         }
                     };
                 }

@@ -1,20 +1,20 @@
 package controllers;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-
-import org.apache.commons.lang.RandomStringUtils;
 
 import models.User;
 
+import org.apache.commons.lang.RandomStringUtils;
+
 import play.modules.morphia.Blob;
 import play.mvc.Controller;
+import play.mvc.Scope.Session;
 
 public class Application extends Controller {
 
     public static void index() {
-        render();
+        session.clear();
+        renderText(session.getId());
     }
 
     public static void uploadImage(File image) {
