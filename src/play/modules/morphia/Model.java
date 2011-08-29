@@ -25,6 +25,7 @@ import org.bson.types.CodeWScope;
 
 import play.Logger;
 import play.Play;
+import play.PlayPlugin;
 import play.data.binding.BeanWrapper;
 import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
@@ -73,6 +74,7 @@ public class Model implements Serializable, play.db.Model {
    @Override
    public void _delete() {
       ds().delete(this);
+      PlayPlugin.postEvent("MorphiaSupport.objectDeleted", this);
    }
 
    // -- porting from play.db.GenericModel
@@ -400,7 +402,7 @@ public class Model implements Serializable, play.db.Model {
       throw new UnsupportedOperationException(
             "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
    }
-   
+
    public static <T extends Model> MorphiaQuery disableValidation() {
        throw new UnsupportedOperationException(
                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
@@ -529,6 +531,11 @@ public class Model implements Serializable, play.db.Model {
     * @return
     */
    public Key<? extends Model> save2() {
+       if (isNew()) {
+           PlayPlugin.postEvent("MorphiaSupport.objectPersisted", this);
+       } else {
+           PlayPlugin.postEvent("MorphiaSupport.objectUpdated", this);
+       }
       Key<? extends Model> k = ds().save(this);
       saveBlobs();
       return k;
@@ -619,7 +626,7 @@ public class Model implements Serializable, play.db.Model {
          // super(clazz, coll, ds, offset, limit);
          q_ = new QueryImpl(clazz, coll, ds, offset, limit);
       }
-      
+
       public long delete() {
          long l = count();
          ds().delete(q_);
@@ -922,7 +929,7 @@ public class Model implements Serializable, play.db.Model {
    /**
     * NoID is used to annotate on sub types which is sure to get ID field from
     * parent type
-    * 
+    *
     * @see https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
     * @author luog
     */
