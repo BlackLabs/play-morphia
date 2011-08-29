@@ -42,14 +42,15 @@ import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
+import com.mongodb.gridfs.GridFS;
 
 /**
  * The plugin for the Morphia module.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.1beta6";
+    public static final String VERSION = "1.2.2beta1";
 
     private static String msg_(String msg, Object... args) {
         return String.format("MorphiaPlugin-" + VERSION + "> %1$s",
@@ -62,6 +63,7 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private static Morphia morphia_ = null;
     private static Datastore ds_ = null;
+    private static GridFS gridfs;
 
     private static boolean configured_ = false;
 
@@ -83,6 +85,10 @@ public class MorphiaPlugin extends PlayPlugin {
         return ds_;
     }
 
+    public static GridFS gridFs() {
+        return gridfs;
+    }
+
     private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
 
     public static Datastore ds(String dbName) {
@@ -97,7 +103,7 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         return ds;
     }
-    
+
     public static Morphia morphia() {
         return morphia_;
     }
@@ -160,6 +166,9 @@ public class MorphiaPlugin extends PlayPlugin {
         morphia_ = new Morphia();
         ds_ = morphia_.createDatastore(mongo_, dbName);
         dataStores_.put(dbName, ds_);
+
+        String uploadCollection = c.getProperty(PREFIX + "collection.upload", "uploads");
+        gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
 
         configured_ = true;
 
@@ -484,7 +493,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 if (Modifier.isStatic(f.getModifiers())) {
                     continue;
                 }
-                if (f.isAnnotationPresent(Transient.class)) {
+                if (f.isAnnotationPresent(Transient.class) && !f.getType().equals(Blob.class)) {
                     continue;
                 }
                 Model.Property mp = buildProperty(f);

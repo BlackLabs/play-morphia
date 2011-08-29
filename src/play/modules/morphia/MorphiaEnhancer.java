@@ -1,11 +1,21 @@
 package play.modules.morphia;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtMethod;
 import javassist.Modifier;
+import javassist.NotFoundException;
+import javassist.bytecode.AccessFlag;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.annotation.Annotation;
+
+import org.apache.commons.lang.StringUtils;
+
 import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
@@ -15,11 +25,12 @@ import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.PrePersist;
+import com.google.code.morphia.annotations.Transient;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
  * marked with the morphia annotations.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class MorphiaEnhancer extends Enhancer {
@@ -32,16 +43,16 @@ public class MorphiaEnhancer extends Enhancer {
         // We won't enhance class before we get ID_type information
         enhanceThisClass_(applicationClass);
     }
-    
+
     void enhanceThisClass_(ApplicationClass applicationClass) throws Exception {
         // this method will be called after configuration finished
         // if (!MorphiaPlugin.configured()) return;
 
         final CtClass ctClass = makeClass(applicationClass);
-        
+
         // Enhance MongoEntity annotated classes
         if (hasAnnotation(ctClass, Entity.class.getName()) && !hasAnnotation(ctClass, Model.ByPass.class.getName())) {
-        	
+
             boolean addId = true;
             boolean embedded = false;
         	boolean autoTS = hasAnnotation(ctClass, Model.AutoTimestamp.class.getName());
@@ -65,16 +76,16 @@ public class MorphiaEnhancer extends Enhancer {
                     }
                 }
             }
-            
+
             enhance_(ctClass, applicationClass, addId, embedded, autoTS);
         } else {
             return;
         }
     }
-    
+
     /**
      * Enhance classes marked with the MongoEntity annotation.
-     * 
+     *
      * @param ctClass
      * @throws Exception
      */
@@ -83,10 +94,10 @@ public class MorphiaEnhancer extends Enhancer {
 
         // Don't need to fully qualify types when compiling methods below
         classPool.importPackage(PACKAGE_NAME);
-        
+
         String entityName = ctClass.getName();
         String className = entityName + ".class";
-        
+
         // ModalFactory
         // create an id field
         // CtField mf = new CtField(classPool.get(play.db.Model.Factory.class.getName()), "mf", ctClass);
@@ -133,11 +144,11 @@ public class MorphiaEnhancer extends Enhancer {
                     CtMethod getId = CtMethod.make("public Object getId() { return mf.keyValue(this);}", ctClass);
                     ctClass.addMethod(getId);
                 }
-                // setId - for user marked Id entity, setId method needs to be override 
-                
+                // setId - for user marked Id entity, setId method needs to be override
+
                 CtMethod isUserDefinedId = CtMethod.make("protected boolean isUserDefinedId_() {return super.isUserDefinedId_();}", ctClass);
                 ctClass.addMethod(isUserDefinedId);
-                
+
             } else {
                 Logger.trace("adding id methods to embedded entity: %1$s", ctClass.getName());
                 // -- embedded
@@ -147,23 +158,23 @@ public class MorphiaEnhancer extends Enhancer {
                 // setId
                 CtMethod setId = CtMethod.make("protected void setId_(Object id) {throw new UnsupportedOperationException(\"embedded object does not support this method\");}", ctClass);
                 ctClass.addMethod(setId);
-                
+
                 CtMethod isEmbedded = CtMethod.make("protected boolean isEmbedded_() {return true;}", ctClass);
                 ctClass.addMethod(isEmbedded);
             }
         }
-        
+
         // create timestamp?
         if (autoTS) {
         	Logger.trace("create timestamp fields automatically");
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
         	createdField.setModifiers(Modifier.PRIVATE);
         	ctClass.addField(createdField);
-        	
+
         	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
         	modifiedField.setModifiers(Modifier.PRIVATE);
         	ctClass.addField(modifiedField);
-        	
+
         	CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
             AnnotationsAttribute aa = new AnnotationsAttribute(ctClass.getClassFile().getConstPool(),
                     AnnotationsAttribute.visibleTag);
@@ -171,7 +182,7 @@ public class MorphiaEnhancer extends Enhancer {
             aa.addAnnotation(prePersistAnn);
             persistTs.getMethodInfo().addAttribute(aa);
             ctClass.addMethod(persistTs);
-        	
+
             CtMethod getCreated = CtMethod.make("public long _getCreated() { return _created; }", ctClass);
             ctClass.addMethod(getCreated);
 
@@ -190,7 +201,7 @@ public class MorphiaEnhancer extends Enhancer {
         // createQuery
         CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
-        
+
         // disableValidation
         CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
         ctClass.addMethod(disableValidation);
@@ -198,11 +209,11 @@ public class MorphiaEnhancer extends Enhancer {
         // find -- alias: all()
         CtMethod find = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find() { return all(); }",ctClass);
         ctClass.addMethod(find);
-        
+
         // find(String keys, Object... params)
         CtMethod find2 = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find(String keys, java.lang.Object[] params) { return createQuery().findBy(keys.substring(2), params); }",ctClass);
         ctClass.addMethod(find2);
-        
+
         // findAll
         CtMethod findAll = CtMethod.make("public static java.util.List findAll() {return all().asList();}", ctClass);
         ctClass.addMethod(findAll);
@@ -240,8 +251,50 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod deleteAll = CtMethod.make("public static long deleteAll() { return delete(all()); }",ctClass);
         ctClass.addMethod(deleteAll);
 
+        // add @Transient to all blobs automatically
+        addTransientAnnotationToAllBlobFields(ctClass);
+
+        // enhance all getters returning blobs
+        addGetterToAllBlobFields(ctClass);
+
         // Done.
         applicationClass.enhancedByteCode = ctClass.toBytecode();
         ctClass.detach();
+    }
+
+    private void addGetterToAllBlobFields(CtClass ctClass) throws CannotCompileException, NotFoundException {
+        for (CtMethod method: ctClass.getMethods()) {
+            // boolean isSynthetic = isSynthetic(method);
+            boolean isGetter = method.getName().startsWith("get");
+            boolean isReturningBlob = method.getReturnType().getName().equals("play.modules.morphia.Blob");
+            // if (isSynthetic && isGetter && isReturningBlob) {
+            if (isGetter && isReturningBlob) {
+                String fieldName = method.getName().substring(3);
+                Logger.debug("Adding blob getter for field %s", fieldName);
+                String methodStr = String.format("public Blob %s() { return binaryFieldGet(\"%s\"); }", method.getName(), StringUtils.uncapitalize(fieldName), fieldName);
+                CtMethod getMethod = CtMethod.make(methodStr, ctClass);
+                getMethod.setModifiers(getMethod.getModifiers() | AccessFlag.SYNTHETIC);
+                getMethod.setName(method.getName());
+                ctClass.removeMethod(method);
+                ctClass.addMethod(getMethod);
+            }
+        }
+    }
+
+    private void addTransientAnnotationToAllBlobFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
+        List<CtField> fields  = new ArrayList<CtField>();
+        fields.addAll(Arrays.asList(ctClass.getDeclaredFields()));
+        fields.addAll(Arrays.asList(ctClass.getFields()));
+        for (CtField cf: fields) {
+            CtClass ctReturnType = cf.getType();
+            if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") &&
+                    !hasAnnotation(cf, Transient.class.getName())) {
+                createAnnotation(getAnnotations(cf), Transient.class);
+            }
+        }
+    }
+
+    private boolean isSynthetic(CtMethod method) {
+        return (method.getMethodInfo().getAccessFlags() & AccessFlag.SYNTHETIC) != 0;
     }
 }
