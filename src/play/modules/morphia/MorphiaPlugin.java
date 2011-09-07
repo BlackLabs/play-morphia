@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -41,6 +42,7 @@ import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.gridfs.GridFS;
 
@@ -123,15 +125,35 @@ public class MorphiaPlugin extends PlayPlugin {
             return;
         Logger.trace("Morphia> reading configuration");
         Properties c = Play.configuration;
+
         String host = c.getProperty(PREFIX + "host", "localhost");
         String port = c.getProperty(PREFIX + "port", "27017");
-        try {
-            mongo_ = new Mongo(host, Integer.parseInt(port));
-            Logger.trace("MongoDB host: %1$s", host);
-            Logger.trace("MongoDB port: %1$s", port);
-        } catch (UnknownHostException e) {
-            throw new RuntimeException("unknown db host: " + e.getMessage());
+		
+		String hosts = c.getProperty(PREFIX + "hosts");
+		String ports = c.getProperty(PREFIX + "ports");
+
+		try {
+			if (hosts != null && ports != null) {
+				StringTokenizer hostsList = new StringTokenizer(hosts,","); 
+				StringTokenizer portsList = new StringTokenizer(ports,","); 
+				List addresses = new ArrayList();
+				
+				while(hostsList.hasMoreTokens()) { 
+					addresses.add(new ServerAddress(hostsList.nextToken().trim(), Integer.parseInt(portsList.nextToken().trim())));
+				}
+				
+				mongo_ = new Mongo(addresses);
+				Logger.trace("MongoDB hosts: %1$s", hosts);
+	           	Logger.trace("MongoDB ports: %1$s", ports);
+			}else{
+		    	mongo_ = new Mongo(host, Integer.parseInt(port));
+            	Logger.trace("MongoDB host: %1$s", host);
+            	Logger.trace("MongoDB port: %1$s", port);
+        	}
+		}catch (Exception e) {
+            throw new RuntimeException("error connecting to db host(s): " + e.getMessage());
         }
+		
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
             Logger.warn("mongodb name not configured! using [test] db");
