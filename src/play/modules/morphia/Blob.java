@@ -1,8 +1,7 @@
 package play.modules.morphia;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -30,8 +29,8 @@ public class Blob implements BinaryField {
     public Blob(File inputFile, String type) {
         this();
         try {
-            set(new FileInputStream(inputFile), type);
-        } catch (FileNotFoundException e) {
+            set(inputFile, type);
+        } catch (IOException e) {
             Logger.debug("File not found: %s (%s)", inputFile.getAbsolutePath(), e.getMessage());
         }
     }
@@ -45,6 +44,14 @@ public class Blob implements BinaryField {
     public InputStream get() {
         return file != null ? file.getInputStream() : null;
     }
+    
+    public void set(File file, String type) throws IOException {
+        GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(file);
+        inputFile.setContentType(type);
+        inputFile.save();
+        this.file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
+    }
+    
 
     @Override
     public void set(InputStream is, String type) {

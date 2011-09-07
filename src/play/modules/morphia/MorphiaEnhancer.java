@@ -198,9 +198,13 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod create = CtMethod.make("public static play.modules.morphia.Model create(String name, play.mvc.Scope.Params params) { Object o = play.Play.classloader.loadClass(\""+ entityName + "\").newInstance(); return ((play.modules.morphia.Model)o).edit(name, params.all()); }",ctClass);
         ctClass.addMethod(create);
 
-        // createQuery
+        // createQuery - alias of all
         CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
+        
+        // q - alias of createQuery
+        CtMethod q = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q() { return all(); }",ctClass);
+        ctClass.addMethod(q);
 
         // disableValidation
         CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
@@ -211,8 +215,12 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(find);
 
         // find(String keys, Object... params)
-        CtMethod find2 = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find(String keys, java.lang.Object[] params) { return createQuery().findBy(keys.substring(2), params); }",ctClass);
+        CtMethod find2 = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find(String keys, java.lang.Object[] params) { return createQuery().findBy(keys, params); }",ctClass);
         ctClass.addMethod(find2);
+        
+        // q -- alias: find(String, Object...)
+        CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object[] params) { return createQuery().findBy(keys, params); }",ctClass);
+        ctClass.addMethod(q2);
 
         // findAll
         CtMethod findAll = CtMethod.make("public static java.util.List findAll() {return all().asList();}", ctClass);
@@ -246,6 +254,46 @@ public class MorphiaEnhancer extends Enhancer {
         // count (String keys, Object... params)
         CtMethod count2 = CtMethod.make("public static long count(String keys, Object[] params) { return find(keys, params).count(); }", ctClass);
         ctClass.addMethod(count2);
+        
+        // distinct
+        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return new java.util.HashSet(ds().getCollection(%s).distinct(key));}", className), ctClass);
+        ctClass.addMethod(distinct);
+        
+        // max
+        CtMethod max = CtMethod.make(String.format("public static Long _max(String field) {return q().max(field);}", className), ctClass);
+        ctClass.addMethod(max);
+
+        // group-max
+        CtMethod groupmax = CtMethod.make(String.format("public static AggregationResult groupMax(String field, String[] groupKeys) {return q().groupMax(field, groupKeys);}", className), ctClass);
+        ctClass.addMethod(groupmax);
+
+        // min
+        CtMethod min = CtMethod.make(String.format("public static Long _min(String field) {return q().min(field);}", className), ctClass);
+        ctClass.addMethod(min);
+
+        // group-min
+        CtMethod groupMin = CtMethod.make(String.format("public static AggregationResult groupMin(String field, String[] groupKeys) {return q().groupMin(field, groupKeys);}", className), ctClass);
+        ctClass.addMethod(groupMin);
+
+        // average
+        CtMethod average = CtMethod.make(String.format("public static Long _average(String field) {return q().average(field);}", className), ctClass);
+        ctClass.addMethod(average);
+
+        // group-average
+        CtMethod groupAverage = CtMethod.make(String.format("public static AggregationResult groupAverage(String field, String[] groupKeys) {return q().groupAverage(field, groupKeys);}", className), ctClass);
+        ctClass.addMethod(groupAverage);
+
+        // sum
+        CtMethod sum = CtMethod.make(String.format("public static Long _sum(String field) {return q().sum(field);}", className), ctClass);
+        ctClass.addMethod(sum);
+
+        // group-sum
+        CtMethod groupSum = CtMethod.make(String.format("public static AggregationResult groupSum(String field, String[] groupKeys) {return q().groupSum(field, groupKeys);}", className), ctClass);
+        ctClass.addMethod(groupSum);
+
+        // group-count
+        CtMethod groupCount = CtMethod.make(String.format("public static AggregationResult groupCount(String field, String[] groupKeys) {return q().groupCount(field, groupKeys);}", className), ctClass);
+        ctClass.addMethod(groupCount);
 
         // deleteAll
         CtMethod deleteAll = CtMethod.make("public static long deleteAll() { return delete(all()); }",ctClass);
@@ -294,7 +342,7 @@ public class MorphiaEnhancer extends Enhancer {
         }
     }
 
-    private boolean isSynthetic(CtMethod method) {
-        return (method.getMethodInfo().getAccessFlags() & AccessFlag.SYNTHETIC) != 0;
-    }
+//    private boolean isSynthetic(CtMethod method) {
+//        return (method.getMethodInfo().getAccessFlags() & AccessFlag.SYNTHETIC) != 0;
+//    }
 }

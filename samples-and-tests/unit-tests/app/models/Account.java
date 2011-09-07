@@ -7,6 +7,8 @@ import play.modules.morphia.Model;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Indexed;
 
+import com.mongodb.*;
+
 @SuppressWarnings("serial")
 @Entity
 public class Account extends Model {
@@ -18,10 +20,28 @@ public class Account extends Model {
     @Required
     @Email
     public String email;
+    
+    public String region;
+    
+    public int age;
+    
+    public int score;
+    
+    public String department;
 
     public Account(String login, String email) {
+        this(login, email, "AU");
+    }
+    
+    public Account(String login, String email, String region) {
+        this(login, email, region, "IT");
+    }
+    
+    public Account(String login, String email, String region, String department) {
         this.login = login;
         this.email = email;
+        this.region = region;
+        this.department = department;
     }
-
+    
 }

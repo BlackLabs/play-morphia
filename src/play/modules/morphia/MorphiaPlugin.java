@@ -249,9 +249,9 @@ public class MorphiaPlugin extends PlayPlugin {
         ds().ensureIndexes();
 
         String writeConcern = Play.configuration
-                .getProperty("morphia.defaultWriteConcern");
+                .getProperty("morphia.defaultWriteConcern", "safe");
         if (null != writeConcern) {
-            ds().setDefaultWriteConcern(WriteConcern.valueOf(writeConcern));
+            ds().setDefaultWriteConcern(WriteConcern.valueOf(writeConcern.toUpperCase()));
         }
         Logger.info(msg_("initialized"));
     }
