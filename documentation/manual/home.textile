@@ -1,3 +1,8 @@
+Updates in 1.2.3beta1
+* Support aggregation operations: max,min,sum,average,count and their group peers
+* Support connecting to replica set. Thanks https://github.com/taligent for his contribution
+* Supports custom keys to find relations by ID. Thanks https://github.com/zash80 for his contribution
+
 Updates in 1.2.2beta1
 * This is an important and purely community driven release which includes the following updates:
 ** Support GridFS, thanks Alexander Reelsen (alr@emplify.de) for his contribution!
@@ -129,6 +134,12 @@ http request params.
 * Indexing
 ** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
 
+* Aggregation
+** You can aggregate data based on queries and group by fields. Limitations:
+*** The max/min/sum/average/count aggregation operate on one field each time. A low level group() interface could be used for complicated use case
+*** Having clause in tranditional SQL is not supported. You will need to filter the result list in memory to achieve the same result. See http://rickosborne.org/download/SQL-to-MongoDB.pdf
+*** The interface support aggregation on field in the same collection. group by a reference collection does not supported yet. You will need to use map-reduce to archieve the result
+
 h2. <a>Dependencies</a>
 
 * Play: Play-1.2
@@ -218,9 +229,9 @@ bc..     public Post previous() {
         return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
     }
 
-h3. <a>Aggregation with MapReduce</a>
+h3. <a>Aggregation</a>
 
-h4. JPA style:
+h4. JPA:
 
 bc..     public static List<Map> getCloud() {
         List<Map> result = Tag.find(
@@ -229,7 +240,7 @@ bc..     public static List<Map> getCloud() {
         return result;
     }
 
-h4.. Morphia style:
+h4.. MapReduce style:
 
 bc..     private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
     private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
@@ -249,6 +260,19 @@ bc..     private static final String m_ = "function() {this.tags.forEach(functio
     }
     
 p. This part looks not so elegant. I hope it could be simplified in the future.
+
+h4.. New Aggregation interface (start from version 1.2.3beta1)
+
+bc..     public static void aggregateInterface() {
+        long sum = Account.sum("sales"); // sales is an numeric field of collection account
+        long sum = Account.q("region", "AU").sum("sales"); // get sum of sales of all account in AU region
+        AggregationResult r = Account.groupMax("sales", "region"); // max sales grouped by region
+        long maxAU = r.getResult("region", "AU"); // max sales account in AU
+        r = Account.groupMin("sales", "region"); // min sales grouped by region
+        long minUS = r.getResult("region", "US"); // min sales account in US
+        long average = Account.q("department", "IT").average("cost"); // IT department's average cost
+    }
+    
 
 h2. <a>FAQ</a>
 

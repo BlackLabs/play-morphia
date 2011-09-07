@@ -171,5 +171,13 @@ public class AccountTest extends UnitTest {
         AggregationResult r = Account.groupCount("score", "region");
         assertSame(2L, r.getResult("region", "CN"));
     }
+    
+    @Test
+    public void testInClause() {
+        setUpAggregation();
+        String[] regions = {"AU", "CN"};
+        List<Account> l = Account.q("region in ", java.util.Arrays.asList(regions)).asList();
+        assertSame(4, l.size());
+    }
 
 }

@@ -561,8 +561,7 @@ public class Model implements Serializable, play.db.Model {
      * @param objects
      * @return
      */
-    public static <T extends Model> MorphiaQuery q(String keys,
-            Object... params) {
+    public static <T extends Model> MorphiaQuery q(String keys, Object value) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }

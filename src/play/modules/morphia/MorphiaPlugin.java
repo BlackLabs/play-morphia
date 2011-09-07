@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -26,6 +25,7 @@ import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.data.binding.Binder;
 import play.db.Model.Factory;
+import play.exceptions.ConfigurationException;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.utils.StringUtil;
 
@@ -48,7 +48,7 @@ import com.mongodb.gridfs.GridFS;
 
 /**
  * The plugin for the Morphia module.
- *
+ * 
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
@@ -94,7 +94,8 @@ public class MorphiaPlugin extends PlayPlugin {
     private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
 
     public static Datastore ds(String dbName) {
-        if (StringUtil.isEmpty(dbName)) return ds();
+        if (StringUtil.isEmpty(dbName))
+            return ds();
         Datastore ds = dataStores_.get(dbName);
         if (null == ds) {
             Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
@@ -119,6 +120,67 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private static Mongo mongo_;
 
+    /*
+     * Connect using conf - morphia.db.host=host1,host2... -
+     * morphia.db.port=port1,port2...
+     */
+    private final Mongo connect_(String host, String port) {
+        String[] ha = host.split("[,\\s;]+");
+        String[] pa = port.split("[,\\s;]+");
+        int len = ha.length;
+        if (len != pa.length)
+            throw new ConfigurationException(
+                    "host and ports number does not match");
+        if (1 == len) {
+            try {
+                return new Mongo(ha[0], Integer.parseInt(pa[0]));
+            } catch (Exception e) {
+                throw new ConfigurationException(String.format("Cannot connect to mongodb at %s:%s", host, port));
+            }
+        }
+        List<ServerAddress> addrs = new ArrayList<ServerAddress>(ha.length);
+        for (int i = 0; i < len; ++i) {
+            try {
+                addrs.add(new ServerAddress(ha[i], Integer.parseInt(pa[i])));
+            } catch (Exception e) {
+                Logger.error(e, "Error creating mongo connection to %s:%s",
+                        host, port);
+            }
+        }
+        if (addrs.isEmpty()) {
+            throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
+        }
+        return new Mongo(addrs);
+    }
+
+    /*
+     * Connect using conf morphia.db.seeds=host1[:port1];host2[:port2]...
+     */
+    private final Mongo connect_(String seeds) {
+        String[] sa = seeds.split("[;,\\s]+");
+        List<ServerAddress> addrs = new ArrayList<ServerAddress>(sa.length);
+        for (String s : sa) {
+            String[] hp = s.split(":");
+            if (0 == hp.length)
+                continue;
+            String host = hp[0];
+            int port = 27017;
+            if (hp.length > 1) {
+                port = Integer.parseInt(hp[1]);
+            }
+            try {
+                addrs.add(new ServerAddress(host, port));
+            } catch (UnknownHostException e) {
+                Logger.error(e, "error creating mongo connection to %s:%s",
+                        host, port);
+            }
+        }
+        if (addrs.isEmpty()) {
+            throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
+        }
+        return new Mongo(addrs);
+    }
+
     @Override
     public void onConfigurationRead() {
         if (configured_)
@@ -126,34 +188,15 @@ public class MorphiaPlugin extends PlayPlugin {
         Logger.trace("Morphia> reading configuration");
         Properties c = Play.configuration;
 
-        String host = c.getProperty(PREFIX + "host", "localhost");
-        String port = c.getProperty(PREFIX + "port", "27017");
-		
-		String hosts = c.getProperty(PREFIX + "hosts");
-		String ports = c.getProperty(PREFIX + "ports");
-
-		try {
-			if (hosts != null && ports != null) {
-				StringTokenizer hostsList = new StringTokenizer(hosts,","); 
-				StringTokenizer portsList = new StringTokenizer(ports,","); 
-				List addresses = new ArrayList();
-				
-				while(hostsList.hasMoreTokens()) { 
-					addresses.add(new ServerAddress(hostsList.nextToken().trim(), Integer.parseInt(portsList.nextToken().trim())));
-				}
-				
-				mongo_ = new Mongo(addresses);
-				Logger.trace("MongoDB hosts: %1$s", hosts);
-	           	Logger.trace("MongoDB ports: %1$s", ports);
-			}else{
-		    	mongo_ = new Mongo(host, Integer.parseInt(port));
-            	Logger.trace("MongoDB host: %1$s", host);
-            	Logger.trace("MongoDB port: %1$s", port);
-        	}
-		}catch (Exception e) {
-            throw new RuntimeException("error connecting to db host(s): " + e.getMessage());
+        String seeds = c.getProperty(PREFIX + "seeds");
+        if (!StringUtil.isEmpty(seeds))
+            mongo_ = connect_(seeds);
+        else {
+            String host = c.getProperty(PREFIX + "host", "localhost");
+            String port = c.getProperty(PREFIX + "port", "27017");
+            mongo_ = connect_(host, port);
         }
-		
+
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
             Logger.warn("mongodb name not configured! using [test] db");
@@ -189,7 +232,8 @@ public class MorphiaPlugin extends PlayPlugin {
         ds_ = morphia_.createDatastore(mongo_, dbName);
         dataStores_.put(dbName, ds_);
 
-        String uploadCollection = c.getProperty(PREFIX + "collection.upload", "uploads");
+        String uploadCollection = c.getProperty(PREFIX + "collection.upload",
+                "uploads");
         gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
 
         configured_ = true;
@@ -270,10 +314,11 @@ public class MorphiaPlugin extends PlayPlugin {
 
         ds().ensureIndexes();
 
-        String writeConcern = Play.configuration
-                .getProperty("morphia.defaultWriteConcern", "safe");
+        String writeConcern = Play.configuration.getProperty(
+                "morphia.defaultWriteConcern", "safe");
         if (null != writeConcern) {
-            ds().setDefaultWriteConcern(WriteConcern.valueOf(writeConcern.toUpperCase()));
+            ds().setDefaultWriteConcern(
+                    WriteConcern.valueOf(writeConcern.toUpperCase()));
         }
         Logger.info(msg_("initialized"));
     }
@@ -351,7 +396,8 @@ public class MorphiaPlugin extends PlayPlugin {
                         Binder.directBind(id.toString(), keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
-                Logger.debug(e, "cannot find entity[%s] with id: %s", clazz.getName(), id);
+                Logger.debug(e, "cannot find entity[%s] with id: %s",
+                        clazz.getName(), id);
                 return null;
             }
         }
@@ -515,7 +561,8 @@ public class MorphiaPlugin extends PlayPlugin {
                 if (Modifier.isStatic(f.getModifiers())) {
                     continue;
                 }
-                if (f.isAnnotationPresent(Transient.class) && !f.getType().equals(Blob.class)) {
+                if (f.isAnnotationPresent(Transient.class)
+                        && !f.getType().equals(Blob.class)) {
                     continue;
                 }
                 Model.Property mp = buildProperty(f);
@@ -653,8 +700,8 @@ public class MorphiaPlugin extends PlayPlugin {
                     modelProperty.choices = new Model.Choices() {
                         @SuppressWarnings("unchecked")
                         public List<Object> list() {
-                            return (List<Object>) ds().createQuery(
-                                    fieldType).asList();
+                            return (List<Object>) ds().createQuery(fieldType)
+                                    .asList();
                         }
                     };
                 }

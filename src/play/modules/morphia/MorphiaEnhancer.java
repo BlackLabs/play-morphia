@@ -218,8 +218,8 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod find2 = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find(String keys, java.lang.Object[] params) { return createQuery().findBy(keys, params); }",ctClass);
         ctClass.addMethod(find2);
         
-        // q -- alias: find(String, Object...)
-        CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object[] params) { return createQuery().findBy(keys, params); }",ctClass);
+        // q -- alias: filter(String, Object...)
+        CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object value) { return createQuery().filter(keys, value); }",ctClass);
         ctClass.addMethod(q2);
 
         // findAll
