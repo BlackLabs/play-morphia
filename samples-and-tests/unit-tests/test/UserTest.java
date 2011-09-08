@@ -94,5 +94,7 @@ public class UserTest extends UnitTest {
         String expectedMd5 = DigestUtils.md5Hex(new FileInputStream("test/googlelogo.png"));
         assertEquals(expectedMd5, actualMd5);
 
+        assertNotNull(blob.getGridFSFile().getFilename());
+        assertEquals(blob.getGridFSFile().getFilename(), "googlelogo.png");
     }
 }
