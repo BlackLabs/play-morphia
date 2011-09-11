@@ -5,4 +5,3 @@ build.bat
 .eclipse
 play-morphia.jar
 dist
-modules
