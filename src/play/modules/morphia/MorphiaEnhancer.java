@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import javassist.CannotCompileException;
+import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtMethod;
@@ -12,7 +13,10 @@ import javassist.Modifier;
 import javassist.NotFoundException;
 import javassist.bytecode.AccessFlag;
 import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
+import javassist.bytecode.annotation.EnumMemberValue;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -26,6 +30,7 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.utils.IndexDirection;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
@@ -47,6 +52,8 @@ public class MorphiaEnhancer extends Enhancer {
     void enhanceThisClass_(ApplicationClass applicationClass) throws Exception {
         // this method will be called after configuration finished
         // if (!MorphiaPlugin.configured()) return;
+        // is anonymous class?
+        if (applicationClass.name.contains("$anonfun$") || applicationClass.name.contains("$anon$")) return;
 
         final CtClass ctClass = makeClass(applicationClass);
 
@@ -90,12 +97,12 @@ public class MorphiaEnhancer extends Enhancer {
      * @throws Exception
      */
     private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean embedded, boolean autoTS) throws Exception {
-        Logger.trace("Morphia: enhancing MorphiaEntity: " + ctClass.getName());
+        String entityName = ctClass.getName();
+        Logger.trace("Morphia: enhancing MorphiaEntity: " + entityName);
 
         // Don't need to fully qualify types when compiling methods below
         classPool.importPackage(PACKAGE_NAME);
 
-        String entityName = ctClass.getName();
         String className = entityName + ".class";
 
         // ModalFactory
@@ -166,12 +173,24 @@ public class MorphiaEnhancer extends Enhancer {
 
         // create timestamp?
         if (autoTS) {
+            ClassFile classFile = ctClass.getClassFile();
+            ConstPool cp = classFile.getConstPool();
+            AnnotationsAttribute attribute = new AnnotationsAttribute(cp, AnnotationsAttribute.visibleTag);
+            Annotation indexAnnotation = new Annotation(cp, ClassPool.getDefault().get("com.google.code.morphia.annotations.Indexed"));
+            EnumMemberValue val = new EnumMemberValue(cp);
+            val.setType(IndexDirection.class.getName());
+            val.setValue(IndexDirection.DESC.name());
+            indexAnnotation.addMemberValue("value", val);
+            attribute.addAnnotation(indexAnnotation);
+            
         	Logger.trace("create timestamp fields automatically");
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
+        	createdField.getFieldInfo().addAttribute(attribute);
         	createdField.setModifiers(Modifier.PRIVATE);
         	ctClass.addField(createdField);
 
         	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
+        	modifiedField.getFieldInfo().addAttribute(attribute);
         	modifiedField.setModifiers(Modifier.PRIVATE);
         	ctClass.addField(modifiedField);
 

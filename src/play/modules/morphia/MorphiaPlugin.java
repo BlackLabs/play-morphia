@@ -52,7 +52,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.3beta1";
+    public static final String VERSION = "1.2.3d";
 
     private static String msg_(String msg, Object... args) {
         return String.format("MorphiaPlugin-" + VERSION + "> %1$s",

@@ -10,12 +10,15 @@ import play.data.binding.As;
 import play.data.validation.MaxSize;
 import play.data.validation.Required;
 import play.modules.morphia.Model;
+import play.modules.morphia.Model.AutoTimestamp;
 
 import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Reference;
 
+@SuppressWarnings("serial")
 @Entity(value="pt", noClassnameStored=true)
+@AutoTimestamp
 public class Post extends Model {
  
     @Required

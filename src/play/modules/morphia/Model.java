@@ -673,17 +673,20 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public Blob binaryFieldGet(String field) {
-        String fieldName = String.format("%s_%s_%s", this.getClass()
-                .getSimpleName(), StringUtils.capitalize(field), getId()
-                .toString());
-        Logger.debug("binaryFieldGet(): %s new: %s", fieldName, isNew());
-        if (!isNew()) {
-            Blob b = new Blob(fieldName);
-            if (b.exists()) {
-                return b;
-            }
+        if (isNew()) {
+            try {
+                Field f = this.getClass().getField(field);
+                return (Blob)f.get(this);
+            } catch (Exception e) {
+                Logger.warn(e, "Error return blob field %s", field);
+                return null;
+            } 
         }
-        return null;
+        String fieldName = String.format("%s_%s_%s", this.getClass()
+                .getSimpleName(), StringUtils.capitalize(field), getId());
+        Logger.debug("binaryFieldGet(): %s new: %s", fieldName, isNew());
+        Blob b = new Blob(fieldName);
+        return b.exists() ? b : null;
     }
 
     // -- auto timestamp methods

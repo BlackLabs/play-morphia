@@ -4,10 +4,8 @@ import java.util.Date;
 
 import play.data.validation.MaxSize;
 import play.data.validation.Required;
-import play.modules.morphia.Model;
 
 import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Reference;
  
 @Embedded
