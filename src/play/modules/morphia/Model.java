@@ -79,7 +79,8 @@ public class Model implements Serializable, play.db.Model {
 
     @Override
     public void _delete() {
-        ds().delete(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        ds(dsName).delete(this);
     }
 
     // -- porting from play.db.GenericModel
@@ -386,7 +387,8 @@ public class Model implements Serializable, play.db.Model {
      */
     @SuppressWarnings("unchecked")
     public <T extends Model> T refresh() {
-        return (T) ds().get(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        return (T) ds(dsName).get(this);
     }
 
     public static <T extends Model> MorphiaQuery all() {
@@ -600,15 +602,20 @@ public class Model implements Serializable, play.db.Model {
      * 
      * @return
      */
+    @Deprecated
     public static Datastore ds() {
-        return MorphiaPlugin.ds();
+        return MorphiaPlugin.ds(MorphiaPlugin.DEFAULT_DS_NAME);
     }
-
+    public static Datastore ds(String dsName) {
+        return MorphiaPlugin.ds(dsName);
+    }
+    
     /**
      * Return MongoDB DB instance
      * 
      * @return
      */
+    @Deprecated
     public static DB db() {
         return ds().getDB();
     }
@@ -631,7 +638,17 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public Key<? extends Model> save2() {
-        Key<? extends Model> k = ds().save(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        Datastore ds = ds(dsName);
+        if (ds == null) {
+            if (MorphiaPlugin.DEFAULT_DS_NAME.equals(dsName)) {
+                throw new RuntimeException("No morphia datasources are configured in application.conf");
+            } else {
+                throw new RuntimeException("Model class is annotated with @Datasource(name=" + dsName + ") but no datasource is configured in application.conf");
+            }
+        }
+        
+        Key<? extends Model> k = ds.save(this);
         saveBlobs();
         return k;
     }
@@ -702,8 +719,10 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static class MorphiaQuery {
-        public static Datastore ds() {
-            return MorphiaPlugin.ds();
+        
+        //TODO making this an instance method would make the design cleaner
+        public static Datastore ds(String dsName) {
+            return MorphiaPlugin.ds(dsName);
         }
 
         private QueryImpl<? extends Model> q_;
@@ -719,7 +738,8 @@ public class Model implements Serializable, play.db.Model {
 
         public MorphiaQuery(Class<? extends Model> clazz) {
             // super(clazz, ds().getCollection(clazz), ds());
-            q_ = (QueryImpl<? extends Model>) ds().createQuery(clazz);
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(clazz);
+            q_ = (QueryImpl<? extends Model>) ds(dsName).createQuery(clazz);
             c_ = clazz;
         }
 
@@ -739,7 +759,8 @@ public class Model implements Serializable, play.db.Model {
 
         public long delete() {
             long l = count();
-            ds().delete(q_);
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+            ds(dsName).delete(q_);
             return l;
         }
 
@@ -892,7 +913,9 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public Set<?> distinct(String key) {
-            return new HashSet(ds().getCollection(c_).distinct(key,
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+
+            return new HashSet(ds(dsName).getCollection(c_).distinct(key,
                     q_.getQueryObject()));
         }
 
@@ -913,7 +936,9 @@ public class Model implements Serializable, play.db.Model {
                     key.put(s, true);
                 }
             }
-            return (List<CommandResult>) ds().getCollection(c_).group(key,
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+
+            return (List<CommandResult>) ds(dsName).getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
         }
 
@@ -1144,4 +1169,14 @@ public class Model implements Serializable, play.db.Model {
     public @interface NoId {
     }
 
+    /**
+     * Associate an entity with a named Datasource.
+     * 
+     * @author dbusch
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE})
+    public @interface Datasource {
+        String name() default "DEFAULT_DS_NAME";
+    }
 }

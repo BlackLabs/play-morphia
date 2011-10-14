@@ -13,8 +13,8 @@ import com.google.code.morphia.utils.LongIdEntity.StoredId;
 
 
 public class IdGenerator {
-    public static Datastore ds() {
-        return MorphiaPlugin.ds();
+    public static Datastore ds(String dsName) {
+        return MorphiaPlugin.ds(dsName);
     }
     public static Object generateId(Model entity){
         IdType t = MorphiaPlugin.getIdType();
@@ -33,13 +33,15 @@ public class IdGenerator {
     }
     
     public static <T extends Model> Long generateLongId(Class<T> clazz){
-        String collName = ds().getCollection(clazz).getName();
-        Query<StoredId> q = ds().find(StoredId.class, "_id", collName);
-        UpdateOperations<StoredId> uOps = ds().createUpdateOperations(StoredId.class).inc("value");
-        StoredId newId = ds().findAndModify(q, uOps);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(clazz);
+        
+        String collName = ds(dsName).getCollection(clazz).getName();
+        Query<StoredId> q = ds(dsName).find(StoredId.class, "_id", collName);
+        UpdateOperations<StoredId> uOps = ds(dsName).createUpdateOperations(StoredId.class).inc("value");
+        StoredId newId = ds(dsName).findAndModify(q, uOps);
         if (newId == null) {
             newId = new StoredId(collName);
-            ds().save(newId);
+            ds(dsName).save(newId);
         }
         return newId.getValue();
     }

@@ -267,7 +267,7 @@ public class MorphiaEnhancer extends Enhancer {
         }
 
         // count
-        CtMethod count = CtMethod.make("public static long count() { return ds().getCount(" + className + "); }", ctClass);
+        CtMethod count = CtMethod.make("public static long count() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCount(\" + className + \"); }", ctClass);
         ctClass.addMethod(count);
 
         // count (String keys, Object... params)
@@ -275,7 +275,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(count2);
         
         // distinct
-        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return new java.util.HashSet(ds().getCollection(%s).distinct(key));}", className), ctClass);
+        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return new java.util.HashSet(ds(MorphiaPlugin.getDatasourceNameFromAnnotation(%s)).getCollection(%s).distinct(key));}", className, className), ctClass);
         ctClass.addMethod(distinct);
         
         // max

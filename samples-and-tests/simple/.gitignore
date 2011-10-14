@@ -1,0 +1,8 @@
+logs
+eclipse
+tmp
+precompiled
+test-result
+.classpath
+.settings
+
