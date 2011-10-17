@@ -1,3 +1,7 @@
+Updates in 1.2.3d-sumall
+* Support configuring multiple mongo backends
+* Migrated plugin to use Play's dependency management
+
 Updates in 1.2.3d
 * Fix bug: NullPointerException to fetch blob field before an new field saved
 
