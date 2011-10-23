@@ -38,7 +38,7 @@ Everything you need to know about PlayMorphia
 ## "Store blob data into GridFS":model#gridfs
 ## "Automatic timestamp":model#timestamp
 ## "Create index":model#index
-## "Advanced topics":model#advanced
+## "Advanced Model topics":model#advanced
 # "Use PlayMorphia model in your application":crud
 ## "Create an new model instance":crud#create
 ## "Read from mongodb":crud#read

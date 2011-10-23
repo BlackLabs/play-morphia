@@ -37,6 +37,7 @@ import play.modules.morphia.Model.OnUpdate;
 import play.modules.morphia.Model.Updated;
 import play.modules.morphia.utils.StringUtil;
 
+import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.PrePersist;
@@ -69,7 +70,11 @@ public class MorphiaEnhancer extends Enhancer {
 
         final CtClass ctClass = makeClass(applicationClass);
         final CtClass modelClass = classPool.getCtClass("play.modules.morphia.Model");
-        if (!hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, ByPass.class.getName()) || !ctClass.subclassOf(modelClass)) return;
+        if (!ctClass.subclassOf(modelClass)) return;
+        if (hasAnnotation(ctClass, Embedded.class.getName()) ) {
+            throw new Exception(String.format("Error enhancing [%s]: Embedded entity shall NOT extend play.modules.morphia.Model class!", ctClass.getName()));
+        }
+        if (!hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, ByPass.class.getName())) return;
 
         boolean addId = true;
     	boolean autoTS = hasAnnotation(ctClass, Model.AutoTimestamp.class.getName());

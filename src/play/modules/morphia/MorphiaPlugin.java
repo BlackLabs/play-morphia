@@ -71,12 +71,24 @@ public class MorphiaPlugin extends PlayPlugin {
         Logger.warn(msg_(msg, args));
     }
 
+    public static void warn(Throwable t, String msg, Object... args) {
+        Logger.warn(t, msg_(msg, args));
+    }
+
     public static void error(String msg, Object... args) {
         Logger.error(msg_(msg, args));
     }
 
+    public static void error(Throwable t, String msg, Object... args) {
+        Logger.error(t, msg_(msg, args));
+    }
+
     public static void fatal(String msg, Object... args) {
         Logger.fatal(msg_(msg, args));
+    }
+
+    public static void fatal(Throwable t, String msg, Object... args) {
+        Logger.fatal(t, msg_(msg, args));
     }
 
     private static String msg_(String msg, Object... args) {
@@ -188,8 +200,7 @@ public class MorphiaPlugin extends PlayPlugin {
             try {
                 addrs.add(new ServerAddress(ha[i], Integer.parseInt(pa[i])));
             } catch (Exception e) {
-                Logger.error(e, "Error creating mongo connection to %s:%s",
-                        host, port);
+                error(e, "Error creating mongo connection to %s:%s", host, port);
             }
         }
         if (addrs.isEmpty()) {
@@ -216,8 +227,7 @@ public class MorphiaPlugin extends PlayPlugin {
             try {
                 addrs.add(new ServerAddress(host, port));
             } catch (UnknownHostException e) {
-                Logger.error(e, "error creating mongo connection to %s:%s",
-                        host, port);
+                error(e, "error creating mongo connection to %s:%s", host, port);
             }
         }
         if (addrs.isEmpty()) {
@@ -230,7 +240,7 @@ public class MorphiaPlugin extends PlayPlugin {
     public void onConfigurationRead() {
         if (configured_)
             return;
-        Logger.trace("Morphia> reading configuration");
+        debug("Morphia> reading configuration");
         Properties c = Play.configuration;
 
         String seeds = c.getProperty(PREFIX + "seeds");
@@ -244,17 +254,15 @@ public class MorphiaPlugin extends PlayPlugin {
 
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
-            Logger.warn("mongodb name not configured! using [test] db");
+            warn("mongodb name not configured! using [test] db");
             dbName = "test";
         }
         DB db = mongo_.getDB(dbName);
-        if (c.containsKey(PREFIX + "username")
-                && c.containsKey(PREFIX + "password")) {
+        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
             String username = c.getProperty(PREFIX + "username");
             String password = c.getProperty(PREFIX + "password");
             if (!db.authenticate(username, password.toCharArray())) {
-                throw new RuntimeException("MongoDB authentication failed: "
-                        + dbName);
+                throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
         }
         
@@ -264,8 +272,7 @@ public class MorphiaPlugin extends PlayPlugin {
         ds_ = morphia_.createDatastore(mongo_, dbName);
         dataStores_.put(dbName, ds_);
 
-        String uploadCollection = c.getProperty("morphia.collection.upload",
-                "uploads");
+        String uploadCollection = c.getProperty("morphia.collection.upload", "uploads");
         gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
         
         morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor(){
@@ -305,19 +312,18 @@ public class MorphiaPlugin extends PlayPlugin {
     private void initIdType_() {
         Properties c = Play.configuration;
         if (c.containsKey("morphia.id.type")) {
-            Logger.debug("Morphia> reading id type...");
+            debug("reading id type...");
             String s = c.getProperty("morphia.id.type");
             try {
                 idType_ = IdType.valueOf(s);
-                Logger.debug("ID Type set to : %1$s", idType_.name());
+                debug("ID Type set to : %1$s", idType_.name());
                 if ("1.2beta".equals(VERSION) && idType_ == IdType.Long) {
-                    Logger.warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
+                    warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
                 }
             } catch (Exception e) {
-                Logger.warn(
-                        e,
-                        "Error configure morphia id type: %1$s. Id type set to default: ObjectId.",
-                        s);
+                String msg = msg_("Error configure morphia id type: %1$s. Id type set to default: ObjectId.", s);
+                fatal(e, msg);
+                throw new ConfigurationException(msg);
             }
         }
     }
@@ -327,14 +333,14 @@ public class MorphiaPlugin extends PlayPlugin {
 //        configured_ = false;
 //        onConfigurationRead();
         configureDs_();
-        Logger.info(msg_("loaded"));
+        info("loaded");
     }
 
     @Override
     public void onInvocationException(Throwable e) {
         if (e instanceof MongoException.Network) {
             // try restart morphia plugin
-            Logger.error("MongoException.Network encountered. Trying to restart mongo...");
+            error("MongoException.Network encountered. Trying to restart mongo...");
             configured_ = false;
             onConfigurationRead();
         }
@@ -355,10 +361,10 @@ public class MorphiaPlugin extends PlayPlugin {
             Class<?> clz = c.javaClass;
             if (clz.isAnnotationPresent(Entity.class)) {
                 try {
-                    Logger.debug(">> mapping class: %1$s", clz.getName());
+                    debug("mapping class: %1$s", clz.getName());
                     morphia_.map(clz);
                 } catch (ConstraintViolationException e) {
-                    Logger.error(e, "error mapping class [%1$s]", clz);
+                    error(e, "error mapping class [%1$s]", clz);
                     pending.add(clz);
                     retries.put(clz, 1);
                 }
@@ -368,11 +374,11 @@ public class MorphiaPlugin extends PlayPlugin {
         while (!pending.isEmpty()) {
             for (Class<?> clz : pending) {
                 try {
-                    Logger.trace(">> mapping class: ", clz.getName());
+                    debug("mapping class: ", clz.getName());
                     morphia_.map(clz);
                     pending.remove(clz);
                 } catch (ConstraintViolationException e) {
-                    Logger.error(e, "error mapping class [%1$s]", clz);
+                    error(e, "error mapping class [%1$s]", clz);
                     int retry = retries.get(clz);
                     if (retry > 2) {
                         throw new RuntimeException(
@@ -391,7 +397,7 @@ public class MorphiaPlugin extends PlayPlugin {
             ds().setDefaultWriteConcern(
                     WriteConcern.valueOf(writeConcern.toUpperCase()));
         }
-        Logger.info(msg_("initialized"));
+        info("initialized");
     }
 
     @Override
@@ -463,12 +469,10 @@ public class MorphiaPlugin extends PlayPlugin {
             if (id == null)
                 return null;
             try {
-                return ds().find(clazz, keyName(),
-                        Binder.directBind(id.toString(), keyType())).get();
+                return ds().find(clazz, keyName(), Binder.directBind(id.toString(), keyType())).get();
             } catch (Exception e) {
                 // Key is invalid, thus nothing was found
-                Logger.debug(e, "cannot find entity[%s] with id: %s",
-                        clazz.getName(), id);
+                warn(e, "cannot find entity[%s] with id: %s", clazz.getName(), id);
                 return null;
             }
         }
@@ -557,8 +561,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     }
                     String prop = sa[0];
                     String val = sa[1];
-                    Logger.trace("where prop val pair found: %1$s = %2$s",
-                            prop, val);
+                    debug("where prop val pair found: %1$s = %2$s", prop, val);
                     prop = prop.replaceAll("[\"' ]", "");
                     if (val.matches("[\"'].*[\"']")) {
                         // string value
