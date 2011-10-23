@@ -92,46 +92,35 @@ h2. Entity Lifecycle callbacks
 Sometimes it's interesting to listen to the lifecycle events of an entity and proceed with relevant logics. For example, you want to log an entry input, or you want to send an notification email on entry removed. PlayMorphia provides a set of lifecycle annotations to mark the methods to be called when certain event triggered: 
 
 bc. @Entity public class User {
-    
     public String fName;
     public String lName;
-    
     @OnLoad void beforeLoad() {
         Logger.info("user entity about to load data from mongodb");
     }
-    
     @Loaded void afterLoad() {
         Logger.info("user entity now filled with data from mongodb");
     }
-    
     @OnAdd void beforeAddNew() {
         Logger.info("About to create new user record");
     }
-    
     @Added void afterAddNew() {
         Logger.info("new user record created in the database");
     }
-    
     @OnUpdate void beforeSaveUpdated(){
         Logger.info("About to persist updated user into database");
     }
-    
     @Updated void afterUpdatedSaved() {
         Logger.info("Updated user data persisted to the database");
     }
-    
     @OnDelete void beforeDelete() {
         Logger.info("About to delete a user record from the database");
     }
-    
     @Deleted void afterDelete() {
         Logger.info("This user record is removed from mongodb");
     }
-    
     @OnBatchDelete static void beforeBatchDelete(MorphiaQuery q) {
         Logger.info("About to delete all records specified by the query");
     }
-    
     @BatchDeleted static void afterBatchDelete(MorphiaQuery q) {
         Logger.info("Records specified by the query has been deleted";
         // Note q.count() will always return 0 in this method as the 
