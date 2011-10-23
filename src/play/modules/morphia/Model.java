@@ -25,6 +25,7 @@ import org.bson.types.CodeWScope;
 
 import play.Logger;
 import play.Play;
+import play.PlayPlugin;
 import play.data.binding.BeanWrapper;
 import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
@@ -41,6 +42,7 @@ import com.google.code.morphia.annotations.PostPersist;
 import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.CriteriaContainer;
 import com.google.code.morphia.query.CriteriaContainerImpl;
@@ -52,7 +54,6 @@ import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.gridfs.GridFSDBFile;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -61,7 +62,7 @@ import com.mongodb.gridfs.GridFSDBFile;
  * @author greenlaw110@gmail.com
  */
 public class Model implements Serializable, play.db.Model {
-
+    
     public static final String ALL = "__all__";
 
     private static final long serialVersionUID = -719759872826848048L;
@@ -231,9 +232,10 @@ public class Model implements Serializable, play.db.Model {
     }
 
     /**
-     * MorphiaEnhancer will override this method for sub class with \@Embedded
-     * annotation specified
+     * This method is deprecated as Embedded object shall not extends Model class
+     * and shall not be enhanced
      * 
+     * @deprecated
      * @return
      */
     protected boolean isEmbedded_() {
@@ -489,8 +491,38 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings("unchecked")
     public <T extends Model> T delete() {
+        postEvent_(MorphiaEvent.ON_DELETE, this);
+        h_OnDelete();
         _delete();
+        deleteBlobs();
+        h_Deleted();
+        postEvent_(MorphiaEvent.DELETED, this);
+        
         return (T) this;
+    }
+    
+    protected void h_OnDelete() {
+        // for enhancer usage
+    }
+    
+    protected void h_Deleted() {
+        // for enhancer usage
+    }
+    
+    protected void h_OnBatchDelete(MorphiaQuery q) {
+        // for enhancer usage
+    }
+    
+    protected void h_BatchDeleted(MorphiaQuery q) {
+        // for enhancer usage
+    }
+    
+    protected void deleteBlobs() {
+        // for enhancer usage
+    }
+    
+    protected void deleteBlobsInBatch(MorphiaQuery q) {
+        // for enhancer usage
     }
 
     /**
@@ -631,62 +663,65 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public Key<? extends Model> save2() {
+        boolean isNew = isNew();
+        postEvent_(isNew ? MorphiaEvent.ON_ADD : MorphiaEvent.ON_UPDATE, this);
+        if (isNew) h_OnAdd(); else h_OnUpdate();
         Key<? extends Model> k = ds().save(this);
         saveBlobs();
+        if (isNew) h_Added(); else h_Updated();
+        postEvent_(isNew ? MorphiaEvent.ADDED : MorphiaEvent.UPDATED, this);
         return k;
     }
-
-    public void saveBlobs() {
-        Set<Field> fields = getAllFields();
-        for (Field field : fields) {
-            if (field.getType().equals(Blob.class)) {
-                try {
-                    Blob blob = (Blob) field.get(this);
-                    if (blob == null) {
-                        continue;
-                    }
-                    GridFSDBFile file = blob.getGridFSFile();
-                    String name = String.format("%s_%s_%s", this.getClass()
-                            .getSimpleName(), StringUtils.capitalize(field
-                            .getName()), getId().toString());
-                    file.put("name", name);
-                    file.save();
-                    Logger.debug("Saved blob field of entity %s under name %s",
-                            this.getClass().getSimpleName(), name);
-                    // field.set(this, null); // This makes sure the getter
-                    // regets the file form mongodb, not sure if this is useful
-                } catch (Exception e) {
-                    Logger.error(e, "Exception while saving blobs");
-                }
-            }
+    
+    public void h_OnLoad() {
+        // for enhancer usage
+    }
+    
+    public void h_Loaded() {
+        // for enhancer usage
+    }
+    
+    protected void h_Added() {
+        // used by enhancer
+    }
+    
+    protected void h_Updated() {
+        // used by enhancer
+    }
+    
+    protected void h_OnAdd() {
+        // used by enhancer
+    }
+    
+    protected void h_OnUpdate() {
+        // used by enhancer
+    }
+    
+    protected void saveBlobs() {
+        // used by enhancer 
+    }
+    
+    public String getBlobFileName(String fieldName) {
+        return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
+    }
+    
+    public static String getBlobFileName(String className, Object id, String fieldName) {
+        return String.format("%s_%s_%s", className, StringUtils.capitalize(fieldName), id);
+    }
+    
+    public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
+        for (String fieldName: fieldNames) {
+            String fileName = getBlobFileName(className, id, fieldName);
+            new Blob(fileName).delete();
         }
     }
 
-    private Set<Field> getAllFields() {
-        Set<Field> fields = new HashSet<Field>();
-        Class<?> clazz = this.getClass();
-        while (!clazz.equals(Object.class)) {
-            Collections.addAll(fields, clazz.getDeclaredFields());
-            clazz = clazz.getSuperclass();
+    public static void removeGridFSFiles(MorphiaQuery q, String... fieldNames) {
+        q.retrievedFields(true, "_id");
+        for (Key<Model> key: q.fetchKeys()) {
+            Object id = key.getId();
+            removeGridFSFiles(q.getEntityClass().getSimpleName(), id, fieldNames);
         }
-        return fields;
-    }
-
-    public Blob binaryFieldGet(String field) {
-        if (isNew()) {
-            try {
-                Field f = this.getClass().getField(field);
-                return (Blob)f.get(this);
-            } catch (Exception e) {
-                Logger.warn(e, "Error return blob field %s", field);
-                return null;
-            } 
-        }
-        String fieldName = String.format("%s_%s_%s", this.getClass()
-                .getSimpleName(), StringUtils.capitalize(field), getId());
-        Logger.debug("binaryFieldGet(): %s new: %s", fieldName, isNew());
-        Blob b = new Blob(fieldName);
-        return b.exists() ? b : null;
     }
 
     // -- auto timestamp methods
@@ -698,6 +733,10 @@ public class Model implements Serializable, play.db.Model {
     public long _getModified() {
         throw new UnsupportedOperationException(
                 "Please annotate model with @AutoTimestamp annotation");
+    }
+    
+    private static void postEvent_(MorphiaEvent event, Object context) {
+        PlayPlugin.postEvent(event.getId(), context);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -739,7 +778,24 @@ public class Model implements Serializable, play.db.Model {
 
         public long delete() {
             long l = count();
+            postEvent_(MorphiaEvent.ON_BATCH_DELETE, this);
+            Model m = null;
+            try {
+                Constructor c = c_.getDeclaredConstructor();
+                if (!c.isAccessible()) {
+                    c.setAccessible(true);
+                }
+                m = (Model)c.newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException("Cannot init model class", e);
+            }
+            m.h_OnBatchDelete(this);
+            m.deleteBlobsInBatch(this);
             ds().delete(q_);
+            if (null != m) {
+                m.h_BatchDeleted(this);
+            }
+            postEvent_(MorphiaEvent.BATCH_DELETED, this);
             return l;
         }
 
@@ -931,7 +987,7 @@ public class Model implements Serializable, play.db.Model {
             String reduce = String
                     .format("function(obj, prev){if (obj.%s > prev.%s) prev.%s = obj.%s}",
                             field, field, field, field);
-            return aggregate_(field, null, (long)Integer.MIN_VALUE, reduce, null,
+            return aggregate_(field, null, Long.MIN_VALUE + 1, reduce, null,
                     groupKeys);
         }
 
@@ -943,7 +999,7 @@ public class Model implements Serializable, play.db.Model {
             String reduce = String
                     .format("function(obj, prev){if (obj.%s < prev.%s) prev.%s = obj.%s}",
                             field, field, field, field);
-            return aggregate_(field, null, (long)Integer.MAX_VALUE, reduce, null,
+            return aggregate_(field, null, Long.MAX_VALUE - 1, reduce, null,
                     groupKeys);
         }
 
@@ -1131,6 +1187,16 @@ public class Model implements Serializable, play.db.Model {
     public @interface AutoTimestamp {
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    public @interface Column {
+        /** The name of the key to store the field in; Defaults to the field name. */
+        String value() default Mapper.IGNORED_FIELDNAME;
+
+        /** Specify the concrete class to instantiate. */
+        Class<?> concreteClass() default Object.class;
+    }
+
     /**
      * NoID is used to annotate on sub types which is sure to get ID field from
      * parent type
@@ -1144,4 +1210,109 @@ public class Model implements Serializable, play.db.Model {
     public @interface NoId {
     }
 
+    /**
+     * OnLoad mark a method be called after an new instance of an entity is initialized and
+     * before the properties are filled with mongo db columns
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface OnLoad {
+    }
+
+    /**
+     * OnLoad mark a method be called immediately after an entity loaded from mongodb
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface Loaded {
+    }
+
+    /**
+     * OnAdd mark a method be called before an new entity is saved. If any exception get thrown
+     * out in the method the entity will not be saved
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface OnAdd {
+    }
+
+    /**
+     * OnUpdate mark a method be called before an existing entity is saved. If any exception get thrown
+     * out in the method the entity will not be saved
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface OnUpdate {
+    }
+    
+    /**
+     * Added mark a method be called after an new entity is saved.
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface Added {
+    }
+    
+    /**
+     * Updated mark a method be called after an existing entity is saved.
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface Updated {
+    }
+    
+    /**
+     * OnDelete mark a method be called before an entity is deleted. If any exception throw out
+     * in this method the entity will not be removed
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface OnDelete {
+    }
+    
+    /**
+     * Deleted mark a method be called after an entity is deleted
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface Deleted {
+    }
+    
+    /**
+     * OnBatchDelete mark a method be called before a query's delete method get called. If any exception throw out
+     * in this method the query deletion will be canceled
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface OnBatchDelete {
+    }
+    
+    /**
+     * Deleted mark a method be called after an a query deletion executed
+     * 
+     * @author luog
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
+    public @interface BatchDeleted {
+    }
+    
 }

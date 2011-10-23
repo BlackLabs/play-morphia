@@ -12,6 +12,7 @@ import com.google.code.morphia.annotations.Reference;
  * children.
  * 
  */
+@SuppressWarnings("serial")
 @Entity
 public class Parent extends Model
 {

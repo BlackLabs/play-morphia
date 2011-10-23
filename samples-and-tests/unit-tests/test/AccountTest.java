@@ -9,10 +9,7 @@ import org.junit.Test;
 
 import play.Logger;
 import play.modules.morphia.AggregationResult;
-import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
-
-import com.mongodb.*;
 
 public class AccountTest extends UnitTest {
 
@@ -105,7 +102,7 @@ public class AccountTest extends UnitTest {
         a1.save();
         Account a2 = new Account("loginabc", "a@a.x");
         a2.save();
-        Set set = Account._distinct("email");
+        Set<?> set = Account._distinct("email");
         assertSame(2, set.size());
         Account a3 = new Account("login123", "a@a.b", "SG");
         a3.save();

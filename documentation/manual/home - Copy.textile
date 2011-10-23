@@ -1,0 +1,361 @@
+Updates in 1.2.4
+* Improved GridFS access performance
+* Support GridFS delete on both query delete and model entity delete
+* Support new lifecycle annotations for better performance
+* Fix bug in Yabe sample admin view
+
+Updates in 1.2.3d
+* Fix bug: NullPointerException to fetch blob field before an new field saved
+
+Updates in 1.2.3c
+* Create index on _created and _modified fields for models annotated with @AutoTimestamp
+
+Updates in 1.2.3beta1
+* Support aggregation operations: max,min,sum,average,count and their group peers
+* Support connecting to replica set. Thanks https://github.com/taligent for his contribution
+* Supports custom keys to find relations by ID. Thanks https://github.com/zash80 for his contribution
+
+Updates in 1.2.2beta1
+* This is an important and purely community driven release which includes the following updates:
+** Support GridFS, thanks Alexander Reelsen (alr@emplify.de) for his contribution!
+** Added a morphiaFixture tag. This allows models to be loaded and deleted from within Selenium test cases. Thanks Agile Consulting (http://www.agileconsulting.biz) for their contribution
+** Bug fix: Choices list for Reference Collection was always empty. Thanks Lepnio (https://github.com/lepnio) for his contribution
+
+Updates in 1.2.1beta6
+* Fix bug: IllegalStateException of "User defined ID should be populated before persist" when saving a subtype model with @Id fields defined in parent type
+
+Updates in 1.2.1beta5
+* Add disableValidation() to Model. This is useful when your different subtype model have different fields
+* Add @NoId annotation. This help to resolve issue discussed in https://groups.google.com/forum/#!topic/play-framework/hPWJCvefPoI/discussion
+
+Updates in 1.2.1beta4
+* Upgrade morphia to 1.0-snapshot and mongo lib to 2.6.1
+
+Updates in 1.2.1beta3
+* Limited support for multiple mongodb databases
+
+Updates in 1.2.1beat2
+* "test" db used if no database configured and a warning issued
+* clear idCache when calling MorphiaFixtures.deleteX
+* support auto timestamp
+
+Updates in 1.2.1beta1
+* Make it compatible with play-1.2.x
+
+Updates in 1.2beta-6
+* Support filter (where clause) in Model.Factory.count and Model.Factory.fetch
+* Add @Global annotated ObjectIdBinder to app. This could fix issue #5
+* Revert morphia library to 0.99-Snapshot as a workaround for issue #16
+
+Updates in 1.2beta-5:
+* Fix issue: https://github.com/greenlaw110/play-morphia/issues#issue/12
+* Support simple where clause in MorphiaPlugin.MorphiaModelLoader.fetch|count
+
+Updates in 1.2beta-4:
+* morphia lib updated to 0.99 release
+* mongo driver updated to 0.24 release
+
+Updates in 1.2beta-3:
+* Fixed issues: 7,8,9, see http://github.com/greenlaw110/play-morphia/issues
+* Add new configuration: morphia.defaultWriteConcern
+
+Updates in 1.2beta-2:
+* Fix bug: Play reload cause MappingException (https://github.com/greenlaw110/play-morphia/issues#issue/6)
+* Supress some debug information (change debug to trace) in MorphiaEnhancer and MorphiaPlugin
+
+Updates in 1.2beta:
+* Upgrade Morphia Library to 0.99-SNAPSHOT, mongodb driver to 2.3
+* Better generic support in Model query methods. Now you don't need type cast for methods return a of entities. But if you use field or criteria in your expression, type cast is still needed
+* Support new Or query interface which is released since morphia-0.97
+
+Note using Long as IdType (configured with "morphia.id.type") and you have @Reference annotation in your model entities, then you will be in trouble. Check <a href="http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973">this</a> thread for detail. Yabe sample has been updated and now use ObjectId as ID type for the same reason
+
+Known Issues: 
+1. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/5">StackOverflowError with unbind</a>
+2. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/6">Play reload cause MappingException</a>
+
+Updates in 1.1d:
+* Fix bug: Play reload cause MappingException (https://github.com/greenlaw110/play-morphia/issues#issue/6)
+* Supress some debug information (change debug to trace) in MorphiaEnhancer and MorphiaPlugin
+
+Updates in 1.1c:
+* Fix bug in MorphiaFixture: delete(Class<Model>) -> delete(Class<? extends Model)
+
+Updates in 1.1b: 
+* Yabe unit test passed 
+* Add isNew() method to Model 
+* Model.save() now return Model object which is comply to JPAModel; Use Model.save2() to return Key<Model> 
+
+Updates in 1.1a:
+* Fix problems with User defined @Id field 
+* Add information to document on how to create user defined @Id field entity 
+
+h1. Morphia module
+
+The Morphia module bridge play.db.Model to mongodb. 
+<script type="text/javascript" src="http://www.ohloh.net/p/485871/widgets/project_users_logo.js"></script>
+
+This module depends on morphia project hosted on <a href="http://code.google.com/p/morphia/">googlecode</a>
+<script type="text/javascript" src="http://www.ohloh.net/p/484627/widgets/project_partner_badge.js"></script>
+
+h2. <a>Motivation</a>
+
+In the begining I want to use existing <a href="http://www.playframework.org/modules/mongo">play-mongo</a> plugin. However it lack some features I need, including:
+* support map (relatively long) java name to (short) mongo db name
+* create (inique) index on field
+* life cycle management: @PreLoad, @PostPersist etc.
+
+I've come across with <a href="http://code.google.com/p/morphia/">morphia</a> project and feel it is exactly what I need. Juust need to write some code to bridge it to existing data model of play framework. And it comes out this plugin.
+
+h2. <a>features</a>
+
+Morphia module provides complete bridge from play.db.Model to mongo, meaning your application needs very limited change to migrate from JPA/RDBMS to mongodb:
+
+* Annotations:
+** Entity (support short collection name), like javax.persistence.Entity combined with javax.persistence.Table
+** Id, like javax.persistence.Id. Usually you don't need to provide @Id marked fields as MorphiaEnhancer will generate one for you.
+** Property (support short field name), like javax.persistence.Column
+** Indexed (support unique and dropDups), enable you mark fields needs index
+** Transient, mark fields which should be ignored
+** Embedded, mark a entity which should be embedded in another entity, or a field of host entity which is an embedded entity
+*** Note class annotated with @Embedded shall NOT extends play.modules.morphia.Model class
+** Life cycle annotations: PreLoad, PrePersist, PostLoad, PostPersist...
+** and many other useful annotations you can find at <a href="http://code.google.com/p/morphia/wiki/EntityAnnotation">here</a>
+** AutoTimestamp(start from version 1.2.1beta2), this is play-morphia (rather than morphia) annotation. When your model is annotated with this annotation, the plugin will automatically add two fields to the class:
+*** public long _created; // the field get filled with System.currentTimeMills() when an new model is saved. To access the field, call myModel._getCreated()
+*** public long _modified; // the field get filled with System.currentTimeMills() whenever a model is saved. To access the field, call myModel._getModified()
+
+* play.db.Model support
+** Yes, you can use almost all existing interface without changing your code. You can even load yml data by Fixtures.load(). You can also use find("byXAndY", ...) 
+style query. However SQL/JQL query not supported. Take a look at the YABE sample code to see how things like "Post.find("postedAt < ? order by postedAt desc", postedAt).first();" be translated into "(Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();". There is also an example in Tag.java showing you how SQL aggregation is completed using mongodb mapReduce. Note, you can't simply use Fixtures.deleteXX() methods to get rid of testing data, use MorphiaFixtures.deleteXX() instead.
+** (new in 1.2beta-5) simple where string support in Model.Factory.fetch|count:
+*** where string could be one of: "prop = val", "prop in (val1, val2, ...)", "prop1 = val1 and prop2 = val2 and prop3 in (val1, val2, val3, ..) ..."
+
+* Dynamic Id support
+** MongoDB suggest use org.bson.types.ObjectId as the type for Id field, there are good reason to use that b/c u don't have go to database for new id generation. However
+if you like use Long (an obvious motivation is CRUD's route file recongnize number only...), you are free to do it. Just add this line in your application.conf: "morphia.id.type=Long" Morphia will handle everything for you Long type ID generation. You are free to mark your own Id field with any type (better to be String) like Tag.name. In that case, Morphia will
+not manage your Id field
+
+* CRUD support
+** Yeah! Morphia support CRUD transparently. However there are some inherited limitation with Embedded entity type: MongoDb prevent Id field for any embedded document, thus you cannot manage embedded entities using CRUD like Comment in YABE sample.
+
+* Data binding and validation
+** Feel free to your faviourite "Binder.bind(user, "User", params.all());" or "User.edit(user, "User", params.all());", and call "Validation.valid(user);" to validate
+http request params.
+
+* Indexing
+** You don't need to create index manually. Just map your field with @Indexed. Morphia will ensure the index is created upon your play application startup
+
+* Aggregation
+** You can aggregate data based on queries and group by fields. Limitations:
+*** The max/min/sum/average/count aggregation operate on one field each time. A low level group() interface could be used for complicated use case
+*** Having clause in tranditional SQL is not supported. You will need to filter the result list in memory to achieve the same result. See http://rickosborne.org/download/SQL-to-MongoDB.pdf
+*** The interface support aggregation on field in the same collection. group by a reference collection does not supported yet. You will need to use map-reduce to archieve the result
+
+h2. <a>Dependencies</a>
+
+* Play: Play-1.2
+
+h2. <a>Usage</a>
+
+h3. <a>Configuration</a>
+
+bc.. ## Morphia module configuration
+# load morphia module
+module.morphia=${play.path}/modules/morphia
+# where your mongodb server located?
+morphia.db.host=ckweb
+# what's your mongodb server port
+morphia.db.port=27017 
+# what's your database name
+morphia.db.name=yabe
+# Authentication to your mongodb server
+#morphia.db.username=user
+#morphia.db.password=pass
+# configure your ID field type
+# could be either ObjectId or Long, default to ObjectId
+morphia.id.type=Long
+# Set default write concern, see http://api.mongodb.org/java/current/com/mongodb/class-use/WriteConcern.html
+#morphia.defaultWriteConcern=safe
+
+h3. <a>Create domain model using Morphia</a>
+
+bc.. package models;
+ 
+import play.data.validation.Email;
+import play.data.validation.Required;
+import play.modules.morphia.Model;
+import play.modules.morphia.Blob;
+import com.google.code.morphia.annotations.Entity;
+ 
+@Entity
+public class User extends Model {
+ 
+    @Email
+    @Required
+    public String email;
+    
+    @Required
+    public String password;
+    
+    public String fullname;
+    
+    public boolean isAdmin;
+    
+    // Blob type field support start from v1.2.2beta1
+    public Blob photo;
+    
+    // image Type could be something like "image/jpeg" etc.
+    public User(String email, String password, String fullname, File photo, String imageType) {
+        this.email = email;
+        this.password = password;
+        this.fullname = fullname;
+        this.photo = new Blob(photo, imageType);
+    }
+    
+    public static User connect(String email, String password) {
+        return find("byEmailAndPassword", email, password).first();
+    }
+    
+    public String toString() {
+        return email;
+    }
+ 
+}
+
+p. Note @Embedded class shall NOT extend play.modules.morphia.Model class
+
+p. User.java is almost not changed from what it is in Play sample_and_tests. The only differences is Model is now play.modules.morphia.Model and Entity becomes com.google.code.morphia.annotations.Entity
+
+h3. <a>Migrate JQL query to MongoDB query</a>
+
+h4. JPA Style
+
+bc..     public Post previous() {
+        return Post.find("postedAt < ? order by postedAt desc", postedAt).first();
+    } 
+    
+h4. Morphia style:
+
+bc..     public Post previous() {
+        return (Post) Post.filter("postedAt <", postedAt).order("-postedAt").get();
+    }
+
+h3. <a>Aggregation</a>
+
+h4. JPA:
+
+bc..     public static List<Map> getCloud() {
+        List<Map> result = Tag.find(
+            "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
+        ).fetch();
+        return result;
+    }
+
+h4.. MapReduce style:
+
+bc..     private static final String m_ = "function() {this.tags.forEach(function (t) {emit (t, {count:1});});}";
+    private static final String r_ = "function(v, vs){var t=0;for(var i=0;i<vs.length;++i){t+=vs[i].count}return{tag: v, count:t}}";
+    public static List<Map<String, Integer>> getCloud(Query<? extends Model> query) {
+        List<Map<String, Integer>> result = new ArrayList<Map<String, Integer>>();
+        Datastore ds = MorphiaPlugin.ds();
+        DBCollection dbCol = ds.getCollection(Post.class);
+        MapReduceOutput out = dbCol.mapReduce(m_, r_, null, query == null ? null : ((QueryImpl<? extends Model>)query).getQueryObject());
+        for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+            DBObject dbo = itr.next();
+            DBObject k_v = (DBObject)dbo.get("value");
+            Map<String, Integer> m = new HashMap<String, Integer>();
+            m.put((String)k_v.get("tag"), ((Double)k_v.get("count")).intValue());
+            result.add(m);
+        }
+        return result;
+    }
+    
+p. This part looks not so elegant. I hope it could be simplified in the future.
+
+h4.. New Aggregation interface (start from version 1.2.3beta1)
+
+bc..     public static void aggregateInterface() {
+        long sum = Account.sum("sales"); // sales is an numeric field of collection account
+        long sum = Account.q("region", "AU").sum("sales"); // get sum of sales of all account in AU region
+        AggregationResult r = Account.groupMax("sales", "region"); // max sales grouped by region
+        long maxAU = r.getResult("region", "AU"); // max sales account in AU
+        r = Account.groupMin("sales", "region"); // min sales grouped by region
+        long minUS = r.getResult("region", "US"); // min sales account in US
+        long average = Account.q("department", "IT").average("cost"); // IT department's average cost
+    }
+    
+
+h2. <a>FAQ</a>
+
+h3. Why do I get the following error while running my play app in prod mode?
+
+bc.. play.exceptions.JavaExecutionException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.jobs.Job.call(Job.java:119)
+        at Invocation.Job(Play!)
+Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one
+ or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.test.Fixtures.load(Fixtures.java:214)
+        at Bootstrap.doJob(Bootstrap.java:21)
+        at play.jobs.Job.doJobWithResult(Job.java:37)
+        at play.jobs.Job.call(Job.java:110)
+        
+p. This problem happens on Play v1.1-beta1. Please switch to latest 1.1 version
+
+h3. How to create an "OR" relation query?
+
+bc..     Query q = myPost.createQuery(); // create a Query
+    q.or(q.criteria("title").contains("mongodb"), q.criteria("content").contains("mongodb"), ...);
+    List<play.db.Model> l = new ArrayList<play.db.Model>();
+    l.add(q.order("-postedAt").limit(10).asList()); // sort the result by postedAt desc order and fetch at most 10 items
+    return l;
+
+h3. How to do aggregation?
+
+Scroll up this page until you see "Aggregation with MapReduce".
+
+h3. There is a lot of compilation and runtime errors with this plugin!
+
+Make sure you have checked "Dependences" section already
+
+h3. Why do you choose Morphia? I've heard that GuiceyMongo is faster
+
+Well the goal of Play-Morphia is to provide a way to help Play app developer to migrate their existing apps from RDBMS (via JPA) to MongoDB with least effort. Morphia is by far the best thing I can find provides JPA style (annotation) access to mongodb. If you are developing new Play application, and would like to try a different way, GuiceyMongo might be a good choice for you.
+
+h3. How to create Entity with user defined @Id field?
+
+* Add @com.google.code.morphia.annotations.Id annotation to the field you want to use as an ID field, e.g. : @Id name;
+* Override the following methods declared in play.modules.morphia.Model:
+
+bc..     @Override public Object getId() {return name;}
+    @Override protected void setId_(Object id) {name = id.toString();}
+    protected static Object processId_(Object id) {return id.toString();}
+
+p. Make sure you always populated your @Id field before calling model.save(), don't let framework to generate Id for you b/c framework has no knowledge on how to do it
+
+It's better to keep your @Id field type to be java.lang.String.
+
+h3. I got "Can not use dot-notation past  ..." exception when I try to query entity using relationship, what happened?
+
+p. Basically this error occurred when you try to query an entity using referenced entity property. E.g. Post p = Post.filter("author.email", "bob@gmail.com").first(). The solution is:
+
+bc.. User bob = User.filter("email", "bob@gmail.com").first();
+Post p = Post.filter("author", bob).first();
+
+p. If the relationship is embedded rather than reference, you can safely use "dot" notation to do the query
+ 
+h3. How do I know if an entity object is an new object just constructed in the memory or represents a data (either by save or load from db) in a db?
+
+p. Use obj.isNew()
+
+h3. I try to call Fixtures.deleteAll() in my unit test setup methods, but I found the data is still there, what happened?
+
+p. The deleteAll() methods defined in play.test.Fixtures are hooked with JPA based database, try to use MorphiaFixtures.deleteAll() instead. Actually you are encouraged to use MorphiaFixtures in replace of Fixtures to deal with your Morphia models for all methods call.
+
+h3. Why setting morphia.defaultWriteConcern does not work?
+
+p. A <a href='http://code.google.com/p/morphia/issues/detail?id=209'>bug</a> of current version (at the time v0.99) of morphia suppress this setting
+
+h3. I get duplicate ID field error. 
+
+p. If you define sub type models Morphia will probably enhance and add @Id field to both sub type and parent type. Therefore you got 2 @Id field in sub type model. To resolve the problem, annotate your sub type or parent type with @NoId annotation (available in morphia-1.2.1beta5)

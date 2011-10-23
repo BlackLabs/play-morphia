@@ -27,8 +27,11 @@ import play.data.binding.Binder;
 import play.db.Model.Factory;
 import play.exceptions.ConfigurationException;
 import play.exceptions.UnexpectedException;
+import play.modules.morphia.Model.MorphiaQuery;
+import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.StringUtil;
 
+import com.google.code.morphia.AbstractEntityInterceptor;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Morphia;
 import com.google.code.morphia.annotations.Embedded;
@@ -36,10 +39,12 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
 import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
+import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
@@ -52,7 +57,27 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.3d";
+    public static final String VERSION = "1.2.4";
+    
+    public static void info(String msg, Object... args) {
+        Logger.info(msg_(msg, args));
+    }
+    
+    public static void debug(String msg, Object... args) {
+        Logger.debug(msg_(msg, args));
+    }
+
+    public static void warn(String msg, Object... args) {
+        Logger.warn(msg_(msg, args));
+    }
+
+    public static void error(String msg, Object... args) {
+        Logger.error(msg_(msg, args));
+    }
+
+    public static void fatal(String msg, Object... args) {
+        Logger.fatal(msg_(msg, args));
+    }
 
     private static String msg_(String msg, Object... args) {
         return String.format("MorphiaPlugin-" + VERSION + "> %1$s",
@@ -66,7 +91,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private static Morphia morphia_ = null;
     private static Datastore ds_ = null;
     private static GridFS gridfs;
-
+    
     private static boolean configured_ = false;
 
     public static boolean configured() {
@@ -113,9 +138,29 @@ public class MorphiaPlugin extends PlayPlugin {
 
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
-        onConfigurationRead(); // ensure configuration be read before
+        //onConfigurationRead(); // ensure configuration be read before
                                // enhancement
+        initIdType_();
         e_.enhanceThisClass(applicationClass);
+    }
+    
+    private static List<IMorphiaEventHandler> eventHandlers_ = new ArrayList<IMorphiaEventHandler>();
+    
+    public static void registerEventHandler(IMorphiaEventHandler handler) {
+        if (null == handler) throw new NullPointerException();
+        if (!eventHandlers_.contains(handler)) eventHandlers_.add(handler);
+    }
+    
+    void onLifeCycleEvent(MorphiaEvent event, Model model) {
+        for (IMorphiaEventHandler h: eventHandlers_) {
+            event.invokeOn(h, model);
+        }
+    }
+    
+    void onBatchLifeCycleEvent(MorphiaEvent event, MorphiaQuery query) {
+        for (IMorphiaEventHandler h: eventHandlers_) {
+            event.invokeOn(h, query);
+        }
     }
 
     private static Mongo mongo_;
@@ -212,6 +257,53 @@ public class MorphiaPlugin extends PlayPlugin {
                         + dbName);
             }
         }
+        
+        // - idtype init moved out of this method
+        
+        morphia_ = new Morphia();
+        ds_ = morphia_.createDatastore(mongo_, dbName);
+        dataStores_.put(dbName, ds_);
+
+        String uploadCollection = c.getProperty("morphia.collection.upload",
+                "uploads");
+        gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
+        
+        morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor(){
+            @Override
+            public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
+                    ((Model)ent).h_OnLoad();
+                }
+            }
+            
+            @Override
+            public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    Model m = (Model)ent;
+                    PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
+                    m.h_Loaded();
+                }
+            }
+        });
+
+        configured_ = true;
+
+        // // now it's time to enhance the model classes
+        // ApplicationClass ac = null;
+        // try {
+        // for (ApplicationClass ac0: Play.classes.all()) {
+        // ac = ac0;
+        // new MorphiaEnhancer().enhanceThisClass_(ac);
+        // }
+        // } catch (Exception e) {
+        // throw new UnexpectedException("Error enhancing class: " + ac.name);
+        // }
+        // afterApplicationStart_();
+    }
+    
+    private void initIdType_() {
+        Properties c = Play.configuration;
         if (c.containsKey("morphia.id.type")) {
             Logger.debug("Morphia> reading id type...");
             String s = c.getProperty("morphia.id.type");
@@ -228,33 +320,12 @@ public class MorphiaPlugin extends PlayPlugin {
                         s);
             }
         }
-        morphia_ = new Morphia();
-        ds_ = morphia_.createDatastore(mongo_, dbName);
-        dataStores_.put(dbName, ds_);
-
-        String uploadCollection = c.getProperty(PREFIX + "collection.upload",
-                "uploads");
-        gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
-
-        configured_ = true;
-
-        // // now it's time to enhance the model classes
-        // ApplicationClass ac = null;
-        // try {
-        // for (ApplicationClass ac0: Play.classes.all()) {
-        // ac = ac0;
-        // new MorphiaEnhancer().enhanceThisClass_(ac);
-        // }
-        // } catch (Exception e) {
-        // throw new UnexpectedException("Error enhancing class: " + ac.name);
-        // }
-        // afterApplicationStart_();
     }
 
     @Override
     public void onApplicationStart() {
-        configured_ = false;
-        onConfigurationRead();
+//        configured_ = false;
+//        onConfigurationRead();
         configureDs_();
         Logger.info(msg_("loaded"));
     }

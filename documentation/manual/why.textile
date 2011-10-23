@@ -1,0 +1,16 @@
+h1. Why PlayMorphia
+
+**"Morphia project":http://code.google.com/p/morphia/** has provided a lightweight and easy way to integrate power of "MongoDB":http://www.mongodb.org/ into Java application. There is absolute no problem to use Morphia directly in your Play application. So why do you bother with PlayMorphia module? Let's see take a looks at a set of codes and understand why using PlayMorphia is a better approach when you are developing Play application:
+
+h2. Define entity model class
+
+Given a very simple model class, PlayMorphia require the class to extends @play.modules.morphia.Model@. You don't need to extend any class if you are using pure Morphia. However, you must declare an <code>@ID</code> field in your model class. In addition, the application developer needs to provide a way to ensure the model class is "mapped":http://code.google.com/p/morphia/wiki/MappingObjects.
+
+!images/why-model-class!
+
+h2. CRUD and Query
+
+PlayMorphia provides most natural way to do Create-Read-Update-Delete-Query operations on entity instance. Though it's still quite easy to do that in pure Morphia also:
+
+!images/why-model-usage!
+

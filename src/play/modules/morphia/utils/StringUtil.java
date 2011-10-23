@@ -7,24 +7,38 @@ public class StringUtil {
     public static String join(String separator, Collection<?> list) {
         return join(separator, null, null, list);
     }
-
-    public static String join(String separator, String prefix, String suffix,
-            Collection<?> list) {
+    
+    public static String join(String separator, Collection<?> list, boolean quoted) {
+        return join(separator, null, null, list, quoted);
+    }
+    
+    public static String join(String separator, String prefix, String suffix, Collection<?> list, boolean quoted) {
         StringBuilder sb = new StringBuilder();
 
         if (null != prefix)
             sb.append(prefix).append(separator);
 
         Iterator<?> itr = list.iterator();
-        if (itr.hasNext())
+        if (itr.hasNext()) {
+            if (quoted) sb.append("\"");
             sb.append(itr.next());
+            if (quoted) sb.append("\"");
+        }
         while (itr.hasNext()) {
-            sb.append(separator).append(itr.next());
+            sb.append(separator);
+            if (quoted) sb.append("\"");
+            sb.append(itr.next());
+            if (quoted) sb.append("\"");
         }
 
         if (null != suffix)
             sb.append(separator).append(suffix);
         return sb.toString();
+    }
+
+    public static String join(String separator, String prefix, String suffix,
+            Collection<?> list) {
+        return join(separator, prefix, suffix, list, false);
     }
 
     public static String join(String separator, String... list) {
@@ -68,5 +82,22 @@ public class StringUtil {
             return s1.equals(s2);
         }
     }
+    
+    public static String lowerFirstChar(String s) {
+        if (StringUtil.isEmpty(s)) return s;
+        String init = s.substring(0, 1);
+        String rest = s.substring(1);
+        return String.format("%s%s", init.toLowerCase(), rest);
+    }
 
+    private static void echo(String msg, Object... args) {
+        System.out.println(String.format(msg, args));
+    }
+    
+    public static void main(String[] sa) {
+        echo("%s", lowerFirstChar(""));
+        echo("%s", lowerFirstChar("s"));
+        echo("%s", lowerFirstChar("S"));
+        echo("%s", lowerFirstChar("Photo"));
+    }
 }
