@@ -25,5 +25,6 @@ In addition to existing "Morphia lifecycle methods":http://code.google.com/p/mor
 |@Added|called after an *new* entity is persisted into DB|good chance to do log/track etc|
 |@OnUpdate|called before an *existing* entity is persisted into DB|good place to calculate db properties from derived properties|
 |@Uploaded|called after an *existing* entity is persisted into DB|good place to do log/track etc|
-|@OnDelete|called before an *existing* entity is deleted
+|@OnDelete|called before an *existing* entity is deleted||
+|@Deleted|calledd after an *existing* entity is deleted||
 

@@ -78,7 +78,13 @@ public class Model implements Serializable, play.db.Model {
 
     @Override
     public void _delete() {
+        if (isNew()) return;
+        postEvent_(MorphiaEvent.ON_DELETE, this);
+        h_OnDelete();
         ds().delete(this);
+        deleteBlobs();
+        h_Deleted();
+        postEvent_(MorphiaEvent.DELETED, this);
     }
 
     // -- porting from play.db.GenericModel
@@ -486,13 +492,12 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings("unchecked")
     public <T extends Model> T delete() {
-        if (isNew()) throw new IllegalStateException();
-        postEvent_(MorphiaEvent.ON_DELETE, this);
-        h_OnDelete();
+        if (isNew()) {
+            Logger.warn("invocation of delete on new entity ignored");
+            return (T) this;
+        }
+        
         _delete();
-        deleteBlobs();
-        h_Deleted();
-        postEvent_(MorphiaEvent.DELETED, this);
         
         return (T) this;
     }
