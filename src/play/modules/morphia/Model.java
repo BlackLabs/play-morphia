@@ -37,8 +37,6 @@ import play.mvc.Scope.Params;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Key;
 import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.PostLoad;
-import com.google.code.morphia.annotations.PostPersist;
 import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
@@ -367,9 +365,6 @@ public class Model implements Serializable, play.db.Model {
         return !saved_;
     }
 
-    @SuppressWarnings("unused")
-    @PostLoad
-    @PostPersist
     private void setSaved_() {
         saved_ = true;
     }
@@ -491,6 +486,7 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings("unchecked")
     public <T extends Model> T delete() {
+        if (isNew()) throw new IllegalStateException();
         postEvent_(MorphiaEvent.ON_DELETE, this);
         h_OnDelete();
         _delete();
@@ -668,9 +664,14 @@ public class Model implements Serializable, play.db.Model {
         if (isNew) h_OnAdd(); else h_OnUpdate();
         Key<? extends Model> k = ds().save(this);
         saveBlobs();
-        if (isNew) h_Added(); else h_Updated();
+        if (isNew) {setSaved_();h_Added();} else h_Updated();
         postEvent_(isNew ? MorphiaEvent.ADDED : MorphiaEvent.UPDATED, this);
         return k;
+    }
+    
+    public void _h_Loaded() {
+        setSaved_();
+        h_Loaded();
     }
     
     public void h_OnLoad() {

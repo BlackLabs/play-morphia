@@ -14,3 +14,16 @@ PlayMorphia provides most natural way to do Create-Read-Update-Delete-Query oper
 
 !images/why-model-usage!
 
+h2. More control on entity lifecycle management
+
+In addition to existing "Morphia lifecycle methods":http://code.google.com/p/morphia/wiki/LifecycleMethods, PlayMorphia provides an new set of lifecycle annotation and callback interfaces for application and plugin developer to use:
+
+|_. Annotation|_. Description|_. Comment|
+|@OnLoad|called before an entity is filled with DB data|not used usually|
+|@Loaded|called after an entity is filled with DB data|good place to calculate derived properties, e.g. full name|
+|@OnAdd|called before an *new* entity is persisted into DB|good place to calculate db properties from derived properties|
+|@Added|called after an *new* entity is persisted into DB|good chance to do log/track etc|
+|@OnUpdate|called before an *existing* entity is persisted into DB|good place to calculate db properties from derived properties|
+|@Uploaded|called after an *existing* entity is persisted into DB|good place to do log/track etc|
+|@OnDelete|called before an *existing* entity is deleted
+

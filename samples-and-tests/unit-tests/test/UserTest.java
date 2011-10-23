@@ -62,6 +62,7 @@ public class UserTest extends UnitTest {
     public void testStoreUser() {
         User u = new User();
         u.name = "alex";
+        assertTrue(u.isNew());
         u.save();
 
         assertFalse(u.isNew());
@@ -74,6 +75,7 @@ public class UserTest extends UnitTest {
         User u = new User();
         u.name = "alex";
         u.photo = blob;
+        assertTrue(u.isNew());
         u = u.save();
 
         assertFalse(u.isNew());
@@ -85,6 +87,7 @@ public class UserTest extends UnitTest {
 
         // Now load the user from zero
         u = User.find("byName", "alex").first();
+        assertFalse(u.isNew());
         assertThatPhotoBlobIsValid(u.photo.getGridFSFile());
     }
     

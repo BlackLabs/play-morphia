@@ -282,7 +282,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 if (ent instanceof Model) {
                     Model m = (Model)ent;
                     PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
-                    m.h_Loaded();
+                    m._h_Loaded();
                 }
             }
         });

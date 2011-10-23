@@ -52,8 +52,9 @@ Everything you need to know about PlayMorphia
 ## "Play JPA style interfaces":query#jpa
 ## "Other useful interfaces":query#misc
 # "Advanced topics":advance
-## "Statistics: aggregation and grouping":advanced#stat
-# "Play!Framework integration":play
+## "Statistics: aggregation and grouping":statistics
+## "Handle lifecycle events":lifecycle#event
+# "Play integration":play
 ## "CRUD Support":play#crud
 ## "Lifecycle events":play#event
 ## "Morphia Fixture":play#fixture

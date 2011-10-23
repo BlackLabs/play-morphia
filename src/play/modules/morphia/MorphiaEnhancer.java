@@ -438,7 +438,7 @@ public class MorphiaEnhancer extends Enhancer {
                     try {
                         m0 = ctClass.getDeclaredMethod(mn);
                     } catch (Exception e) {
-                        m0 = CtMethod.make(String.format("protected void %s(){}", mn), ctClass);
+                        m0 = CtMethod.make(String.format("protected void %s(){}", mn, mn), ctClass);
                         ctClass.addMethod(m0);
                     }
                     
