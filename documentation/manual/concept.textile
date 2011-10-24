@@ -1,0 +1,71 @@
+h1. The main concepts
+
+PlayMorphia plugin is a Object-MongoDB mapping tool integrated with Play!Framework.
+
+h2. <a name="arch">System architecture</a>
+
+Build on top of Play!framework plugin infrastructure and "Morphia":http://code.google.com/p/morphia/ library, PlayMorphia hides complexity and provides an easy-to-user interface to application developers for MongoDB access.
+
+!images/play-morphia-arch!
+
+h2. <a name="mongodb">Understand MongoDB</a>
+
+_"MongoDB (from 'humongous') is a scalable, high-performance, open source, document-oriented database.":http://www.mongodb.org_
+
+Unlike traditional SQL databases, MongoDB's document oriented storage persist data in "JSON-style documents":http://bsonspec.org/ with "dynamic schemas":http://www.mongodb.org/display/DOCS/Schema+Design.
+
+h3. <a name="connection">Connection</a>
+
+"Connection":http://www.mongodb.org/display/DOCS/Connections is a concept used in classic client-server system. In our context, MongoDB provides server process; your application takes the client role. In order to access server(MongoDB) resources, your application needs to connect to server.
+
+p(note). In PlayMorphia, you configure the connection to MongoDB server with the @morphia.db.seeds@ configuration. See "here":start#database
+
+h3. <a name="database">Database</a>
+
+MongoDB use "databases":http://www.mongodb.org/display/DOCS/Databases to group a set of collections of data. A MongoDB server supports multiple databases. Each one of them are separate from each other, for security and ease of management.
+
+p(note). At the moment PlayMorphia supports mapping data model to only *one* database though you are free to configure multiple databases. To configure the database used in your application, you use @morphia.db.name@ configuration. See "here":start#database
+
+h3. <a name="collection">Collection</a>
+
+A "collection":http://www.mongodb.org/display/DOCS/Collections is roughly a table in traditional SQL database products. It groups a set of document(data) and (though not accurately) corresponds to a "Morphia Model":model#basic class in your application.
+
+By default PlayMorphia map your model class to the collection with the same name of the model class. E.g. suppose you have the following model class:
+
+bc. @Entity public class User extends Model {...}
+
+A collection named "*User*" will be created in your MongoDB database to store all the user document. However it is possible to specify a collection with different name. Let's say if I want the User class be mapped to a collection name "*profile*", I could do it in this way:
+
+bc. @Entity("profile") public class User extends Model {...}
+
+p(note). Click "here":annotation#entity for more information about the <code>@Entity</code> annotation.
+
+h3. <a name="document">Document</a>
+
+"Document":http://www.mongodb.org/display/DOCS/Documents is the way MongoDB call the record. The relationship between document and collection is just like that between row and table.
+
+In PlayMorphia, one document corresponds to an instance of your Model class. You can easily "create":crud#create, "read":crud#read, "update":crud#update and "delete":crud#update a document by invoking corresponding method built into your Model class.
+
+h2. <a name="morphia">Understand Morphia</a>
+
+Created by Mr. Scott Hernandez,  _"“Morphia is a type-safe library for mapping Java objects to/from MongoDB”":http://code.google.com/p/morphia/_. 
+
+The Morphia library is the cornerstone of PlayMorphia module, and it's also how this module is named. **Morphia** library provides the following functions in this module:
+
+# Mapping between Java Object and MongoDB document
+# Query interface
+
+Most interfaces/tools provided with Morphia have been carefully encapsulated or exposed in PlayMorphia in a way that make the programmer feel easy and comfortable. Actually it's hard for you to aware that you are using Morphia or any other tools. Like other stuff in Play, things just happen naturally.
+
+p(note). An interesting question is "Can I use Morphia directly in my Play application?". Yes you can. But before you go ahead with that way, make sure you have read "Why PlayMorphia":why.
+
+h2. <a name="play">PlayMorphia, seamless integration of MongoDB access into Play!Framework</a> 
+
+MongoDB is wonderful, Morphia is nice, Play is amazing. PlayMorphia bring you a way to integrate these cool stuff together. With PlayMorphia module, writing code with MongoDB as backend in Play is not only easy but also fun!
+
+# "Simple configuration":start#simple
+# Automatically mapping model classes
+# DB access methods built into your model class
+# Transparent GridFS support
+# Clear entity lifecycle event handling
+# Powerful statistics in simple interface

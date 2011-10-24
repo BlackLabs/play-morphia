@@ -1,13 +1,9 @@
-import java.util.List;
-
 import models.AutoTs;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import play.Logger;
-import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
 public class AutoTsTest extends UnitTest {

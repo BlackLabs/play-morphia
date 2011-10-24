@@ -39,6 +39,16 @@ public class Blob implements BinaryField {
         DBObject queryObj = new BasicDBObject("name", id);
         file = MorphiaPlugin.gridFs().findOne(queryObj);
     }
+    
+    public void delete() {
+        if (null == file) return;
+        MorphiaPlugin.gridFs().remove((ObjectId)file.getId());
+    }
+    
+    public static GridFSDBFile findFile(String name) {
+        DBObject queryObj = new BasicDBObject("name", name);
+        return MorphiaPlugin.gridFs().findOne(queryObj);
+    }
 
     @Override
     public InputStream get() {

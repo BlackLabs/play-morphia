@@ -36,9 +36,11 @@
                     <li class="${request.controller == 'Tags' ? 'selected' : ''}">
                         <a href="@{Tags.list()}">Tags</a>
                     </li>
+                    *{
                     <li class="${request.controller == 'Comments' ? 'selected' : ''}">
                         <a href="@{Comments.list()}">Comments</a>
                     </li>
+                    }*
                     <li class="${request.controller == 'Users' ? 'selected' : ''}">
                         <a href="@{Users.list()}">Users</a>
                     </li>

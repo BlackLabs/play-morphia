@@ -1,16 +1,10 @@
-import java.util.List;
-
 import models.Extend;
 
-import org.junit.Assert;
+import org.bson.types.ObjectId;
 import org.junit.Before;
 import org.junit.Test;
 
-import play.Logger;
-import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
-
-import org.bson.types.ObjectId;
 
 public class ExtendTest extends UnitTest {
     

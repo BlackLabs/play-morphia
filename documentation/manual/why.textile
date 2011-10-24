@@ -1,0 +1,41 @@
+h1. Why PlayMorphia
+
+**"Morphia project":http://code.google.com/p/morphia/** has provided a lightweight and easy way to integrate power of "MongoDB":http://www.mongodb.org/ into Java application. There is absolute no problem to use Morphia directly in your Play application. So why do you bother with PlayMorphia module? Let's see take a looks at a set of codes and understand why using PlayMorphia is a better approach when you are developing Play application:
+
+h2. Define entity model class
+
+Given a very simple model class, PlayMorphia require the class to extends @play.modules.morphia.Model@. You don't need to extend any class if you are using pure Morphia. However, you must declare an <code>@ID</code> field in your model class. In addition, the application developer needs to provide a way to ensure the model class is "mapped":http://code.google.com/p/morphia/wiki/MappingObjects.
+
+!images/why-model-class!
+
+h2. CRUD and Query
+
+PlayMorphia provides most natural way to do Create-Read-Update-Delete-Query operations on entity instance. Though it's still quite easy to do that in pure Morphia also:
+
+!images/why-model-usage!
+
+h2. Statistics
+
+Like all other interfaces provided, PlayMorphia provides a set of clean an simple interface for application developer to do statistics on their models:
+
+_TODO_ 
+
+h2. More control on entity lifecycle management
+
+In addition to existing "Morphia lifecycle methods":http://code.google.com/p/morphia/wiki/LifecycleMethods, PlayMorphia provides an new set of lifecycle annotation for application developer to use:
+
+|_. Annotation|_. Description|_. Comment|
+|@OnLoad|called before an entity is filled with DB data|not used usually|
+|@Loaded|called after an entity is filled with DB data|good place to calculate derived properties, e.g. full name|
+|@OnAdd|called before an *new* entity is persisted into DB|good place to calculate db properties from derived properties|
+|@Added|called after an *new* entity is persisted into DB|good chance to do log/track etc|
+|@OnUpdate|called before an *existing* entity is persisted into DB|good place to calculate db properties from derived properties|
+|@Uploaded|called after an *existing* entity is persisted into DB|good place to do log/track etc|
+|@OnDelete|called before an *existing* entity is deleted|not used usually|
+|@Deleted|calledd after an *existing* entity is deleted|good place to do log/track etc|
+|@OnBatchDelete|called before a set of entities (specified by query) is deleted|good place to retrieve set of entity IDs;better to be declared on static method|
+|@BatchDeleted|called after a set of entities (specified by query) is deleted|good place to do log track;better to be declared on static method|
+
+These annotations could be put on methods of your model class. There is no requirement on method visible scope (e.g. private, package, protected, public). Methods shall not return any object. There is shall be no argument declared in annotated methods except <code>@OnBatchDelete</code> and <code>@BatchDeleted</code>. The methods with "batch" annotations must have one argument: @play.modules.morphia.Model.MorphiaQuery@. It's recommended that "batch" annotated methods be declared as static methods, all other annotated methods be decalred as non-static one, but this is not required. 
+
+p(note). In addition to the above annotations, PlayMorphia provides two events distribution mechanisms to enable application and/or plugin developers to inject their logic interactive with entity lifecycles. Please refer to "Lifecycle events":lifecycle#event for details 
