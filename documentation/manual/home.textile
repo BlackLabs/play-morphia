@@ -9,12 +9,14 @@ h2. <a name="started">Getting started</a>
 Your first steps with PlayMorphia module and your first 5 minutes of fun.
 
 # "PlayMorphia overview":overview
+<div style="display:none">
 # "Watch the screencast":http://screenr.com/
 # "Five cool things you can do with PlayMorphia":5things
 # "Frequently Asked Questions":faq
 # %(next)"Installation and Configuration":start%
 # "Your first application —— the ‘Hello World’ tutorial":firstapp
 # "Sample applications":samples
+</div>
 
 h2. <a name="guide">Tutorials -- PlayMorphia guide, adapt YABE from JPA to PlayMorphia</a>
 
@@ -38,7 +40,8 @@ Everything you need to know about PlayMorphia
 ## "Store blob data into GridFS":model#gridfs
 ## "Automatic timestamp":model#timestamp
 ## "Create index":model#index
-## "Advanced Model topics":model#advanced
+## "Advanced Model topics":advance#model
+<div style="display:none">
 # "Use PlayMorphia model in your application":crud
 ## "Create an new model instance":crud#create
 ## "Read from mongodb":crud#read
@@ -64,3 +67,4 @@ h2. <a name="reference">References</a>
 # "Configuration":config
 # "Annotations":annotation
 # "API":todo
+</div>

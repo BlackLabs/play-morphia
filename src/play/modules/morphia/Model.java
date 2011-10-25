@@ -235,6 +235,13 @@ public class Model implements Serializable, play.db.Model {
         return false;
     }
 
+    public boolean validateAndCreate() {
+        if (Validation.current().valid(this).ok) {
+            return create();
+        }
+        return false;
+    }
+
     /**
      * This method is deprecated as Embedded object shall not extends Model class
      * and shall not be enhanced

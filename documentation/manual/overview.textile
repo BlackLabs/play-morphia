@@ -89,6 +89,8 @@ int minAge_AU_IT = (int)minValueDistribution.get("region department", "AU", "IT"
 
 h2. Entity Lifecycle callbacks
 
+p(note). The content documented in this section are new to PlayMorphia v1.2.4. For life cyle annotations used before v1.2.4 please go to "Morphia documentation":http://code.google.com/p/morphia/wiki/LifecycleMethods
+
 Sometimes it's interesting to listen to the lifecycle events of an entity and proceed with relevant logics. For example, you want to log an entry input, or you want to send an notification email on entry removed. PlayMorphia provides a set of lifecycle annotations to mark the methods to be called when certain event triggered: 
 
 bc. @Entity public class User {
