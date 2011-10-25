@@ -1,0 +1,21 @@
+require:
+    - play [1.2.3,)
+    - com.sumall -> play-morphia 1.2.3d-sumall         # MongoDB access - http://www.playframework.org/modules/morphia
+
+
+
+repositories:
+    - morphia:
+        type: iBiblio 
+        root: "http://morphia.googlecode.com/svn/mavenrepo/" 
+        contains:
+            - com.google.code.morphia -> *
+    - sumAllModules:
+        type: chain 
+        using: 
+            - localModules: 
+                type: local 
+                descriptor: "${application.path}/../../conf/dependencies.yml" 
+                artifact: "${application.path}/../../dist/[module]-[revision].zip"
+        contains:
+            - com.sumall -> *

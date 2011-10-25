@@ -3,6 +3,8 @@ build.bat
 .classpath
 .project
 .eclipse
+eclipse
 lib/play-morphia.jar
 dist
 lib
+samples-and-tests/simple/modules
