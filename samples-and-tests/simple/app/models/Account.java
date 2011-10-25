@@ -1,5 +1,5 @@
 package models;
-
+ 
 import play.data.validation.Email;
 import play.data.validation.Required;
 import play.modules.morphia.Model;
