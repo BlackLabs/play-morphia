@@ -7,6 +7,7 @@ import play.modules.morphia.Model;
 import com.google.code.morphia.annotations.Id;
 
 
+@SuppressWarnings("serial")
 public abstract class Base extends Model {
 	@Id
 	public ObjectId _id;

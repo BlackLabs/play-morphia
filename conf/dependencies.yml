@@ -1,7 +1,7 @@
-self: com.sumall -> play-morphia 1.2.3d-sumall
+self: play -> morphia 1.2.4
 
 require:
-    - play [1.2.3,)
+    - play [1.2,)
     - org.mongodb -> mongo-java-driver [2.6.5,)         # Mongodb driver.  Specify updated version due to https://jira.mongodb.org/browse/JAVA-362
     - com.google.code.morphia -> morphia 1.00-SNAPSHOT:
         exclude:

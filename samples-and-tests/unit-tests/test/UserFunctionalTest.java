@@ -9,7 +9,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import play.Logger;
 import play.mvc.Http.Response;
 import play.test.FunctionalTest;
 

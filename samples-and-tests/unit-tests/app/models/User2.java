@@ -6,11 +6,10 @@ import play.modules.morphia.Model;
 import com.google.code.morphia.annotations.Entity;
 
 @SuppressWarnings("serial")
-@Entity(noClassnameStored = true)
-public class User extends Model {
+@Entity(value="User", noClassnameStored = true)
+public class User2 extends Model {
 
-    @Column("nm")
-    public String name;
+    public String nm;
     public Blob photo;
     public String tag = "testing";
     

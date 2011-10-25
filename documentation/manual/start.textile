@@ -1,0 +1,43 @@
+h1. Getting start with PlayMorphia
+
+h2. <a name="install">Install PlayMorphia</a>
+
+You can choose to install PlayMorphia module into your Play!Framework or install PlayMorphia to your Play application only.
+
+To install PlayMorphia module into your Play!Framework just type "@play install morphia@", the current version of PlayMorphia module will be download and installed into your local module repository. Or you want to choose to install a specific version of PlayMorphia module, you need to attach version number to "@morphia@". E.g. "@play install morhpia-1.2.4@" will install PlayMorphia version 1.2.4 into your local module repository.
+
+To install PlayMorphia module into your Play application, you need to edit @conf/dependencies.yml@ file:
+
+bc. require:
+    - play -> morphia [1.2.4,)
+
+The above dependency file declare PlayMorphia module version 1.2.4 or up to be installed into your application module repository. Once you have declared PlayMorphia module into your @conf/dependencies.yml@ file, you can run "@play deps --sync@" to install the module. 
+
+If you have already installed PlayMorphia module into your Play!Framework module repository then a pesudo link file will be created inside your @modules@ directory of your Application point to your local PlayMorphia installation. Otherwise Play will download PlayMorphia module from official Play module repository and installed into @modules@ directory of your application
+
+h2. <a name="config">Configure PlayMorphia</a>
+
+There are quite a bit of configuration items you could use to setting up your PlayMorphia module. All items has default value therefore you could use that module without single lines of configuration. However there are several configuration you might want to touch in a real production environment.
+
+<a name="database">**MongoDB Database**</a>
+
+The most commonly used configuration is to set which database to be used by your application in MongoDB
+
+bc. # configure mongodb host and port. Default value: 127.0.0.1:27017
+morphia.db.seeds=127.0.0.1:27017
+#
+# configure mongodb authentication
+# - username. Default value: empty
+morphia.db.username=user
+# - password. Default value: empty
+morphia.db.password=pass
+#
+# configure database name. Default value: test
+morphia.db.name=test
+
+<a name="misc">**Other settings**</a>
+
+bc. # configure gridfs collection name. Default value: uploads
+morphia.collection.upload=uploads
+
+p(note). In most cases all you need is just one line of configuration: <a name="simple">@morphia.db.name=mydb@</a>
