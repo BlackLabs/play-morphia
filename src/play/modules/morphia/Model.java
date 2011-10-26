@@ -766,7 +766,6 @@ public class Model implements Serializable, play.db.Model {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static class MorphiaQuery {
         
-        //TODO making this an instance method would make the design cleaner
         public static Datastore ds(String dsName) {
             return MorphiaPlugin.ds(dsName);
         }
@@ -1001,8 +1000,10 @@ public class Model implements Serializable, play.db.Model {
             }
             String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
 
-            return (List<CommandResult>) ds(dsName).getCollection(c_).group(key,
+            DBObject results = ds(dsName).getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
+            
+            return (List<CommandResult>)results;
         }
 
         private AggregationResult aggregate_(String field, DBObject initial,
