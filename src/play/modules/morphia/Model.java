@@ -78,13 +78,11 @@ public class Model implements Serializable, play.db.Model {
 
     @Override
     public void _delete() {
-        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
-        ds(dsName).delete(this);
-
         if (isNew()) return;
         postEvent_(MorphiaEvent.ON_DELETE, this);
         h_OnDelete();
-        ds().delete(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        ds(dsName).delete(this);
         deleteBlobs();
         h_Deleted();
         postEvent_(MorphiaEvent.DELETED, this);
@@ -767,8 +765,6 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static class MorphiaQuery {
-        
-        //TODO making this an instance method would make the design cleaner
         public static Datastore ds(String dsName) {
             return MorphiaPlugin.ds(dsName);
         }
@@ -807,8 +803,6 @@ public class Model implements Serializable, play.db.Model {
 
         public long delete() {
             long l = count();
-            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
-            ds(dsName).delete(q_);
             postEvent_(MorphiaEvent.ON_BATCH_DELETE, this);
             Model m = null;
             try {
@@ -822,6 +816,7 @@ public class Model implements Serializable, play.db.Model {
             }
             m.h_OnBatchDelete(this);
             m.deleteBlobsInBatch(this);
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
             ds(dsName).delete(q_);
             if (null != m) {
                 m.h_BatchDeleted(this);
@@ -1004,8 +999,10 @@ public class Model implements Serializable, play.db.Model {
             }
             String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
 
-            return (List<CommandResult>) ds(dsName).getCollection(c_).group(key,
+            DBObject results = ds(dsName).getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
+            
+            return (List<CommandResult>)results;
         }
 
         private AggregationResult aggregate_(String field, DBObject initial,
@@ -1253,7 +1250,7 @@ public class Model implements Serializable, play.db.Model {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE})
     public @interface Datasource {
-        String name() default "DEFAULT_DS_NAME";
+        String name() default "default";
     }
 
     /* OnLoad mark a method be called after an new instance of an entity is initialized and

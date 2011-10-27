@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import play.Logger;
 import play.modules.morphia.AggregationResult;
+import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
 public class AccountTest extends UnitTest {
@@ -36,6 +37,8 @@ public class AccountTest extends UnitTest {
         a1 = new Account("login456", "a@a.x", "CN", "SA");
         a1.score = 18;
         a1.save();
+        
+        assertEquals(4, Account.count());
     }
     
     @Test
@@ -50,6 +53,7 @@ public class AccountTest extends UnitTest {
     public void testDelete() {
         Account before = new Account("loginxyz", "a@a.a");
         before.save();
+        
         Assert.assertEquals(1, Account.count());
         before.delete();
         Assert.assertEquals(0, Account.count());
@@ -164,6 +168,14 @@ public class AccountTest extends UnitTest {
     
     @Test
     public void testCount() {
+        assertEquals(0, Account.count());
+        setUpAggregation();
+        assertEquals(4, Account.count());
+        
+    }
+    
+    @Test
+    public void testGroupCount() {
         setUpAggregation();
         AggregationResult r = Account.groupCount("score", "region");
         assertSame(2L, r.getResult("region", "CN"));

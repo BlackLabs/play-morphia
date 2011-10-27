@@ -1,19 +1,4 @@
-self: play -> morphia 1.2.4
+self: com.sumall -> play-morphia 1.2.4
 
 require:
-    - play [1.2,)
-    - org.mongodb -> mongo-java-driver [2.6.5,)         # Mongodb driver.  Specify updated version due to https://jira.mongodb.org/browse/JAVA-362
-    - com.google.code.morphia -> morphia 1.00-SNAPSHOT:
-        exclude:
-            - cglib -> *                                # exists in Play, don't want to pull in a newer version
-    - javassist -> javassist 3.9.0.GA                   # exists in Play
-    - commons-lang -> commons-lang 2.6                  # exists in Play    
-    - com.google.code.gson -> gson 1.7.1                # exists in Play
-
-
-repositories:
-    - morphia:
-        type: iBiblio 
-        root: "http://morphia.googlecode.com/svn/mavenrepo/" 
-        contains:
-            - com.google.code.morphia -> *
+    - play 1.2

@@ -50,7 +50,7 @@ public class LifeCycleBenchmark extends UnitTest {
         Logger.info("legacy: %s", d0);
         Logger.info("new: %s", d1);
 
-        assertTrue(d1 < d0);
+        assertTrue((d1 - d0) < 100);
     }
     
     private long l(int times) {

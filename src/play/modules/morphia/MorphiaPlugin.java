@@ -35,6 +35,7 @@ import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.StringUtil;
 
+import com.google.code.morphia.AbstractEntityInterceptor;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Morphia;
 import com.google.code.morphia.annotations.Embedded;
@@ -42,10 +43,12 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
 import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
+import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
@@ -102,9 +105,6 @@ public class MorphiaPlugin extends PlayPlugin {
     public static final String DEFAULT_DS_NAME = "default";
     
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
-    private static Morphia morphia_ = null;
-    private static Datastore ds_ = null;
-    private static GridFS gridfs;
     private static boolean configured_ = false;
 
     public static boolean configured() {
@@ -152,21 +152,6 @@ public class MorphiaPlugin extends PlayPlugin {
         return ds;
     }
     
-//TODO was this being used anywhere?
-//  public static Datastore ds(String dbName) {
-//  if (StringUtil.isEmpty(dbName))
-//      return ds();
-//  Datastore ds = dataStores_.get(dbName);
-//  if (null == ds) {
-//      Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
-//      ds = dataStores_.putIfAbsent(dbName, ds0);
-//      if (null == ds) {
-//          ds = ds0;
-//      }
-//  }
-//  return ds;
-//}
-    
     private static GridFS gridfs_ = null;
 
     public static GridFS gridFs() {
@@ -176,11 +161,6 @@ public class MorphiaPlugin extends PlayPlugin {
     private static final ConcurrentMap<String, Morphia> 
         morphias_ = new ConcurrentHashMap<String, Morphia>();
     
-//    @Deprecated
-//    public static Morphia morphia() {
-//        return morphias_.get(DEFAULT_DS_NAME);
-//    }
-
     public static Morphia morphia(String datasourceName) {
         return morphias_.get(datasourceName);
     }
@@ -188,8 +168,7 @@ public class MorphiaPlugin extends PlayPlugin {
     
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
-        //onConfigurationRead(); // ensure configuration be read before
-                               // enhancement
+        //onConfigurationRead(); // ensure configuration be read before enhancement
         initIdType_();
         e_.enhanceThisClass(applicationClass);
     }
@@ -306,18 +285,6 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
         configured_ = true;
-
-        // // now it's time to enhance the model classes
-        // ApplicationClass ac = null;
-        // try {
-        // for (ApplicationClass ac0: Play.classes.all()) {
-        // ac = ac0;
-        // new MorphiaEnhancer().enhanceThisClass_(ac);
-        // }
-        // } catch (Exception e) {
-        // throw new UnexpectedException("Error enhancing class: " + ac.name);
-        // }
-        // afterApplicationStart_();
     }
     
     
@@ -389,7 +356,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private static final ConcurrentMap<String, DB> dbs_ = 
             new ConcurrentHashMap<String, DB>();
     
-    private void initializeDatasource(String datastoreName) {
+    private synchronized void initializeDatasource(String datastoreName) {
         Properties c = Play.configuration;
         String prefix = (null == datastoreName || "".equals(datastoreName)) ? PREFIX : PREFIX + datastoreName + ".";
         String dsKey = (null == datastoreName || "".equals(datastoreName)) ? DEFAULT_DS_NAME : datastoreName;
@@ -440,6 +407,26 @@ public class MorphiaPlugin extends PlayPlugin {
         Datastore ds = morphia.createDatastore(mongo, dbName);
         ds.ensureIndexes();
         
+        morphia.getMapper().addInterceptor(new AbstractEntityInterceptor(){
+            @Override
+            public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
+                    ((Model)ent).h_OnLoad();
+                }
+            }
+            
+            @Override
+            public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    Model m = (Model)ent;
+                    PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
+                    m._h_Loaded();
+                }
+            }
+        });
+        
+        
         String writeConcern = Play.configuration.getProperty("morphia.defaultWriteConcern", "safe");
         if (null != writeConcern) {
             ds.setDefaultWriteConcern(WriteConcern.valueOf(writeConcern.toUpperCase()));
@@ -448,6 +435,7 @@ public class MorphiaPlugin extends PlayPlugin {
         dataStores_.put(dsKey, ds);
         Logger.debug("Datasource %s initialized", dsKey);
         
+        configured_ = true;
     }
 
     private void initIdType_() {
@@ -470,7 +458,7 @@ public class MorphiaPlugin extends PlayPlugin {
     }
     
     private final Pattern gridFSKeyPattern = 
-            Pattern.compile(PREFIX + "([a-zA-Z0-9]+).collection.upload");
+            Pattern.compile("morphia" + "([a-zA-Z0-9]+).collection.upload");
 
     //GridFS is special, it must be be configured on only one node 
     //in a multi-node configuration due to have the Blob class in implemented
@@ -497,11 +485,11 @@ public class MorphiaPlugin extends PlayPlugin {
         String gridFsUploadDir = null;
         
         if (null != gridFsKeyName && !"".equals(gridFsKeyName)) {
-            gridFsUploadDir = c.getProperty(gridFsKeyName, "upload");
+            gridFsUploadDir = c.getProperty(gridFsKeyName, "uploads");
             dbName = gridFsNodeName;
             
         } else {
-            gridFsUploadDir = c.getProperty(PREFIX + "collection.upload", "upload");
+            gridFsUploadDir = c.getProperty("morphia.collection.upload", "uploads");
             dbName = DEFAULT_DS_NAME;
         }
        
@@ -518,10 +506,11 @@ public class MorphiaPlugin extends PlayPlugin {
     
     @Override
     public void onApplicationStart() {
-        configured_ = false;
-        onConfigurationRead();
+        //configured_ = false;
+        //onConfigurationRead();
         
         for (Morphia morphia : morphias_.values()) {
+            if (morphia == null) throw new ConfigurationException("Morphia instance is somehow null");
             configureDs_(morphia);
         }
         
@@ -554,7 +543,7 @@ public class MorphiaPlugin extends PlayPlugin {
             if (clz.isAnnotationPresent(Entity.class)) {
                 try {
                     debug("mapping class: %1$s", clz.getName());
-                    morphia_.map(clz);
+                    morphia.map(clz);
                 } catch (ConstraintViolationException e) {
                     error(e, "error mapping class [%1$s]", clz);
                     pending.add(clz);
@@ -567,7 +556,7 @@ public class MorphiaPlugin extends PlayPlugin {
             for (Class<?> clz : pending) {
                 try {
                     debug("mapping class: ", clz.getName());
-                    morphia_.map(clz);
+                    morphia.map(clz);
                     pending.remove(clz);
                 } catch (ConstraintViolationException e) {
                     error(e, "error mapping class [%1$s]", clz);
@@ -620,16 +609,34 @@ public class MorphiaPlugin extends PlayPlugin {
         return super.bind(name, clazz, type, annotations, params);
     }
 
+    //TODO add a cache or figure out a bytecode enhancement
+    public static final ConcurrentMap<Class, String> datasourceNameMap = new ConcurrentHashMap<Class, String>();
     public static String getDatasourceNameFromAnnotation(Class clazz) {
-        if (Model.class.isAssignableFrom(clazz)) {
-            for (Annotation annotation : clazz.getAnnotations()) {
-                if (Datasource.class.isAssignableFrom(annotation.annotationType())) {
-                    Datasource ds = (Datasource)annotation;
-                    return ds.name();
+        
+        if (datasourceNameMap.containsKey(clazz)) {
+            return datasourceNameMap.get(clazz);
+            
+        } else {
+        
+            if (Model.class.isAssignableFrom(clazz)) {
+                for (Annotation annotation : clazz.getAnnotations()) {
+                    if (Datasource.class.isAssignableFrom(annotation.annotationType())) {
+                        Datasource ds = (Datasource)annotation;
+                        
+                        datasourceNameMap.put(clazz, ds.name());
+                        warn("associating %s with %s", clazz, ds.name());
+                        
+                        return ds.name();
+                    }
                 }
             }
+            
+            datasourceNameMap.put(clazz, DEFAULT_DS_NAME);
+            return DEFAULT_DS_NAME; 
+        
+        
         }
-        return DEFAULT_DS_NAME;
+        
     }
     
     @Override
