@@ -267,7 +267,7 @@ public class MorphiaEnhancer extends Enhancer {
         }
 
         // count
-        CtMethod count = CtMethod.make("public static long count() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCount(\" + className + \"); }", ctClass);
+        CtMethod count = CtMethod.make("public static long count() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCount(" + className + "); }", ctClass);
         ctClass.addMethod(count);
 
         // count (String keys, Object... params)
