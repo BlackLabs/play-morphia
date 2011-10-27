@@ -105,6 +105,8 @@ public class MorphiaPlugin extends PlayPlugin {
     private static GridFS gridfs;
     
     private static boolean configured_ = false;
+    
+    private static boolean appStarted_ = false;
 
     public static boolean configured() {
         return configured_;
@@ -240,7 +242,12 @@ public class MorphiaPlugin extends PlayPlugin {
     public void onConfigurationRead() {
         if (configured_)
             return;
-        debug("Morphia> reading configuration");
+        debug("reading configuration");
+        configureConnection_();
+        configured_ = true;
+    }
+    
+    private void configureConnection_() {
         Properties c = Play.configuration;
 
         String seeds = c.getProperty(PREFIX + "seeds");
@@ -251,7 +258,11 @@ public class MorphiaPlugin extends PlayPlugin {
             String port = c.getProperty(PREFIX + "port", "27017");
             mongo_ = connect_(host, port);
         }
-
+    }
+    
+    private void initMorphia_() {
+        Properties c = Play.configuration;
+        
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
             warn("mongodb name not configured! using [test] db");
@@ -265,9 +276,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
         }
-        
-        // - idtype init moved out of this method
-        
+
         morphia_ = new Morphia();
         ds_ = morphia_.createDatastore(mongo_, dbName);
         dataStores_.put(dbName, ds_);
@@ -293,20 +302,6 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
         });
-
-        configured_ = true;
-
-        // // now it's time to enhance the model classes
-        // ApplicationClass ac = null;
-        // try {
-        // for (ApplicationClass ac0: Play.classes.all()) {
-        // ac = ac0;
-        // new MorphiaEnhancer().enhanceThisClass_(ac);
-        // }
-        // } catch (Exception e) {
-        // throw new UnexpectedException("Error enhancing class: " + ac.name);
-        // }
-        // afterApplicationStart_();
     }
     
     private void initIdType_() {
@@ -330,28 +325,24 @@ public class MorphiaPlugin extends PlayPlugin {
 
     @Override
     public void onApplicationStart() {
-//        configured_ = false;
-//        onConfigurationRead();
+        if (!appStarted_) {
+            // reload all at dev mode
+            configureConnection_();
+        }
+        initMorphia_();
         configureDs_();
-        info("loaded");
+        info("initialized");
+        appStarted_ = true;
     }
 
     @Override
     public void onInvocationException(Throwable e) {
         if (e instanceof MongoException.Network) {
-            // try restart morphia plugin
             error("MongoException.Network encountered. Trying to restart mongo...");
-            configured_ = false;
-            onConfigurationRead();
+            configureConnection_();
+            initMorphia_();
         }
     }
-
-    // @Override
-    // public void detectChange() {
-    // ds_.getMongo().close();
-    // onConfigurationRead();
-    // afterApplicationStart();
-    // }
 
     private void configureDs_() {
         List<Class<?>> pending = new ArrayList<Class<?>>();
@@ -397,7 +388,6 @@ public class MorphiaPlugin extends PlayPlugin {
             ds().setDefaultWriteConcern(
                     WriteConcern.valueOf(writeConcern.toUpperCase()));
         }
-        info("initialized");
     }
 
     @Override
