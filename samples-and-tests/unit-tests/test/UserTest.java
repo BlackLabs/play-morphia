@@ -73,7 +73,6 @@ public class UserTest extends UnitTest {
     }
 
     @Test
-    @Ignore("_saved should not be persisted, this test seems wrong")
     public void testStoreUserWithAttachment() throws IOException {
         User u = new User();
         u.name = "alex";

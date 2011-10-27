@@ -765,7 +765,6 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static class MorphiaQuery {
-        
         public static Datastore ds(String dsName) {
             return MorphiaPlugin.ds(dsName);
         }
@@ -1251,7 +1250,7 @@ public class Model implements Serializable, play.db.Model {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE})
     public @interface Datasource {
-        String name() default "DEFAULT_DS_NAME";
+        String name() default "default";
     }
 
     /* OnLoad mark a method be called after an new instance of an entity is initialized and

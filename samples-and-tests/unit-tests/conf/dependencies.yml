@@ -1,3 +1,4 @@
 require:
     - play
-    - play -> crud 1.2.3
+    - play -> crud
+

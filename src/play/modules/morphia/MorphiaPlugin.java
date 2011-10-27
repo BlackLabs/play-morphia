@@ -35,6 +35,7 @@ import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.StringUtil;
 
+import com.google.code.morphia.AbstractEntityInterceptor;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Morphia;
 import com.google.code.morphia.annotations.Embedded;
@@ -42,10 +43,12 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
 import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
+import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
@@ -404,6 +407,26 @@ public class MorphiaPlugin extends PlayPlugin {
         Datastore ds = morphia.createDatastore(mongo, dbName);
         ds.ensureIndexes();
         
+        morphia.getMapper().addInterceptor(new AbstractEntityInterceptor(){
+            @Override
+            public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
+                    ((Model)ent).h_OnLoad();
+                }
+            }
+            
+            @Override
+            public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
+                if (ent instanceof Model) {
+                    Model m = (Model)ent;
+                    PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
+                    m._h_Loaded();
+                }
+            }
+        });
+        
+        
         String writeConcern = Play.configuration.getProperty("morphia.defaultWriteConcern", "safe");
         if (null != writeConcern) {
             ds.setDefaultWriteConcern(WriteConcern.valueOf(writeConcern.toUpperCase()));
@@ -412,6 +435,7 @@ public class MorphiaPlugin extends PlayPlugin {
         dataStores_.put(dsKey, ds);
         Logger.debug("Datasource %s initialized", dsKey);
         
+        configured_ = true;
     }
 
     private void initIdType_() {
@@ -434,7 +458,7 @@ public class MorphiaPlugin extends PlayPlugin {
     }
     
     private final Pattern gridFSKeyPattern = 
-            Pattern.compile(PREFIX + "([a-zA-Z0-9]+).collection.upload");
+            Pattern.compile("morphia" + "([a-zA-Z0-9]+).collection.upload");
 
     //GridFS is special, it must be be configured on only one node 
     //in a multi-node configuration due to have the Blob class in implemented
@@ -461,11 +485,11 @@ public class MorphiaPlugin extends PlayPlugin {
         String gridFsUploadDir = null;
         
         if (null != gridFsKeyName && !"".equals(gridFsKeyName)) {
-            gridFsUploadDir = c.getProperty(gridFsKeyName, "upload");
+            gridFsUploadDir = c.getProperty(gridFsKeyName, "uploads");
             dbName = gridFsNodeName;
             
         } else {
-            gridFsUploadDir = c.getProperty(PREFIX + "collection.upload", "upload");
+            gridFsUploadDir = c.getProperty("morphia.collection.upload", "uploads");
             dbName = DEFAULT_DS_NAME;
         }
        
@@ -586,16 +610,33 @@ public class MorphiaPlugin extends PlayPlugin {
     }
 
     //TODO add a cache or figure out a bytecode enhancement
+    public static final ConcurrentMap<Class, String> datasourceNameMap = new ConcurrentHashMap<Class, String>();
     public static String getDatasourceNameFromAnnotation(Class clazz) {
-        if (Model.class.isAssignableFrom(clazz)) {
-            for (Annotation annotation : clazz.getAnnotations()) {
-                if (Datasource.class.isAssignableFrom(annotation.annotationType())) {
-                    Datasource ds = (Datasource)annotation;
-                    return ds.name();
+        
+        if (datasourceNameMap.containsKey(clazz)) {
+            return datasourceNameMap.get(clazz);
+            
+        } else {
+        
+            if (Model.class.isAssignableFrom(clazz)) {
+                for (Annotation annotation : clazz.getAnnotations()) {
+                    if (Datasource.class.isAssignableFrom(annotation.annotationType())) {
+                        Datasource ds = (Datasource)annotation;
+                        
+                        datasourceNameMap.put(clazz, ds.name());
+                        warn("associating %s with %s", clazz, ds.name());
+                        
+                        return ds.name();
+                    }
                 }
             }
+            
+            datasourceNameMap.put(clazz, DEFAULT_DS_NAME);
+            return DEFAULT_DS_NAME; 
+        
+        
         }
-        return DEFAULT_DS_NAME;
+        
     }
     
     @Override

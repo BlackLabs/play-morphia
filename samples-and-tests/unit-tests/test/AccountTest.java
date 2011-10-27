@@ -54,9 +54,6 @@ public class AccountTest extends UnitTest {
         Account before = new Account("loginxyz", "a@a.a");
         before.save();
         
-        long enhancedCount = Account.ds(MorphiaPlugin.getDatasourceNameFromAnnotation(Account.class)).getCount(Account.class);
-        long count = Account.count();
-        
         Assert.assertEquals(1, Account.count());
         before.delete();
         Assert.assertEquals(0, Account.count());
@@ -171,6 +168,14 @@ public class AccountTest extends UnitTest {
     
     @Test
     public void testCount() {
+        assertEquals(0, Account.count());
+        setUpAggregation();
+        assertEquals(4, Account.count());
+        
+    }
+    
+    @Test
+    public void testGroupCount() {
         setUpAggregation();
         AggregationResult r = Account.groupCount("score", "region");
         assertSame(2L, r.getResult("region", "CN"));
