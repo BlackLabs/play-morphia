@@ -1,0 +1,128 @@
+h1. Using query
+
+Backed by Morphia project, PlayMorphia provides powerful query interface to make the "_information at your finger tips_".
+
+h2. <a name="learn">30 seconds tutorial</a>
+
+Suppose you have a model class defined as:
+
+bc. @Entity public class User extends Models {
+    public String firstName;
+    public String lastName;
+    public String country;
+    public String department;
+    public int score;
+}
+
+A typical pattern of using PlayMorphia query interface:
+
+bc. List<User> users = User.q()
+    .filter("country", "China")
+    .filter("department", "IT").asList();
+
+You could also achieve the same result with:
+
+bc. List<User> users = User.find("country,department", "China", "IT").asList();
+
+Fields can also be separated by space:
+
+bc. List<User> users = User.find("country department", "China", "IT").asList();
+
+or with the "Play JPA style":http://www.playframework.org/documentation/1.2.3/jpa#Findusingasimplifiedquery:
+
+bc. List<User> users = user.find("byCountryAndDepartment", "China", "IT").asList();
+
+h2. <a name="build">Build MorphiaQuery object</a>
+
+The simplest way to get an @MorphiaQuery@ object out from a @Model@ object is call the static @q()@ method upon the model class. Note you must call the method on your model class not the inherited @play.modules.morphia.Model@:
+
+bc. MorphiaQuery q = User.q();
+
+h2. <a name="filter">Specify query criteria using the filter interface</a>
+
+Once you have the @MorphiaQuery@ instance you could filter the return result set using the filter interface. For example, to find all users with score between 80 and 90, you use the ">" and "<" operators:
+
+bc. List<User> users = user.q().filter("score > ", 80).filter("score < 90").asList();
+
+p(note). *Note* the @filter()@ call on a @MorphiaQuery@ instance adds certain constraints to the current query instance and return "@this@" object. In other words, @filter()@ is a mutable method and not thread-safe.
+
+Here is a list of <a name="operator" href="http://code.google.com/p/morphia/wiki/Query#Operators">operators</a> you can used in PlayMorphia query:
+
+|_. operator|_. <a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-ConditionalOperators">mongo op</a>|_. description|
+|=|$eq|field value equals to the supplied object|
+|!=, <>|"$ne":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24ne|field value is not equal to the supplied object|
+| >, <, >=, <=|"$gt, $lt, $gte, $lte":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%3C%2C%3C%3D%2C%3E%2C%3E%3D|greater than, less than, greater than or equal to, less than or equal to|
+|in|"$in":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in|field value is in the supplied list [1]|
+|nin|"$nin":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nin|field value is not in the supplied list [1]|
+|elem|"$elemMatch":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24elemMatch|field (array or list) has element matches the supplied object|
+|exists|"$exists":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists|field exist (not null in Java term)|
+|all|"$all":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all|field value (array or list) contains all elements supplied by argument|
+|size|"$size":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24size|the size of field value (array or list) equals to the supplied argument|
+|type|"$type":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type|The type of the field value equals to the "type number":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type specified by argument| 
+
+For more operator information please refer to to "MongoDB Advanced Queries":http://www.mongodb.org/display/DOCS/Advanced+Queries
+
+fn1. When you have the "@in@" or "@nin@" operators in the filter constraint, you can supply the following types of parameters:
+
+# array
+# Any object with class implements <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Iterable.html">@java.lang.Iterable@</a>
+# a single object. In this case @in@ is the same as @=@, @nin@ is the same as @!=@ 
+
+h2. <a name="fetch">Fetch entities from MorphiaQuery</a>
+
+As shown above examples you can retrieve the query result in a list by invoking @asList()@ method on the @MorphiaQuery@ object:
+
+bc. List<User> = User.q().filter(...).asList();
+
+p(note). Unlike JPA, you cannot use @fetch@ to return a list of objects from @MorphiaQuery@ object. The @MorphiaQuery.fetch@ method returns an @java.lang.Iterable@ type object. @MorphiaQuery.asList()@ is the equivalence of @JPAQuery.fetch@.
+
+h3. <a name="limit">Limit the number of records returned</a>
+
+The above query returns all instance filtered by the query. To limit the number of models returned, you can invoke the @limit@ method on the query object:
+
+bc. List<User> = User.q().filter(...).limit(10).asList();
+
+h3. <a name="skip">Skip the first N number of records</a>
+
+You can also instruct query to skip first N records:
+
+bc. List<User> = User.q().filter(...).offset(10).asList();
+
+p(note). Combining @limit@ and @offset@ call you get an nice pagination support from @MorphiaQuery@
+
+h3. <a name="get">Get only one record</a>
+
+You can also fetch one model instance from the query:
+
+bc. User user = User.q().get();
+
+or
+
+bc. User user = User.get();
+
+h2. <a name="alias">Alias of queries methods</a>
+
+PlayMorphia provides aliases for query support to cater to different coding style:
+
+Attaining @MorphiaQuery@ from your model class:
+
+bc. MorphaiQuery q = User.q();
+q = User.createQuery();
+q = User.all();
+q = User.find();
+
+Filtering query on your model class:
+
+bc. List<User> users = User.q().filter("country", "China").filter("department", "IT").asList();
+users = User.q().findBy("country,department", "China", "IT").asList();
+users = User.q().findBy("byCountryAndDepartment", "China", "IT").asList();
+users = User.find("byCountryAndDepartment", "China", "IT").asList();
+users = User.find("country,department", "China", "IT").asList();
+
+h2. <a name="reference">Resources</a>
+
+# "Morphia Query interface":http://code.google.com/p/morphia/wiki/Query
+# "MongoDB Querying":http://www.mongodb.org/display/DOCS/Querying
+# "MongoDB Advanced Query":http://www.mongodb.org/display/DOCS/Advanced+Queries
+# "How do I perform SQL join equivalent in MongoDB":http://stackoverflow.com/questions/2350495/how-do-i-perform-the-sql-join-equivalent-in-mongodb
+# "Perform aggregation on Query":statistics

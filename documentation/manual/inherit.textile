@@ -1,0 +1,49 @@
+h1. Model inheritance
+
+PlayMorphia allows you easily persist you model entities across class hierarchies. There are two types of inheritance mode usually:
+
+# Abstract parent class
+# Concrete parent class
+
+Whatever mode you use your parent class must directly or indirectly extend PlayMorphia's @play.modules.morphia.Model@ class.
+
+h2. <a name="abstract">Abstract parent class</a>
+
+You cannot put <code>@Entity</code> annotation to an abstract class, thus you must put <code>@Entity</code> to the concrete child class when your parent class is abstract:
+
+bc. public abstract class Person extends Model {
+    public String fName;
+    public String lName;
+}
+@Entity
+public class Student extends Person {
+    public String major;
+    public String grade;
+}
+@Entity
+public class Teacher extends Person {
+    pubilc List<String> courses;
+}
+
+h2. <a name="concrete">Concrete parent class</a>
+
+You can choose to annotate <code>@Entity</code> to concrete parent class or not. Here is the rule:
+
+p(note). *if you have db entity corresponding to a class then you MUST annotate it with <code>@Entity</code>*
+
+So if you save entities of the the parent class, you must annotate it with the <code>@Entity</code>, otherwise you should not to save the boot-up time of your application.
+
+h3. <a name="noid">About <code>@play.modules.morphia.Model.NoId annotation</code></a>
+
+Usually if you concrete parent class is annotated with <code>@Entity</code>, the ID field is added to the parent class and it will not be added to the child class during code enhancement. However in rare time when Play load child class before parent class, the ID field will be added to the child class and later when parent class loaded it's added again, and hence we got the duplicate field found problem as described in "this":https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion thread. 
+
+It shouldn't happen theoretically, but if you found it in your environment, the <code>@play.modules.morphia.Model.NoId annotation</code> annotation could save your life. Just put it to your children class and PlayMorphia's code enhancer will not add ID to your child class anyway.
+
+h3. <a name="noClassNameStored">About <code>noClassnameStored()</code></a>
+
+By default Morphia will save the class name of the current  
+
+h2. <a name="resource">See Also</a>
+
+# "PlayMorphia Model":model
+# "Back to advanced topics":advance

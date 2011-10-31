@@ -1214,8 +1214,8 @@ public class Model implements Serializable, play.db.Model {
      * NoID is used to annotate on sub types which is sure to get ID field from
      * parent type
      * 
-     * @see https
-     *      ://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
+     * @see https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
+     *      
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
