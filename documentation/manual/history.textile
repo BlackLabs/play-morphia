@@ -1,9 +1,10 @@
 Updates in 1.2.4
+* Huge improvements on documentation
 * Improved GridFS access performance
 * Support GridFS delete on both query delete and model entity delete
 * Support new lifecycle annotations for better performance
 * Fix bug in Yabe sample admin view
-* Rewrite documentation
+* Fix bug in mongodb java driver: GridFSInputFile does not close inputstream after saved
 
 Updates in 1.2.3d
 * Fix bug: NullPointerException to fetch blob field before an new field saved

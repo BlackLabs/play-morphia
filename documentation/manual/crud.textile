@@ -1,0 +1,69 @@
+h1. Use of PlayMorphia model: CRUD
+
+Once you have created your "PlayMorphia model class":model it's easy to use it through your application.
+
+h2. <a name="create">Create an new model instance</a>
+
+There is nothing more than initializing an object and call @save()@ method on it to create an new model instance:
+
+bc. User user = new User();
+...
+user.save()
+
+h2. <a name="read">Read model from MongoDB</a>
+
+To read a model from MongoDB you will need the @ID@ object. The following sample code shows how to read @User@ model from MongoDB in a controller:
+
+bc. public static void show(String userId) {
+    notFoundIfNull(userId);
+    User user = User.findById(userId);
+    notFoundIfNull(user);
+    render(user);
+}
+
+p(note). You can always pass in @java.lang.String@ type object into @Model.findById()@ method without regarding to the real @ID@ field type. PlayMorphia model will automatically handle the type conversion.
+
+h2. <a name="update">Update model</a>
+
+Once you read a model from MongoDB you can modify it's properties and then call @save()@ method on the model instance to update the modified properties into MongoDB. The following sample code change the user's role to "admin" and save the updates to MongoDB:
+
+bc. User user = User.findById(userId);
+user.role = "admin";
+user.save();
+
+h3. <a name="batch-update">Batch update</a>
+
+Batch update not directly supported in PlayMorphia yet, but it's easy to do via the morphia @Datastore@ interface:
+
+bc. Query smartGuys = Employee.find("department", "IT").getMorphiaQuery();
+Datastore ds = Employee.ds();
+UpdateOperations incSalary = 
+    ds.createUpdateOperations(Employee.class).inc("salary", 10000);
+ds.update(smartGuys, incSalary);
+
+p(note). Refer to "Morphia documentation":http://code.google.com/p/morphia/wiki/Updating for more about updating
+
+h2. <a name="delete">Delete model</a>
+
+Call @delete()@ method on the model object if you want to delete the document it corresponding to in MongoDB:
+
+bc. User user = User.findById(userId);
+user.delete();
+
+h3. <a name="batch-delete">Batch delete</a>
+
+It's easy to do batch delete via <a href="">@MorphiaQuery@</a> interface:
+
+bc. Student.q().filter("score < ", 60).delete();
+
+To delete all record of a collection, you can do either one of the following:
+
+bc. User.deleteAll();
+User.q().delete();
+
+<a name="id"></a>
+
+h2. <a name="resource">Resources</a>
+
+# "Understanding PlayMorphia model":model
+# %(next)"Using Query":query%

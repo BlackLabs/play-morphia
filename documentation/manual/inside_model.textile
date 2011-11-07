@@ -1,0 +1,52 @@
+h1. Inside the model class
+
+The PlayMorphia Model defines the skeleton for user entity class to interact with MongoDB. It defines a group of interfaces in a single class:
+
+!images/model-arch!
+
+Some interfaces are defined in dynamic (instance) methods while others are in static methods:
+
+**Dynamic interfaces**
+
+Dynamic interfaces are methods binding to the model instance, e.g. each entity object.
+
+# Java common object contract
+#* toString, hashCode, equals
+# Implement play.db.Model
+#* _key, _save, _delete
+# Simulate play.db.jpa.GenericModel
+#* create, refresh, edit, save, merge, delete, validateAndSave, validateAndCreate(new in 1.2.4)
+# CRUD
+#* create, refresh, save, merge, delete
+# Timestamp
+#* _getCreated, _getModified
+# ID relevant methods
+#* getId, setId, processId_, isUserDefinedId_
+# Lifecycle handling (*NOT* to be used by application or plugin developers)
+#* h_*, deleteBlobs, deleteBlobsInBatch
+# GridFS/Blob field handling (*NOT* to be used by application or plugin developers)
+#* saveBlobs, deleteBlobs, deleteBlobsInBatch, getBlobFileName
+
+**Static interfaces**
+
+Static interfaces are methods binding to the model class, e.g. each entity type.
+
+# Simulate play.db.jpa.GenericModel
+#* create, edit, getModelFactory
+# CRUD
+#* get,delete, deleteAll
+# Query interfaces
+#* all, find, findAll, findById, q, filter
+# GridFS/Blob field handling (*NOT* to be used by application or plugin developers)
+#* removeGridFSFiles, getBlobFileName
+# low level interface: ds, db
+
+It's not difficult to understand why we have provided those dynamic interfaces in the model but an "OOP":http://en.wikipedia.org/wiki/Object-oriented_programming veteran will quickly ask the question that how those static interfaces could be reused. For example, suppose the application developer create an new model Order extends morphia model, how it comes calling on Order.all() returns all Order entities as static methods are not "virtual":http://en.wikipedia.org/wiki/Virtual_function. 
+
+<a name="enhance"></a>
+The magic is behind Play's code enhancement mechanism. When the Play application bootup, Play framework will call class enhancer defined in PlayMorphia module to weave certain logic into application classes. These include most of the static methods mentioned above. The calling to lifecycle annotation marked methods all also weaved by the class enhancer. This process is a powerful mechanism for Play plugins like PlayMorphia to provide most wonderful interfaces to application developers.
+
+Links:
+# "PlayMorphia Model":model
+# "Advanced topics":advance
+# "Home":home

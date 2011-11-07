@@ -1,0 +1,35 @@
+h1. Create customize ID field
+
+By default the application developer <a href="model#id">is NOT required to coding for the <code>@Id</code> field"</a>. However there are some situation that we want to create our own ID field. E.g. I want all my users be indexed by facebook ID. Let's take a look at the code first:
+
+bc. @Entity public class User extends Model {
+    @Id public String fbId;
+    
+    @Override
+    public Object getId() {
+        return fbId;
+    }
+    
+    @Override
+    protected void setId_(Object id) {
+        fbId = processId_(id);
+    }
+    
+    protected static Object processId_(Object id) {
+        return id.toString();
+    }
+    
+    ...
+} 
+
+So the above code shows what you need to do to create a customized ID field model:
+
+# Declare your ID field. You can use any name and any type for this field but it must be annotated with <code>@com.google.code.morphia.annotations.Id</code>.
+# Override @Model.getId()@ method which returns the ID field you declared
+# Override @Model.setId(Object)@ method which set the processed ID object to the ID field you declared
+# create @Model.processId_(Object)@ *static* method which convert the object to the type of your ID field
+
+Links:
+# "PlayMorphia Model":model
+# "Advanced topics":advance
+# "Home":home

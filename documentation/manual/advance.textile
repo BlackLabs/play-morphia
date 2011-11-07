@@ -1,0 +1,7 @@
+h1. Advanced Topics
+
+h2. <a name="model">Models</a>
+
+# "Inside PlayMorphia Model":inside_model
+# "Create customized ID field":cust_id
+# "Model inheritance":inherit

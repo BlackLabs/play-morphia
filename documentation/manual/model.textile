@@ -1,0 +1,309 @@
+h1. PlayMorphia Model
+
+**Model** is a core concept of PlayMorphia module, this concept is programmed into @play.modules.morphia.Model@ class. Application developers start creating their own entity classes by extending this @Model@ class. They use their model classes by invoking methods built into the @Model@, this includes all CRUD, query and statistics operations. Some case require Application developers to override certain methods defined in @Model@, e.g. when application developer decide to "define their own implementation of @Id fields":advance#cust_id.
+
+h2. <a name="basic">Model basics</a>
+
+The PlayMorphia model is modelled after Play's JPA model, so it's equally easy to define your domain model with MongoDB access with PlayMorphia module as you did with Play's JPA model. Let's see the PlayMorphia version of "User model class in Yabe sample":http://www.playframework.org/documentation/1.2.3/guide2#aTheUserclassa:
+
+<a name="sample-1"></a>
+
+bc. package models;
+import play.modules.morphia.Model;
+import com.google.code.morphia.annotations.Entity;
+@Entity
+public class User extends Model {
+ 
+    public String email;
+    public String password;
+    public String fullname;
+    public boolean isAdmin;
+    
+    public User(String email, String password, String fullname) {
+        this.email = email;
+        this.password = password;
+        this.fullname = fullname;
+    }
+}
+
+As you can see, the only difference between the PlayMorphia version and the JPA version is the changes in annotation and base class:
+
+|_. JPA|_.|_. PlayMorphia|
+|play.db.jpa.Model|>>|play.modules.morphia.Model|
+|javax.persistence.Entity|>>|com.google.code.morphia.annotations.Entity|
+
+Now let's say how to use the User class. Again we will compare the PlayMorphia version with the JPA version (Search for @createAndRetrieveUser@ at "here":http://www.playframework.org/documentation/1.2.3/guide2#aWritingthefirsttesta)
+
+bc.    @Test public void createAndRetrieveUser() {
+    // Create a new user and save it
+    new User("bob@gmail.com", "secret", "Bob").save();
+    
+    // Retrieve the user with bob username
+    User bob = User.find("byEmail", "bob@gmail.com").first();
+    
+    // Test 
+    assertNotNull(bob);
+    assertEquals("Bob", bob.fullname);
+}
+
+People might noticed that there is no difference in the method between the PlayMorphia and the JPA version. Yep! one goal of PlayMorphia module is to help Play people who are already familiar JPA model be able to use MongoDB with minimum effort.
+
+h3. <a name="id">ID field</a>
+
+All Morphia model class must have an ID field defined. This is done by giving an <a href="http://code.google.com/p/morphia/wiki/AllAnnotations#Id">@com.google.code.morphia.annotations.Id@</a> annotation to the ID property of the model. Once you have done with that your ID property in Java class will be mapped to <a href="http://www.mongodb.org/display/DOCS/Object+IDs">"_id"</a> key of the document in MongoDB.
+
+Sharp eyed might spot that there is no <code>@Id</code> field in the <a href="#sample-1">sample code</a>. True, because we will add the ID field automatically using <a href="#enhance">code enhancing technology</a> when the application is starting up. By default an ID field name "_id" will be added with type <code>org.bson.types.ObjectId</code>. Application developer are allowed to change (not even possible in Play's JPA model!) the ID field type to <code>java.lang.Long</code> by adding the following line into your <code>conf/applicaiton.conf</code>:
+
+bc. morphia.id.type=Long
+
+Whichever ID type is used, PlayMorphia will always generate ID value automatically.
+
+p(note). See also "How to use customize ID field in the model class":cust_id  
+
+h3. <a name="rules">Rule of thumb</a>
+
+In summary, to create an model class with PlayMorphia you should:
+
+# Make that class extend @play.modules.morphia.Model@ class
+# Annotate that class with <code>@com.google.code.morphia.annotations.Entity</code> annotation
+# Define the ID field *ONLY* IF IT'S TYPE IS *NOT* <a href="http://www.mongodb.org/display/DOCS/Object+IDs">@ObjectId@</a> OR <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Long.html">@Long@</a>.
+# Add the property fields into the class. You are free to following Play's public property convention or Java's private plus manual getter/setter convention.
+# Add domain methods to the class.
+
+You are *NOT required* but free to:
+
+# Add java object contract methods: <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Object.html#toString%28%29">@toString()@</a>
+
+
+You *should NOT* unless you have a good reason to:
+
+# Define the ID field if it's type is ObjectId or Long or you don't know about it's type
+# Add java object contract methods:
+#* <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Object.html#hashCode%28%29">@hashCode()@</a>
+#* <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Object.html#equals%28java.lang.Object%29">@equals()@</a>
+# Add any MongoDB access methods including load, save, query, delete
+
+h2. <a name="embed">Embedded Entity</a>
+
+Like JPA, Morphia support objects embed relationship via annotation <code>@Embedded</code>:
+
+bc. import com.google.code.morphia.annotations.*
+// define the embedded class
+@Embedded
+public class Address {
+    public String streetNo;
+    public String street;
+    public String city;
+    public String state;
+    ...
+} 
+// define the embedding class
+@Entity
+public class Customer extends Model {
+    public String firstName;
+    public String lastName;
+    @Embedded
+    public Address address;
+}
+
+p(note). Unlike JPA, Morphia doesn't use "Embeddable" annotation to annotate the embedded class. <code>@Embedded</code> is used in both embedded class and embedded property declaration.
+
+The Morphia "embedded" is basically the same semantic as the JPA "embedded" relationship from Java programming perspective. However they are different in persistence layer. In JPA when an embedded object is persisted into database, the properties defined in embedded object will be saved in the same table as the properties of the embedding object, ie. they are grouped in a flat structure. While an embedded object in Morphia saved in MongoDB they are saved still as embedded json structure. Given the above User-Address models, the corresponding document in MongoDB could be something like:
+
+bc. {
+    _id: ObjectId('...'),
+    firstName: '...',
+    lastName: '...',
+    address: {
+        streetNo: '...',
+        street: '...',
+        city: '...',
+        state: '...',
+        ...
+    },
+}
+
+p(note). Embedded object is actually NOT an entity at all, you should *NOT* extend embedded object to @play.modules.morphia.Model@, *neither* should you annotate embedded object with <code>@com.google.code.morphia.annotations.Entity</code>
+
+h2. <a name="reference">Reference other models</a>
+
+There are cases that you want to "link" two different entity object instead of embed one into another. For example, suppose you have "Order" model which contains "Customer" information. However you don't want to embed "Customer" into "Order" as one "Customer" might put multiple "Orders". If you embed "Customer" into "Order" you will be forced to duplicate a large number of "Customer" information. In this case "reference" is preferred to "embed" relationship.
+
+Here you don't want to embed "Order" into "Customer" class for different reasons:
+
+# Ease of query and aggregation. Querying or aggregating on an individual entity (which corresponding to a document in MongoDB) is much easier than doing so on an embedded (which mapped to part of a document in MongoDB) object.
+# Life cycle not match. "Customer" has much longer life cycle than "Order". If you embed "Order" into "Customer" you will force to touch "Customer" entity when processing "Order".
+
+p(note). A rule of thumb is to use Embedded relationship when the two parts has a "Composition" relationship, and use Reference relationship when the two parts has a weaker "Aggregation" or "Association" relationship. See "Class diagram on wikipedia":http://en.wikipedia.org/wiki/Class_diagram for details about "Composition", "Aggregation" and "Association
+
+There are two ways to do model "link/reference" relationship in your PlayMorphia model class:
+
+# <a href="#reference-annotate">Use <code>@com.google.code.morphia.annotations.Reference</code> to annotate the model property</a>
+# Store id field of the linked(referenced) entity and create getter/setter to fetch the linked instance
+
+h3. <a name="reference-annotate">@Reference annotation</a>
+
+Morphia provides "@Reference":http://code.google.com/docreader/#p=morphia&s=morphia&t=ReferenceAnnotation which exactly map the MongoDB <a href="http://www.mongodb.org/display/DOCS/Database+References">Database Reference</a> to Java world. Example:
+
+bc. @Entity
+public class Customer extends Model {
+    public String fistname;
+    public String lastname;
+    ... 
+}
+@Entity
+public class Product {
+    public String name;
+    public int price;
+}
+@Entity
+public class Order {
+    @Reference
+    pubilc Customer customer;
+    @Reference
+    public Product product;
+}
+
+By default Morphia to load referenced (Customer and Product in the sample) object when the referencing object (Order in the sample) loaded. However you could make Morphia to lazy load the referenced object by using <code>@Reference(lazy = true)</code>.
+
+By default Morphia will throw out @com.google.code.morphia.mapping.MappingException@ if the referenced object could not be load due to missing data in MongoDB. This is annoying sometimes, you can let Morphia to silently ignore the missing data by using <code>@Reference(ignoreMissing = true)</code>
+
+@Reference annotation is useful to create reference link between two domain models but there is another way to do the same thing and is more preferred.
+
+h3. <a name="reference-manual">Manually create link between models</a>
+
+Manually creating link between models approach is preferred because it use less storage than the @Reference annotation approach. On the other side, it's not difficult to handle at all. Taking the same Order-Product-Customer example. The Customer and Product model has no changes, here is the new version of Order model:
+
+bc. @Entity
+public class Order extends Model {
+    private ObjectId customerId;
+    private ObjectId productId;
+    
+    public Customer getCustomer() {
+        return null == customerId ? null : Customer.findById(customerId);
+    }
+    
+    public Product getProduct() {
+        return null == productId ? null : Product.findById(productId);
+    }
+}
+
+h3. <a name="reference-persist">Persistence view of the two approaches</a>
+
+Let's take a look at the persist data structure of the two reference approaches:
+
+**@Reference annotation version**
+
+bc. {
+    customer: {$ref: Customer, $id: ObjectId(...)},
+    product: {$ref: Product, $id: ObjectId(...)},
+}
+
+**@Manual link version**
+
+bc. {
+    customerId: ObjectId(...), 
+    productId: ObjectId(...), 
+}
+
+p(note). Click "here":http://valyagolev.net/article/mongo_dbref/ to see a good article about MongoDB DBRef
+
+h2. <a name="gridfs">Store Blob data into GridFS</a>
+
+Morphia does very good job to mapping Java objects into MongoDB document. But it's not an easy job for application developer when there comes in blob data (e.g. photo upload). PlayMorphia makes processing of blob data super easy:
+
+bc. import play.modules.morphia.Blob;
+@Entity
+public class User extends Model {
+    public String firstName;
+    public String lastName;
+    Blob photo;
+    public void setPhoto(File file) {
+        String type = "image/" + S.fileExtension(file.getName());
+        photo = new Blob(file, type);
+        save();
+    }
+}
+
+So it's all you need in your model class to declare your blob data with type @play.modules.morphia.Blob@, and implement a simple set method to convert File to Blob. When you call @save()@ method, byte enhanced code will automatically save the blog into MongoDB's <a href="http://www.mongodb.org/display/DOCS/GridFS+Specification">GridFS</a> with property ID. 
+
+Using model with blob data is also very easy:
+
+bc. // photo upload handler
+public static void uploadPhoto(String userId, File photo) {
+    User user = User.findById(userId);
+    notFoundIfNull(user);
+    user.setPhoto(photo);
+    render(user);
+}
+// fetch photo
+public static void getPhoto(String userId) {
+    User user = User.findById(userId);
+    notFoundIfNull(user);
+    notFoundIfNull(user.photo);
+    renderBinary(user.photo.get());
+}
+
+p(note). Check out "GridFS or filesystem":faq#gridfs
+
+h2. <a name="timestamp">Automatic timestamp</a>
+
+It's not unusual that we need to log the time when an entity is created and modified. That's also why people contributes "Chronostamp":http://www.playframework.org/modules/chronostamp module. Chronostamp support JPA only. Fortunately PlayMorphia provides it's own support to create automatic timestamp, even more powerful. To enable automatic timestamp on your model class, add <code>@play.modules.morphia.Model.AutoTimestamp</code> to the class declaration
+
+bc. import play.modules.morphia.Model.AutoTimestamp;
+@AutoTimestamp
+@Entity
+public class MyModel{...}
+
+Once you have marked you model class with <code>@AutoTimestamp</code>, PlayMorphia will add two Long type fields to the model class: <code>_created</code> and <code>_modified</code>. PlayMorphia will also make sure these 2 fields get updated when you save the model instance. Unlike Chronostamp where timestamp fields could be accessed only in the views, PlayMorphia enable you to access timestamp from any where in yoru applicaption by exporting two public interfaces in <code>play.modules.morphia.Model</code>:
+
+bc. // get created timestamp
+long created = myEntity._getCreated();
+// get modified timestamp
+long modified = myEntity._getModified();
+
+p(note). Calling @_getCreated()@ and @_getModified()@ on entity which has no <code>@AutoTimestamp</code> annotation will trigger <code>java.lang.UnsupportedOperationException</code> 
+
+h2. <a name="index">Create index on Model class</a>
+
+Indexing is a very important tool in both SQL and MongoDB to boost query performance. JPA guys assume that creating index is a job of DBA. So they don't have code level tools to create index. MongoDB aims to make database admin as light as possible and Morphia provides annotation based indexing but require you to call @Datastore.ensureIndexes()@ to create them. PlayMorphia moves one step further, just annotate your class or fields to declare the indexes you want to create, PlayMorphia will automatically create them once application started.
+
+h3. <a name="index-property">Index a single property</a>
+
+To index a single property of your model, annotate that property with <code>@com.google.code.morphia.annotations.Indexed</code>:
+
+bc. import com.google.code.morphia.annotations.Indexed;
+@Entity public class extends Model {
+    @Indexed
+    public String firstName;
+    @Indexed
+    public String lastName;
+}
+
+h3. <a name="index-compound">Compound Index</a>
+
+To create a <a href="http://www.mongodb.org/display/DOCS/Indexes#Indexes-CompoundKeysIndexes">compound index</a> you can use @com.google.code.morphia.annotations.Indexes@ to annotate your model class:
+
+bc. import com.google.code.morphia.annotations.Indexes;
+import com.google.code.morphia.annotations.Index;
+@Entity
+@AutoTimestamp
+@Indexes({
+    @Index("user, -_modified"),
+    @Index("changedRecord, -_modified")
+})
+public class ActionTrack extends Model {
+    public String user;
+    public String action;
+}
+
+In the above example, you've created two compound indexes to enable quickly query for recent actions for a given user and query for recent users who invoked a given action.
+
+h2. <a name="resource">Resources</a>
+
+You can refer to the following resource for more about MongoDB modeling:
+
+# Check out "Morphia document":http://code.google.com/p/morphia/wiki/AllAnnotations#Compound_Indexes and "MongoDB document":http://www.mongodb.org/display/DOCS/Indexes for more about index
+# Though not in Java, "MongoDB Data Modeling and Rails":http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails is an *excellent resource* to understand MongoDB's approach of modeling your data
+# %(next)"CRUD":crud%
+# Check out "Advanced Model Topics":advance#model to see more about PlayMorphia model
