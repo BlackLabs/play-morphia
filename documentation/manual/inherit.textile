@@ -39,9 +39,16 @@ Usually if you concrete parent class is annotated with <code>@Entity</code>, the
 
 It shouldn't happen theoretically, but if you found it in your environment, the <code>@play.modules.morphia.Model.NoId annotation</code> annotation could save your life. Just put it to your children class and PlayMorphia's code enhancer will not add ID to your child class anyway.
 
-h3. <a name="noClassNameStored">About <code>noClassnameStored()</code></a>
+h3. <a name="noClassnameStored">About <code>noClassnameStored()</code></a>
 
-By default Morphia will save the class name of the current  
+By default Morphia will save the class name of the entity into the database for the sake of inheritance. If you are sure that you don't have instances of multiple classes  persisted into the same "collection":http://www.mongodb.org/display/DOCS/Collections, then you could use @noClassnameStored@ argument in the <code>@Entity</code> annotation:
+
+bc. @Entity(noClassnameStored = true)
+public class TrackInfo extends Model {
+    public String action;
+    public long timestamp;
+    ...
+}
 
 h2. <a name="resource">See Also</a>
 

@@ -79,12 +79,9 @@ public class Model implements Serializable, play.db.Model {
     @Override
     public void _delete() {
         if (isNew()) return;
-        postEvent_(MorphiaEvent.ON_DELETE, this);
-        h_OnDelete();
+        _h_OnDelete();
         ds().delete(this);
-        deleteBlobs();
-        h_Deleted();
-        postEvent_(MorphiaEvent.DELETED, this);
+        _h_Deleted();
     }
 
     // -- porting from play.db.GenericModel
@@ -509,8 +506,21 @@ public class Model implements Serializable, play.db.Model {
         return (T) this;
     }
     
+    private void _h_OnDelete() {
+        postEvent_(MorphiaEvent.ON_DELETE, this);
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_DELETE, this);
+        h_OnDelete();
+        deleteBlobs();
+    }
+    
     protected void h_OnDelete() {
         // for enhancer usage
+    }
+    
+    private void _h_Deleted() {
+        h_Deleted();
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.DELETED, this);
+        postEvent_(MorphiaEvent.DELETED, this);
     }
     
     protected void h_Deleted() {
@@ -673,39 +683,106 @@ public class Model implements Serializable, play.db.Model {
     public Key<? extends Model> save2() {
         boolean isNew = isNew();
         postEvent_(isNew ? MorphiaEvent.ON_ADD : MorphiaEvent.ON_UPDATE, this);
-        if (isNew) h_OnAdd(); else h_OnUpdate();
+        if (isNew) _h_OnAdd(); else _h_OnUpdate();
         Key<? extends Model> k = ds().save(this);
         saveBlobs();
-        if (isNew) {setSaved_();h_Added();} else h_Updated();
-        postEvent_(isNew ? MorphiaEvent.ADDED : MorphiaEvent.UPDATED, this);
+        if (isNew) {setSaved_();_h_Added();} else _h_Updated();
         return k;
     }
     
-    public void _h_Loaded() {
+    /**
+     * for PlayMorphia internal usage only
+     */
+    public final void _h_OnLoad() {
+        postEvent_(MorphiaEvent.ON_LOAD, this);
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_LOAD, this);
+        h_OnLoad();
+    }
+    
+    /**
+     * for PlayMorphia internal usage only
+     */
+    protected void h_OnLoad() {
+        // for enhancer usage
+    }
+    
+    /**
+     * for PlayMorphia internal usage only
+     */
+    public final void _h_Loaded() {
         setSaved_();
         h_Loaded();
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
+        postEvent_(MorphiaEvent.LOADED, this);
     }
     
-    public void h_OnLoad() {
+    /**
+     * for PlayMorphia internal usage only
+     */
+    protected void h_Loaded() {
         // for enhancer usage
     }
     
-    public void h_Loaded() {
-        // for enhancer usage
+    /**
+     * for PlayMorphia internal usage only
+     */
+    private void _h_Added() {
+        h_Added();
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ADDED, this);
+        postEvent_(MorphiaEvent.ADDED, this);
     }
     
+    /**
+     * for PlayMorphia internal usage only
+     */
     protected void h_Added() {
         // used by enhancer
     }
     
+    /**
+     * for PlayMorphia internal usage only
+     */
+    private void _h_Updated() {
+        h_Updated();
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.UPDATED, this);
+        postEvent_(MorphiaEvent.UPDATED, this);
+    }
+
+    /**
+     * for PlayMorphia internal usage only
+     */
     protected void h_Updated() {
         // used by enhancer
     }
     
+    /**
+     * for PlayMorphia internal usage only
+     */
+    private void _h_OnAdd() {
+        postEvent_(MorphiaEvent.ON_ADD, this);
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_ADD, this);
+        h_OnAdd();
+    }
+    
+    /**
+     * for PlayMorphia internal usage only
+     */
     protected void h_OnAdd() {
         // used by enhancer
     }
     
+    /**
+     * for PlayMorphia internal usage only
+     */
+    private void _h_OnUpdate() {
+        postEvent_(MorphiaEvent.ON_UPDATE, this);
+        MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_UPDATE, this);
+        h_OnUpdate();
+    }
+    
+    /**
+     * for PlayMorphia internal usage only
+     */
     protected void h_OnUpdate() {
         // used by enhancer
     }
@@ -792,6 +869,7 @@ public class Model implements Serializable, play.db.Model {
         public long delete() {
             long l = count();
             postEvent_(MorphiaEvent.ON_BATCH_DELETE, this);
+            MorphiaPlugin.onBatchLifeCycleEvent(MorphiaEvent.ON_BATCH_DELETE, this);
             Model m = null;
             try {
                 Constructor c = c_.getDeclaredConstructor();
@@ -802,8 +880,10 @@ public class Model implements Serializable, play.db.Model {
             } catch (Exception e) {
                 throw new RuntimeException("Cannot init model class", e);
             }
-            m.h_OnBatchDelete(this);
-            m.deleteBlobsInBatch(this);
+            if (null != m) {
+                m.h_OnBatchDelete(this);
+                m.deleteBlobsInBatch(this);
+            }
             ds().delete(q_);
             if (null != m) {
                 m.h_BatchDeleted(this);

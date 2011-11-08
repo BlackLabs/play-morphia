@@ -63,7 +63,7 @@ User.q().delete();
 
 <a name="id"></a>
 
-h2. <a name="resource">Resources</a>
+h2. <a name="resource">See also</a>
 
 # "Understanding PlayMorphia model":model
 # %(next)"Using Query":query%

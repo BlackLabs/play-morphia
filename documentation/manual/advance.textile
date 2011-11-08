@@ -1,6 +1,6 @@
 h1. Advanced Topics
 
-h2. <a name="model">Models</a>
+h2. <a name="model">Advanced PlayMorphia Models</a>
 
 # "Inside PlayMorphia Model":inside_model
 # "Create customized ID field":cust_id

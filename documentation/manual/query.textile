@@ -38,7 +38,7 @@ The simplest way to get an @MorphiaQuery@ object out from a @Model@ object is ca
 
 bc. MorphiaQuery q = User.q();
 
-h2. <a name="filter">Specify query criteria using the filter interface</a>
+h2. <a name="filter">Specify query criteria</a>
 
 Once you have the @MorphiaQuery@ instance you could filter the return result set using the filter interface. For example, to find all users with score between 80 and 90, you use the ">" and "<" operators:
 
@@ -49,11 +49,11 @@ p(note). *Note* the @filter()@ call on a @MorphiaQuery@ instance adds certain co
 Here is a list of <a name="operator" href="http://code.google.com/p/morphia/wiki/Query#Operators">operators</a> you can used in PlayMorphia query:
 
 |_. operator|_. <a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-ConditionalOperators">mongo op</a>|_. description|
-|=|$eq|field value equals to the supplied object|
+|=|$eq|field value equals to the supplied object [1]|
 |!=, <>|"$ne":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24ne|field value is not equal to the supplied object|
 | >, <, >=, <=|"$gt, $lt, $gte, $lte":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%3C%2C%3C%3D%2C%3E%2C%3E%3D|greater than, less than, greater than or equal to, less than or equal to|
-|in|"$in":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in|field value is in the supplied list [1]|
-|nin|"$nin":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nin|field value is not in the supplied list [1]|
+|in|"$in":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in|field value is in the supplied list [2]|
+|nin|"$nin":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nin|field value is not in the supplied list [2]|
 |elem|"$elemMatch":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24elemMatch|field (array or list) has element matches the supplied object|
 |exists|"$exists":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists|field exist (not null in Java term)|
 |all|"$all":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all|field value (array or list) contains all elements supplied by argument|
@@ -62,11 +62,126 @@ Here is a list of <a name="operator" href="http://code.google.com/p/morphia/wiki
 
 For more operator information please refer to to "MongoDB Advanced Queries":http://www.mongodb.org/display/DOCS/Advanced+Queries
 
-fn1. When you have the "@in@" or "@nin@" operators in the filter constraint, you can supply the following types of parameters:
+fn1. Using operator @eq@ has the same effect as no operator:
+
+bc. List<User> users = User.q().filter("department eq", "IT").asList();
+
+is exactly the same as
+
+bc. List<User> users = User.q().filter("department", "IT").asList();
+
+fn2. When you have the "@in@" or "@nin@" operators in the filter constraint, you can supply the following types of parameters:
 
 # array
 # Any object with class implements <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Iterable.html">@java.lang.Iterable@</a>
 # a single object. In this case @in@ is the same as @=@, @nin@ is the same as @!=@ 
+
+h3. <a name="regex">Search with regular expression</a>
+
+Application developer could implement regular expression based text search by using java.util.regex.Pattern class. The following query returns all users with firstName contains "john" or "John" 
+
+bc. List<User> johns = User.q().filter("firstName", Pattern.compile("[Jj]ohn")).asList();
+
+h3. <a name="or">OR query</a>
+
+You can use the @filter()@ interface and @find()@ interface to apply contraints on mutiple fields using "AND" relationship. In order to implement a "OR" based query you need to use @MorphiaQuery.or()@ and @com.google.code.morphia.query.Criteria@ interface. The following query search for user who's first name contains "john" or last name contains "john":
+
+bc. MorphiaQuery q = User.q();
+q.or(q.criteria("firstName").contains("[Jj]ohn"), q.criteria("lastName").contains("[Jj]ohn"));
+List<User> johns = q.asList();
+
+p(note). Here @q.criteria(<fieldname>).contains(<keyword>)@ is one of Morphia's "fluent interface":http://code.google.com/p/morphia/wiki/Query#Fluent_Interface. You should not pass @Pattern@ object into the @contains@ interface. Instead, pass @String@ type object which will be automatically converted to @Pattern@ by the underline implementation.
+
+h3. <a name="embed">Query on embedded objects</a>
+
+To query on the "embedded object":model#embed you need to use the dot notation. Suppose you have the following models:
+
+bc. @Embedded public class Address {
+    public String number;
+    public String street;
+    public String city;
+    public String country;
+}
+// User model contains the address object
+@Entity public class User {
+    public String firstName;
+    public String lastName;
+    @Embedded Address address;
+}
+
+Now the following query find out all users lived in "FuXingJie, DuJiangYan, China":
+
+bc. List<User> users = Users.find("address.street, address.city, address.country",
+    "FuXingJie", "DuJiangYan", "China").asList();
+
+h3. <a name="ref">Query on referenced objects</a>
+
+PlayMorphia does not support query on "referenced objects":model#reference direct as MongoDB does not support join query. However you could do it in 2 steps:
+
+# Find out the referenced object
+# Find out the objects who references that object
+
+Suppose you have an @Author@ model class defined:
+
+bc. @Entity public class Author extends Model {
+    public String fullName;
+    public String email;
+}
+
+And then you define a @BlobEntry@ class which references the @Author@ model:
+
+bc. @Entity public class BlogEntry extends Model {
+    public String title;
+    public Date publishDate;
+    public String body;
+    @Reference public Author author;
+}
+
+The following code find out all blog entries written by greenlaw110@gmail.com:
+
+bc. Author green = Author.find("email", "greenlaw110@gmail.com").get();
+List<BlogEntry> entries = BlogEntry.find("author", green).asList();
+
+If you are using the "manually reference approach":model#reference-manual to define reference model:
+
+bc. @Entity public class BlobEntry {
+    public String title;
+    public Date publishDate;
+    public String body;
+    public String authorId;
+    public Author getAuthor() {
+        return Author.findById(authorId);
+    }
+}
+
+Then you need to query on @authorId@:
+
+bc. Object id = Author.find("email", "greenlaw110@gmail.com).getKey().getId();
+List<BlobEntry) entries = BlobEntry.find("authorId", id).asList();
+
+h3. <a name="n-plus-1">Caching and avoid N+1</a>
+
+Query through reference relationship is not simple and straightforward as it is in relational database world. MongoDB's solution is do a little bit of denormalization. Let's say if you often query @BlobEntry@ with author's email, you could cache the @email@ field in the @BlobEntry@ model:
+
+bc. @Entity public class BlobEntry {
+    public String title;
+    public Date publishDate;
+    public String body;
+    public String authorId;
+    public Author getAuthor() {
+        return Author.findById(authorId);
+    }
+    // cache
+    public String authorEmail;
+}
+
+now the query become easy:
+
+bc. List<BlobEntry> entries = BlobEntry.find("authorEmail", "greenlaw110@gmail.com").asList();
+
+People might argue that doing it cause redudant data. Just think how much you pay for the redundant data and how much you gain from simplified query. To update cache field is no doubt expensive. Again you need to make trade off between expensive update and fast query. In our case author's email is seldom updated while queries happen hundreds of times per day. So cache @email@ in the @BlobEntry@ model is not a bad idea.
+
+p(note). See "MongoDB Data Modeling and Rails":http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails to get more information about this topic.
 
 h2. <a name="fetch">Fetch entities from MorphiaQuery</a>
 
@@ -119,7 +234,7 @@ users = User.q().findBy("byCountryAndDepartment", "China", "IT").asList();
 users = User.find("byCountryAndDepartment", "China", "IT").asList();
 users = User.find("country,department", "China", "IT").asList();
 
-h2. <a name="reference">Resources</a>
+h2. <a name="resource">See also</a>
 
 # "Morphia Query interface":http://code.google.com/p/morphia/wiki/Query
 # "MongoDB Querying":http://www.mongodb.org/display/DOCS/Querying

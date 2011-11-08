@@ -67,7 +67,7 @@ public class MorphiaEnhancer extends Enhancer {
         // if (!MorphiaPlugin.configured()) return;
         // is anonymous class?
         if (applicationClass.name.contains("$anonfun$") || applicationClass.name.contains("$anon$")) return;
-
+        
         final CtClass ctClass = makeClass(applicationClass);
         final CtClass modelClass = classPool.getCtClass("play.modules.morphia.Model");
         if (!ctClass.subclassOf(modelClass)) return;
@@ -97,7 +97,7 @@ public class MorphiaEnhancer extends Enhancer {
 
         enhance_(ctClass, applicationClass, addId, autoTS);
     }
-
+    
     /**
      * Enhance classes marked with the MongoEntity annotation.
      *

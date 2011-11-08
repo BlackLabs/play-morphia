@@ -1,6 +1,7 @@
 package play.modules.morphia;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -107,6 +108,8 @@ public class MorphiaPlugin extends PlayPlugin {
     private static boolean configured_ = false;
     
     private static boolean appStarted_ = false;
+    
+    static boolean postPluginEvent = false;
 
     public static boolean configured() {
         return configured_;
@@ -158,21 +161,79 @@ public class MorphiaPlugin extends PlayPlugin {
         e_.enhanceThisClass(applicationClass);
     }
     
-    private static List<IMorphiaEventHandler> eventHandlers_ = new ArrayList<IMorphiaEventHandler>();
+    private static List<IMorphiaEventHandler> globalEventHandlers_ =  new ArrayList<IMorphiaEventHandler>();
+    private static Map<Class<? extends Model>, List<IMorphiaEventHandler>> modelEventHandlers_ = new HashMap<Class<? extends Model>, List<IMorphiaEventHandler>>();
     
-    public static void registerEventHandler(IMorphiaEventHandler handler) {
+    public static synchronized void registerGlobalEventHandler(IMorphiaEventHandler handler) {
         if (null == handler) throw new NullPointerException();
-        if (!eventHandlers_.contains(handler)) eventHandlers_.add(handler);
+        if (!globalEventHandlers_.contains(handler)) globalEventHandlers_.add(handler);
     }
     
-    void onLifeCycleEvent(MorphiaEvent event, Model model) {
-        for (IMorphiaEventHandler h: eventHandlers_) {
+    public static synchronized void unregisterGlobalEventHandler(IMorphiaEventHandler handler) {
+        if (null == handler) throw new NullPointerException();
+        globalEventHandlers_.remove(handler);
+    }
+    
+    public static synchronized void clearGlobalEventHandler() {
+        globalEventHandlers_.clear();
+    }
+    
+    public static synchronized void registerModelEventHandler(Class<? extends Model> model, IMorphiaEventHandler handler) {
+        if (null == handler || null == model) throw new NullPointerException();
+        List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
+        if (null == l) {
+            l = new ArrayList<IMorphiaEventHandler>();
+            modelEventHandlers_.put(model, l);
+        }
+        l.add(handler);
+    }
+    
+    public static synchronized void unregisterModelEventHandler(Class<? extends Model> model, IMorphiaEventHandler handler) {
+        if (null == handler || null == model) throw new NullPointerException();
+        List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
+        if (null == l) {
+            return;
+        }
+        l.remove(handler);
+    }
+    
+    public static synchronized void clearModelEventHandler(Class<? extends Model> model) {
+        if (null == model) throw new NullPointerException();
+        List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
+        if (null != l) {
+            l.clear();
+            modelEventHandlers_.remove(model);
+        }
+    }
+    
+    public static synchronized void clearAllModelEventHandler() {
+        modelEventHandlers_.clear();
+    }
+    
+    static void onLifeCycleEvent(MorphiaEvent event, Model model) {
+        Class<? extends Model> c = model.getClass();
+        List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
+        if (null != l) {
+            for (IMorphiaEventHandler h: l) {
+                event.invokeOn(h, model);
+            }
+        }
+        
+        for (IMorphiaEventHandler h: globalEventHandlers_) {
             event.invokeOn(h, model);
         }
     }
     
-    void onBatchLifeCycleEvent(MorphiaEvent event, MorphiaQuery query) {
-        for (IMorphiaEventHandler h: eventHandlers_) {
+    static void onBatchLifeCycleEvent(MorphiaEvent event, MorphiaQuery query) {
+        Class<? extends Model> c = query.getEntityClass();
+        List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
+        if (null != l) {
+            for (IMorphiaEventHandler h: l) {
+                event.invokeOn(h, query);
+            }
+        }
+        
+        for (IMorphiaEventHandler h: globalEventHandlers_) {
             event.invokeOn(h, query);
         }
     }
@@ -289,7 +350,7 @@ public class MorphiaPlugin extends PlayPlugin {
             public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
                 if (ent instanceof Model) {
                     PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
-                    ((Model)ent).h_OnLoad();
+                    ((Model)ent)._h_OnLoad();
                 }
             }
             
@@ -331,8 +392,39 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         initMorphia_();
         configureDs_();
+        registerEventHandlers_();
         info("initialized");
         appStarted_ = true;
+    }
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void registerEventHandlers_() {
+        if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.autoRegisterEventHandler", "true"))) return;
+        List<Class> classes = Play.classloader.getAssignableClasses(IMorphiaEventHandler.class);
+        for (Class c: classes) {
+            IMorphiaEventHandler h = null;
+            try {
+                Constructor cnst = c.getDeclaredConstructor();
+                cnst.setAccessible(true);
+                h = (IMorphiaEventHandler)cnst.newInstance();
+            } catch (Exception e) {
+                Logger.error(e, "Cannot init IMorphiaEventHandler from class: %s", c.getName());
+                continue;
+            }
+            Watch w = (Watch)c.getAnnotation(Watch.class);
+            if (null != w) {
+                Class[] ca = w.value();
+                if (ca.length > 0) {
+                    for (Class modelClass: ca) {
+                        if (Model.class.isAssignableFrom(modelClass) && !Modifier.isAbstract(modelClass.getModifiers())) {
+                            registerModelEventHandler(modelClass, h);
+                        }
+                    }
+                    continue;
+                }
+            }
+            registerGlobalEventHandler(h);
+        }
     }
 
     @Override
@@ -483,7 +575,7 @@ public class MorphiaPlugin extends PlayPlugin {
             if (keywords != null && !keywords.equals("")) {
                 List<Criteria> cl = new ArrayList<Criteria>();
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    cl.add(q.criteria(f).contains(keywords));
+                    cl.add(q.criteria(f).containsIgnoreCase(keywords));
                 }
                 q.or(cl.toArray(new Criteria[] {}));
             }
