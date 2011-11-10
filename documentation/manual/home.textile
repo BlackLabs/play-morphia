@@ -50,16 +50,21 @@ Everything you need to know about PlayMorphia
 # "Using query":query
 ## "30 seconds tutorial":query#learn
 ## "Build MorphiaQuery object":query#build
-## "Specify query criteria using MorphiaQuery's filter interface":query#filter
+## "Specify query criteria":query#filter
+### "Text search with regular expression":query#regex
+### "OR query":query#or
+### "Query embedded object":query#embed
+### "Query referenced object":query#ref
 ## "Fetch entities from MorphiaQuery":query#fetch
 ### "Limit the number of records returned":query#limit
 ### "Skip the first N number of records":query#skip
 ### "Get one record only":query#get
 ## "Aliases of query methods":query#alias
-<div style="display:none">
 # "Advanced topics":advance
+## "Advanced PlayMorphia Models":advance#model
 ## "Statistics: aggregation and grouping":statistics
 ## "Handle lifecycle events":lifecycle#event
+<div style="display:none">
 # "Play integration":play
 ## "CRUD Support":play#crud
 ## "Lifecycle events":play#event

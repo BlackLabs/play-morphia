@@ -1,0 +1,108 @@
+h1. Handle model lifecycle events
+
+A model could experience different lifecycle events, e.g. loading from MongoDB, saving to MongoDB and deleting from MongoDB. It would be interesting for application developer to listening to these events and weave in certain logic when a specific event triggered. Typical usage senarios includes updating modified timestamp before saving model object to MongoDB, or logging updating to accouting database if certain model entity is been modified.
+
+PlayMorphia provides a set of tools to enable application developer coding to the model lifecycle events. There are two set of lifecycle events supported by PlayMorphia:
+
+# "Morphia lifecycle events":http://code.google.com/p/morphia/wiki/LifecycleMethods
+# PlayMorphia lifecycle events
+
+Both Morphia and PlayMorphia provides two mechanism [1] for application developer to inject logic when specific entity lifecycle events triggerred:
+
+# "Annotation based lifecycle event handling":lifecycle#anno
+# "Interface based event handler":lifecycle#intf
+
+fn1. PlayMorphia application developer could also use the Morphia's lifecycle event handling mechanism without any problem.
+
+h2. <a name="anno">Annotation based lifecycle event handling</a>
+
+A handy way to bind lifecycle event listener to your model is to mark your model methods with lifecycle event annotations:
+
+bc. @Entity public class User extends Model {
+    public String username;
+    public String password;
+    public long created;
+    public long modified;
+    @PrePersist void fillInTimestamp() {
+      if (isNew()) {
+          created = System.currentTimeMills();
+      } else {
+          modified = System.currentTimeMills();
+      }
+    }
+}
+
+The above example use Morphia lifecycle annotation <code>@PrePersist</code> to set created and modified timestamp of the model. You could also achieve the same result using PlayMorphia annotation:
+
+bc. @Entity public class User extends Model {
+    public String username;
+    public String password;
+    public long created;
+    public long modified;
+    @OnAdd void fillInCreatedTimestamp() {
+        created = System.currentTimeMills();
+    }
+    @OnUpdate void fillInCreatedTimestamp() {
+        modified = System.currentTimeMills();
+    }
+}
+
+p(note). The above samples are listed here for demo purpose, you don't need to do the same thing in your application. To add timestamp to your mode, just annotate your model class with <code>AutoTimestamp</code>. See "here":model#timestamp for detail.
+
+h2. <a name="intf">Interface based event handler</a>
+
+If you have common logic for event handling of multiple models you don't want to copy and paste the the from one model class to another one. You could implement a common event handler listen to all model lifecycle events
+
+h3. <a name="playmorphia-intf">PlayMorphia life cycle event listener</a>
+
+With PlayMorphia you could create a class that implement @play.modules.morphia.MorphiaEvent.IMorphiaEventHandler@ interface to define the common logic handling model entity lifecycle events:
+
+bc. public class MyEntityEventHandler implements IMorphiaEventHandler {
+    ...
+    public void added(Model context) {
+        Logger.info("%s created", context.getClass());
+    }
+    ...
+}
+
+By default PlayMorphia will register all non-abstract classes implemented the @IMorphiaEventHandler@ interface on application start up. You could turn off this auto-registration by set @morphia.autoRegisterEventHandler@ configuration to false in your @conf/application.conf@ file. By default the event handler class will be registered to listen to the entity lifecycle of all models. If you want a the event handler respond to the lifecycle events of only certain PlayMorphia model classes, you need to annotate the event handler class with <code>@play.modules.morphia.Watch</code> annotation. The following example shows how to make your event listener listen to @User@ and @Account@ model class.
+
+bc. @Watch({User.class, Account.class}) 
+public class UserAccountEventListener implements IMorphiaEventHandler {
+    ...
+    public void added(Model context) {
+        Logger.info("%s created", context.getClass());
+    }
+}
+
+p(note). Note although you can put any class in the <code>@Watch</code> annotation parameter, however only class that extends @play.modules.morphia.Model@ will effective.
+
+p(note). the <code>@Watch</code> annotation only effect when the @morphia.autoRegisterEventHandler@ configuration is not turned off in the @application.conf@ file.
+
+p(note). There are 10 methods defined in @IMorphiaEventHandler@ interface. If you don't want to implement all of them, make your class extend @play.modules.morphia.MorphiaEvent.IMorphiaEventHandler@ class instead and override only methods you are interested in.
+
+h3. <a name="playmorphia-plugin">Play Plugin event interface</a>
+
+In addition to the Morphia event handler interface, Plugin developers can also get access to entity lifecycle events via the standard Play plugin event interface.
+
+bc. public class MyPlugin extends PlayPlugin {
+    ...
+    @Override public void onEvent(String message, Object context) {
+        if (MorphiaEvent.UPDATED.toString().equals(message)) {
+            Model model = (Model)context;
+            // handle updated event on model
+            ...
+        }
+    }
+}
+
+However it is recommended to use the @IMorphiaEventHandler@ interface instead of play plugin event interface. 
+
+h3. <a name="morphia-intf">Morphia Entity Listener</a>
+
+dd
+
+h2. <a name="create">Model creating events</a>
+
+!images/lifecycle-create!
+

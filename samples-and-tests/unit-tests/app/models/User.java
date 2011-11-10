@@ -14,4 +14,11 @@ public class User extends Model {
     public Blob photo;
     public String tag = "testing";
     
+    public User() {}
+    
+    public User(String name, String tag) {
+        this.name = name;
+        this.tag = tag;
+    }
+    
 }

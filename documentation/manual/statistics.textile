@@ -1,0 +1,102 @@
+h1. Aggregation and Group aggregation
+
+PlayMorphia provides developer friendly interface for aggregation and group aggregation on models.
+
+Suppose you have defined a model class @Sales@:
+
+bc. @Entity public class Sales extends Model {
+    public String employeeId;
+    public String department;
+    public String region;
+    public int amount;
+}
+
+h2. <a name="aggregation">Aggregation</a>
+
+Now here is a set of aggregations you could do on Sales model:
+
+h3. <a name="count">Count</a>
+
+bc. long total = Sales.count(); // also Sales.q().count();
+long cntIT = Sales.q().filter("department", "IT").count();
+long cntAU = Sales.q().filter("region", "AU").count();
+long cntAuIt = Sales.find("region, department", "AU", "IT").count();
+
+h3. <a name="sum">Sum</a>
+
+bc. long sum = Sales._sum("amount"); // also Sales.q().sum("amount");
+long sumIT = Sales.find("department", "IT").sum("amount");
+long sumAU = Sales.find("region", "AU").sum("amount");
+long sumAuIt = Sales.find("region department", "AU", "IT").sum("amount");
+
+h3. <a name="max">Maximum</a>
+
+bc. long max = Sales._max("amount"); // also Sales.q().max("amount");
+long maxIT = Sales.find("department", "IT").max("amount");
+long maxAU = Sales.find("region", "AU").max("amount");
+long maxAuIt = Sales.find("region department", "AU", "IT").max("amount");
+
+h3. <a name="min">Minimum</a>
+
+bc. long min = Sales._min("amount"); // also Sales.q().min("amount");
+long minIT = Sales.find("department", "IT").min("amount");
+long minAU = Sales.find("region", "AU").min("amount");
+long minAuIt = Sales.find("region department", "AU", "IT").min("amount");
+
+h2. <a name="group">Group aggregation</a>
+
+Each aggregation has a corresponding group aggergation interface defined. This is somehow like SQL's "group by" clause
+
+h3. <a name="g_count">Group count</a>
+
+bc. // group by region
+AggregationResult byRegion = Sales.groupCount("region");
+System.out.println("AU count: " + byRegion.get("region", "AU");
+// group by department
+AggregationResult byDep = Sales.groupCount("department");
+System.out.println("IT count: " + byDep.get("department", "IT");
+// group by region and department
+AggregationResult byRegionDep = Sales.groupCount("region, department");
+System.out.println("IT count: " + byRegionDep.get("department, region", "IT", "AU");
+
+h3. <a name="g_sum">Group sum</a>
+
+bc. // group by region
+AggregationResult byRegion = Sales.groupSum("region");
+System.out.println("AU sum: " + byRegion.get("region", "AU");
+// group by department
+AggregationResult byDep = Sales.groupSum("department");
+System.out.println("IT sum: " + byDep.get("department", "IT");
+// group by region and department
+AggregationResult byRegionDep = Sales.groupSum("region, department");
+System.out.println("IT sum: " + byRegionDep.get("department, region", "IT", "AU");
+
+h3. <a name="g_max">Group maximum</a>
+
+bc. // group by region
+AggregationResult byRegion = Sales.groupMax("region");
+System.out.println("AU max: " + byRegion.get("region", "AU");
+// group by department
+AggregationResult byDep = Sales.groupMax("department");
+System.out.println("IT max: " + byDep.get("department", "IT");
+// group by region and department
+AggregationResult byRegionDep = Sales.groupMax("region, department");
+System.out.println("IT max: " + byRegionDep.get("department, region", "IT", "AU");
+
+h3. <a name="g_min">Group minimum</a>
+
+bc. // group by region
+AggregationResult byRegion = Sales.groupMin("region");
+System.out.println("AU min: " + byRegion.get("region", "AU");
+// group by department
+AggregationResult byDep = Sales.groupMin("department");
+System.out.println("IT min: " + byDep.get("department", "IT");
+// group by region and department
+AggregationResult byRegionDep = Sales.groupMin("region, department");
+System.out.println("IT min: " + byRegionDep.get("department, region", "IT", "AU");
+
+h2. <a name="resource">See Also</a>
+
+# "Understanding PlayMorphia model":model
+# "Using Query":query
+# "How to do aggregation across models":todo
