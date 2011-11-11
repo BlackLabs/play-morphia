@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Watch {
-    Class<?>[] value() default {Model.class};
+public @interface WatchBy {
+    Class<?>[] value() default {};
 }

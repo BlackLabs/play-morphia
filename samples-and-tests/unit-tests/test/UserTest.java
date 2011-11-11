@@ -28,16 +28,19 @@ public class UserTest extends UnitTest {
         User.deleteAll();
         MorphiaPlugin.ds().getDB().getCollection(MorphiaPlugin.gridFs().getBucketName() + ".files").drop();
         MorphiaPlugin.ds().getDB().getCollection(MorphiaPlugin.gridFs().getBucketName() + ".chunks").drop();
-        fileLen = FileUtils.sizeOf(new File("test/googlelogo.png"));
 
         blob = newBlob();
     }
     
     private Blob newBlob() {
-        return new Blob(new File("test/googlelogo.png"), "image/png");
+        return newBlob("test/googlelogo.png");
+    }
+    
+    private Blob newBlob(String path) {
+        return new Blob(new File(path), "image/png");
     }
 
-    @Test
+     @Test
     public void checkFieldAccessibility() throws Exception {
         User u = new User();
         u.name = "alex";
@@ -127,6 +130,11 @@ public class UserTest extends UnitTest {
 
         file = Blob.findFile(b.getBlobFileName("photo"));
         assertThatPhotoBlobIsValid(file);
+        
+        b.photo = newBlob("test/user.png");
+        b.save();
+        file = Blob.findFile(b.getBlobFileName("photo"));
+        assertThatPhotoBlobIsValid(file, "user.png");
 
         User.q("tag", "testing").delete();
         
@@ -137,20 +145,25 @@ public class UserTest extends UnitTest {
         assertNull(file);
     }
     
-
     private void assertThatPhotoBlobIsValid(GridFSDBFile file) throws IOException {
+        assertThatPhotoBlobIsValid(file, "googlelogo.png");
+    }
+    
+
+    private void assertThatPhotoBlobIsValid(GridFSDBFile file, String fileName) throws IOException {
         assertNotNull(file);
 
+        fileLen = FileUtils.sizeOf(new File("test/" + fileName));
         assertEquals(fileLen, file.getLength());
         assertEquals("image/png", file.getContentType());
         InputStream is = file.getInputStream();
         assertNotNull(is);
 
         String actualMd5 = DigestUtils.md5Hex(is);
-        String expectedMd5 = DigestUtils.md5Hex(new FileInputStream("test/googlelogo.png"));
+        String expectedMd5 = DigestUtils.md5Hex(new FileInputStream("test/" + fileName));
         assertEquals(expectedMd5, actualMd5);
 
         assertNotNull(file.getFilename());
-        assertEquals(file.getFilename(), "googlelogo.png");
+        assertEquals(file.getFilename(), fileName);
     }
 }

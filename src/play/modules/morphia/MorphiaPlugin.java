@@ -167,6 +167,7 @@ public class MorphiaPlugin extends PlayPlugin {
     public static synchronized void registerGlobalEventHandler(IMorphiaEventHandler handler) {
         if (null == handler) throw new NullPointerException();
         if (!globalEventHandlers_.contains(handler)) globalEventHandlers_.add(handler);
+        
     }
     
     public static synchronized void unregisterGlobalEventHandler(IMorphiaEventHandler handler) {
@@ -185,7 +186,9 @@ public class MorphiaPlugin extends PlayPlugin {
             l = new ArrayList<IMorphiaEventHandler>();
             modelEventHandlers_.put(model, l);
         }
-        l.add(handler);
+        if (!l.contains(l)) {
+            l.add(handler);
+        }
     }
     
     public static synchronized void unregisterModelEventHandler(Class<? extends Model> model, IMorphiaEventHandler handler) {
@@ -304,6 +307,7 @@ public class MorphiaPlugin extends PlayPlugin {
         if (configured_)
             return;
         debug("reading configuration");
+        MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(Play.configuration.getProperty("morphia.postPluginEvent", "false"));
         configureConnection_();
         configured_ = true;
     }
@@ -400,6 +404,8 @@ public class MorphiaPlugin extends PlayPlugin {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void registerEventHandlers_() {
         if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.autoRegisterEventHandler", "true"))) return;
+        
+        // -- register handlers from event handler class --
         List<Class> classes = Play.classloader.getAssignableClasses(IMorphiaEventHandler.class);
         for (Class c: classes) {
             IMorphiaEventHandler h = null;
@@ -414,16 +420,49 @@ public class MorphiaPlugin extends PlayPlugin {
             Watch w = (Watch)c.getAnnotation(Watch.class);
             if (null != w) {
                 Class[] ca = w.value();
-                if (ca.length > 0) {
-                    for (Class modelClass: ca) {
-                        if (Model.class.isAssignableFrom(modelClass) && !Modifier.isAbstract(modelClass.getModifiers())) {
-                            registerModelEventHandler(modelClass, h);
-                        }
-                    }
-                    continue;
+                for (Class modelClass: ca) {
+                    registerModelEventHandlers_(modelClass, h);
                 }
             }
+        }
+        
+        // -- register handlers from model class --
+        classes = Play.classloader.getAssignableClasses(Model.class);
+        for (Class c: classes) {
+            WatchBy wb = (WatchBy)c.getAnnotation(WatchBy.class);
+            if (null == wb) continue;
+            Class[] ca = wb.value();
+            for (Class handler: ca) {
+                if ((IMorphiaEventHandler.class.isAssignableFrom(handler))) {
+                    IMorphiaEventHandler h = null;
+                    try {
+                        Constructor cnst = handler.getDeclaredConstructor();
+                        cnst.setAccessible(true);
+                        h = (IMorphiaEventHandler)cnst.newInstance();
+                    } catch (Exception e) {
+                        Logger.error(e, "Cannot init IMorphiaEventHandler from class: %s", c.getName());
+                        continue;
+                    }
+                    registerModelEventHandlers_(c, h);
+                }
+            }
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void registerModelEventHandlers_(@SuppressWarnings("rawtypes") Class modelClass, IMorphiaEventHandler h) {
+        if (Model.class.equals(modelClass)) {
             registerGlobalEventHandler(h);
+            return;
+        }
+        if (Model.class.isAssignableFrom(modelClass)) {
+            if (!Modifier.isAbstract(modelClass.getModifiers())) registerModelEventHandler(modelClass, h);
+            @SuppressWarnings("rawtypes")
+            List<Class> lc = Play.classloader.getAssignableClasses(modelClass);
+            lc.remove(modelClass);
+            for (@SuppressWarnings("rawtypes") Class c: lc) {
+                registerModelEventHandlers_(c, h);
+            }
         }
     }
 

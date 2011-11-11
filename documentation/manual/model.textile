@@ -123,6 +123,8 @@ bc. {
     },
 }
 
+p(note). Even without <code>@Embedded</code> you can still use java class as field type as long as that class implements <a href="http://download.oracle.com/javase/6/docs/api/java/io/Serializable.html">@java.io.Serializable@</a>. However that field will be stored in MongoDB in binary format instead of structured data as shown above.
+
 p(note). Embedded object is actually NOT an entity at all, you should *NOT* extend embedded object to @play.modules.morphia.Model@, *neither* should you annotate embedded object with <code>@com.google.code.morphia.annotations.Entity</code>
 
 h2. <a name="reference">Reference other models</a>
@@ -141,9 +143,9 @@ There are two ways to do model "link/reference" relationship in your PlayMorphia
 # <a href="#reference-annotate">Use <code>@com.google.code.morphia.annotations.Reference</code> to annotate the model property</a>
 # Store id field of the linked(referenced) entity and create getter/setter to fetch the linked instance
 
-h3. <a name="reference-annotate">@Reference annotation</a>
+h3. <a name="reference-annotate"><code>@Reference</code> annotation</a>
 
-Morphia provides "@Reference":http://code.google.com/docreader/#p=morphia&s=morphia&t=ReferenceAnnotation which exactly map the MongoDB <a href="http://www.mongodb.org/display/DOCS/Database+References">Database Reference</a> to Java world. Example:
+Morphia provides <code>"@Reference":http://code.google.com/docreader/#p=morphia&s=morphia&t=ReferenceAnnotation</code> which exactly map the MongoDB <a href="http://www.mongodb.org/display/DOCS/Database+References">Database Reference</a> to Java world. Example:
 
 bc. @Entity
 public class Customer extends Model {

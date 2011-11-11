@@ -240,4 +240,4 @@ h2. <a name="resource">See also</a>
 # "MongoDB Querying":http://www.mongodb.org/display/DOCS/Querying
 # "MongoDB Advanced Query":http://www.mongodb.org/display/DOCS/Advanced+Queries
 # "How do I perform SQL join equivalent in MongoDB":http://stackoverflow.com/questions/2350495/how-do-i-perform-the-sql-join-equivalent-in-mongodb
-# "Perform aggregation on Query":statistics
+# %(next)"Aggregation":statistics%

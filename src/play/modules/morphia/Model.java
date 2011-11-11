@@ -12,6 +12,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -711,6 +712,7 @@ public class Model implements Serializable, play.db.Model {
      */
     public final void _h_Loaded() {
         setSaved_();
+        loadBlobs();
         h_Loaded();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
         postEvent_(MorphiaEvent.LOADED, this);
@@ -791,6 +793,18 @@ public class Model implements Serializable, play.db.Model {
         // used by enhancer 
     }
     
+    protected void loadBlobs() {
+        // used by enhander
+    }
+    
+    protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
+    protected final boolean blobChanged(String fieldName) {
+        return (blobFieldsTracker.containsKey(fieldName) && blobFieldsTracker.get(fieldName));
+    }
+    protected final void setBlobChanged(String fieldName) {
+        blobFieldsTracker.put(fieldName, true);
+    }
+    
     public String getBlobFileName(String fieldName) {
         return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
     }
@@ -802,7 +816,7 @@ public class Model implements Serializable, play.db.Model {
     public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
         for (String fieldName: fieldNames) {
             String fileName = getBlobFileName(className, id, fieldName);
-            new Blob(fileName).delete();
+            Blob.delete(fileName);
         }
     }
 
@@ -826,7 +840,7 @@ public class Model implements Serializable, play.db.Model {
     }
     
     private static void postEvent_(MorphiaEvent event, Object context) {
-        PlayPlugin.postEvent(event.getId(), context);
+        if (MorphiaPlugin.postPluginEvent) PlayPlugin.postEvent(event.getId(), context);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

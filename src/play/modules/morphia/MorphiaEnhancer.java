@@ -11,7 +11,6 @@ import javassist.CtField;
 import javassist.CtMethod;
 import javassist.Modifier;
 import javassist.NotFoundException;
-import javassist.bytecode.AccessFlag;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
@@ -312,27 +311,24 @@ public class MorphiaEnhancer extends Enhancer {
         List<String> blobs = processFields(ctClass);
         boolean hasBlobField = blobs.size() > 0;
 
-        // enhance all getters returning blobs
-        if (hasBlobField) addGetterToAllBlobFields(ctClass);
-        
-        // enhance saveBlob method
-        if (hasBlobField) enhanceSaveDeleteBlobMethods(ctClass, blobs);
+        // enhance blob methods: save, delete, batchDelete, load and setters
+        if (hasBlobField) enhanceBlobMethods(ctClass, blobs);
         
         // add lifecycle handling code
         addLifeCycleMethods(ctClass);
 
         // Done.
         applicationClass.enhancedByteCode = ctClass.toBytecode();
-        ctClass.detach();
+        ctClass.defrost();
     }
     
-    private void enhanceSaveDeleteBlobMethods(CtClass ctClass, List<String> blobs) throws CannotCompileException, NotFoundException {
+    private void enhanceBlobMethods(CtClass ctClass, List<String> blobs) throws CannotCompileException, NotFoundException {
         // -- saveBlobs
         StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
         for (String blob: blobs) {
-            sb.append(String.format("{Blob blob = %s; if (null != blob) {com.mongodb.gridfs.GridFSDBFile file = blob.getGridFSFile(); String name = getBlobFileName(\"%s\"); file.put(\"name\", name); file.save();}}", blob, blob));
+            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) { com.mongodb.gridfs.GridFSDBFile file = blob.getGridFSFile(); if (null != file) {file.put(\"name\", name); file.save();}}}", blob, blob, blob));
         }
-        sb.append("}");
+        sb.append("blobFieldsTracker.clear();}");
         CtMethod method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
         
@@ -346,24 +342,21 @@ public class MorphiaEnhancer extends Enhancer {
         sb = new StringBuilder("protected void deleteBlobsInBatch(play.modules.morphia.Model.MorphiaQuery q) { String[] blobs = {").append(blobList).append("}; removeGridFSFiles(q, blobs);}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
-    }
-
-    private void addGetterToAllBlobFields(CtClass ctClass) throws CannotCompileException, NotFoundException {
-        for (CtMethod method: ctClass.getMethods()) {
-            // boolean isSynthetic = isSynthetic(method);
-            boolean isGetter = method.getName().startsWith("get");
-            boolean isReturningBlob = method.getReturnType().getName().equals("play.modules.morphia.Blob");
-            // if (isSynthetic && isGetter && isReturningBlob) {
-            if (isGetter && isReturningBlob) {
-                String fieldName = StringUtil.lowerFirstChar(method.getName().substring(3));
-                String methodStr = String.format("public Blob %s() { if (isNew()) return %s; String fileName = getBlobFileName(\"%s\"); Blob b = new Blob(fileName); return b.exists() ? b : null; }", method.getName(), fieldName, fieldName);
-                CtMethod getMethod = CtMethod.make(methodStr, ctClass);
-                getMethod.setModifiers(getMethod.getModifiers() | AccessFlag.SYNTHETIC);
-                getMethod.setName(method.getName());
-                ctClass.removeMethod(method);
-                Logger.trace("adding Getter to Blob field accessor[%s] to [%s]...", getMethod.getLongName(), ctClass.getName());
-                ctClass.addMethod(getMethod);
-            }
+        
+        // -- loadBlobs
+        sb = new StringBuilder("protected void loadBlobs() {");
+        for (String blob: blobs) {
+            sb.append(String.format("{String fileName = getBlobFileName(\"%s\"); Blob b = new Blob(fileName); if (b.exists()) {%s = b;} }", blob, blob));
+        }
+        sb.append("blobFieldsTracker.clear();}");
+        method = CtMethod.make(sb.toString(), ctClass);
+        ctClass.addMethod(method);
+        
+        // -- blob setters
+        for (String blob: blobs) {
+            String setter = "set" + StringUtil.upperFirstChar(blob);
+            CtMethod ctMethod = ctClass.getDeclaredMethod(setter);
+            ctMethod.insertAfter(String.format("setBlobChanged(\"%s\");", blob));
         }
     }
 

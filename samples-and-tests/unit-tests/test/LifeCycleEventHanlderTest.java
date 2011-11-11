@@ -11,17 +11,16 @@ import org.junit.Test;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaEvent.MorphiaEventHandlerAdaptor;
 import play.modules.morphia.Watch;
+import play.modules.morphia.WatchBy;
 import play.test.UnitTest;
+
+import com.google.code.morphia.annotations.Entity;
 
 
 public class LifeCycleEventHanlderTest extends UnitTest {
+    @Watch
     public static class GlobalLifecycleEventListener extends MorphiaEventHandlerAdaptor {
-        public static GlobalLifecycleEventListener instance;
-        public ConcurrentMap<Class<? extends Model>, Integer> updateCounter = new ConcurrentHashMap<Class<? extends Model>, Integer>();
-        
-        public GlobalLifecycleEventListener() {
-            instance = this;
-        }
+        public static ConcurrentMap<Class<? extends Model>, Integer> updateCounter = new ConcurrentHashMap<Class<? extends Model>, Integer>();
         
         @Override
         public void updated(Model context) {
@@ -34,13 +33,13 @@ public class LifeCycleEventHanlderTest extends UnitTest {
             }
         }
         
-        public void assertTrue(Class<? extends Model> model, int count) {
+        public static void assertTrue(Class<? extends Model> model, int count) {
             Integer I = updateCounter.get(model);
             if (null == I) Assert.assertTrue(0 == count);
             Assert.assertTrue (I == count);
         }
         
-        public void resetCounter() {
+        public static void resetCounter() {
             updateCounter.clear();
         }
         
@@ -48,16 +47,11 @@ public class LifeCycleEventHanlderTest extends UnitTest {
     
     @Watch({User.class, Account.class})
     public static class AccountUserLifecycleEventListener extends MorphiaEventHandlerAdaptor {
-        public static AccountUserLifecycleEventListener instance;
-        public ConcurrentMap<Class<? extends Model>, Integer> updateCounter = new ConcurrentHashMap<Class<? extends Model>, Integer>();
-        
-        public AccountUserLifecycleEventListener() {
-            instance = this;
-        }
+        public static ConcurrentMap<Class<? extends Model>, Integer> updateCounter = new ConcurrentHashMap<Class<? extends Model>, Integer>();
         
         @Override
         public void updated(Model context) {
-            if (context instanceof User || context instanceof Account) {
+            if (context instanceof User || context instanceof Account || context instanceof ModelA) {
                 Class<? extends Model> c = context.getClass();
                 Integer I = updateCounter.get(c);
                 if (null == I) {
@@ -70,20 +64,29 @@ public class LifeCycleEventHanlderTest extends UnitTest {
             }
         }
         
-        public void assertTrue(Class<? extends Model> model, int count) {
+        public static void assertTrue(Class<? extends Model> model, int count) {
             Integer I = updateCounter.get(model);
             if (null == I) Assert.assertTrue(0 == count);
             Assert.assertTrue(I == count);
         }
 
-        public void resetCounter() {
+        public static void resetCounter() {
             updateCounter.clear();
         }
         
     }
     
+    @SuppressWarnings("serial")
+    @Entity
+    @WatchBy(AccountUserLifecycleEventListener.class)
+    public static class ModelA extends Model {
+        
+        public String foo;
+    } 
+    
     protected Account acc;
     protected User usr;
+    protected ModelA ma;
     
     @Before
     public void setup() {
@@ -92,39 +95,45 @@ public class LifeCycleEventHanlderTest extends UnitTest {
         
         Account.deleteAll();
         User.deleteAll();
+        ModelA.deleteAll();
         
         acc = new Account("green", "green@pixolut.com", "AU", "IT").save();
         usr = new User("green", "testing").save();
+        ma = new ModelA().save();
         
-        GlobalLifecycleEventListener.instance.resetCounter();
-        AccountUserLifecycleEventListener.instance.resetCounter();
+        GlobalLifecycleEventListener.resetCounter();
+        AccountUserLifecycleEventListener.resetCounter();
     }
     
     @Test
     public void testGlobalEventHandler() {
-        GlobalLifecycleEventListener l = GlobalLifecycleEventListener.instance;
-        
         acc.department = "MGMT";
         acc.save();
         
         usr.tag = "full";
         usr.save();
         
-        l.assertTrue(User.class, 1);
-        l.assertTrue(Account.class, 1);
+        GlobalLifecycleEventListener.assertTrue(User.class, 1);
+        GlobalLifecycleEventListener.assertTrue(Account.class, 1);
     }
     
     @Test
     public void testModelEventHandler() {
-        AccountUserLifecycleEventListener l = AccountUserLifecycleEventListener.instance;
-        
         acc.department = "MGMT";
         acc.save();
         
         usr.tag = "full";
         usr.save();
         
-        l.assertTrue(User.class, 1);
-        l.assertTrue(Account.class, 1);
+        AccountUserLifecycleEventListener.assertTrue(User.class, 1);
+        AccountUserLifecycleEventListener.assertTrue(Account.class, 1);
+    }
+    
+    @Test
+    public void testWatchBy() {
+        ma.foo = "bar";
+        ma.save();
+        
+        AccountUserLifecycleEventListener.assertTrue(ModelA.class, 1);
     }
 }
