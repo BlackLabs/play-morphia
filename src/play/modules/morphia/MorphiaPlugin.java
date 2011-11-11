@@ -17,6 +17,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 import org.bson.types.ObjectId;
 
@@ -30,6 +31,8 @@ import play.exceptions.ConfigurationException;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
+import play.modules.morphia.utils.PlayLogrFactory;
+import play.modules.morphia.utils.SilentLogrFactory;
 import play.modules.morphia.utils.StringUtil;
 
 import com.google.code.morphia.AbstractEntityInterceptor;
@@ -40,6 +43,8 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.logging.LogrFactory;
+import com.google.code.morphia.logging.MorphiaLoggerFactory;
 import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
 import com.google.code.morphia.query.Criteria;
@@ -64,8 +69,24 @@ public class MorphiaPlugin extends PlayPlugin {
         Logger.info(msg_(msg, args));
     }
     
+    public static void info(Throwable t, String msg, Object... args) {
+        Logger.info(t, msg_(msg, args));
+    }
+    
     public static void debug(String msg, Object... args) {
         Logger.debug(msg_(msg, args));
+    }
+    
+    public static void debug(Throwable t, String msg, Object... args) {
+        Logger.debug(t, msg_(msg, args));
+    }
+    
+    public static void trace(String msg, Object... args) {
+        Logger.trace(msg_(msg, args));
+    }
+    
+    public static void trace(Throwable t, String msg, Object... args) {
+        Logger.warn(t, msg_(msg, args));
     }
 
     public static void warn(String msg, Object... args) {
@@ -108,6 +129,12 @@ public class MorphiaPlugin extends PlayPlugin {
     private static boolean configured_ = false;
     
     private static boolean appStarted_ = false;
+    
+    private static boolean loggerRegistered_ = false; 
+    
+    public static boolean loggerRegistered() {
+        return loggerRegistered_;
+    }
     
     static boolean postPluginEvent = false;
 
@@ -325,6 +352,7 @@ public class MorphiaPlugin extends PlayPlugin {
         }
     }
     
+    @SuppressWarnings("unchecked")
     private void initMorphia_() {
         Properties c = Play.configuration;
         
@@ -342,7 +370,25 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
 
+        String loggerClass = c.getProperty("morphia.logger");
+        Class<? extends LogrFactory> loggerClazz = SilentLogrFactory.class;
+        if (null != loggerClass) {
+            final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes)", Pattern.CASE_INSENSITIVE);
+            final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no)", Pattern.CASE_INSENSITIVE);
+            if (P_PLAY.matcher(loggerClass).matches()) {
+                loggerClazz = PlayLogrFactory.class;
+            } else if (!P_SILENT.matcher(loggerClass).matches()) {
+                try {
+                    loggerClazz = (Class<? extends LogrFactory>) Class.forName(loggerClass);
+                } catch (Exception e) {
+                    warn("Cannot init morphia logger factory using %s. Use PlayLogrFactory instead", loggerClass);
+                }
+            }
+        }
+        loggerRegistered_ = false;
+        MorphiaLoggerFactory.registerLogger(loggerClazz);
         morphia_ = new Morphia();
+        loggerRegistered_ = true;
         ds_ = morphia_.createDatastore(mongo_, dbName);
         dataStores_.put(dbName, ds_);
 

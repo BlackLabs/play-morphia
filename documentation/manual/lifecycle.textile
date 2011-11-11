@@ -195,7 +195,10 @@ Note you can choose either PlayMorphia or Morphia lifecycle event dispatch mecha
 # PlayMorphia defines common event handler at global and model level
 # With PlayMorphia, you can define handler/model binding relationship by annotating on either Model (<code>@WatchBy</code>) or Handler (<code>@Watch</code>), while Morphia force you to annotate on Model class only (<code>@EntityListeners</code>)
 
+p(note). PlayMorphia lifecycle event handler (annotation based or interface based) will ONLY BE CALLED when you are operating on PlayMorphia classes. They will NOT get triggered when you are manupulating the low level objects, e.g. If you save/load/delete MongoDB's @DBObject@ directly the added/updated/loaded events will not trigger, if you call @delete()@ on @com.google.code.morphia.query.Query@, the onBatchDelete and batchDeleted events will not trigger.
+
 h2. <a name="resource">Resources</code>
 
-# "Lifecyle definition of PlayMorphia and Morphia":lifecycle-def
-# "PlayMorphia model":model
+# %(next)"Lifecyle model of PlayMorphia and Morphia":lifecycle-def%
+# "Introduction to PlayMorphia model":model
+# "Use PlayMorphia model: crud":crud

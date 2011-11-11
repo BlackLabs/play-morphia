@@ -80,14 +80,16 @@ h3. <a name="regex">Search with regular expression</a>
 
 Application developer could implement regular expression based text search by using java.util.regex.Pattern class. The following query returns all users with firstName contains "john" or "John" 
 
-bc. List<User> johns = User.q().filter("firstName", Pattern.compile("[Jj]ohn")).asList();
+bc. List<User> johns = User.q().filter("firstName", 
+    Pattern.compile("john", Pattern.CASE_INSENSITIVE)).asList();
 
 h3. <a name="or">OR query</a>
 
 You can use the @filter()@ interface and @find()@ interface to apply contraints on mutiple fields using "AND" relationship. In order to implement a "OR" based query you need to use @MorphiaQuery.or()@ and @com.google.code.morphia.query.Criteria@ interface. The following query search for user who's first name contains "john" or last name contains "john":
 
 bc. MorphiaQuery q = User.q();
-q.or(q.criteria("firstName").contains("[Jj]ohn"), q.criteria("lastName").contains("[Jj]ohn"));
+q.or(q.criteria("firstName").containsIgnoreCase("john"), 
+    q.criteria("lastName").containsIgnoreCase("john"));
 List<User> johns = q.asList();
 
 p(note). Here @q.criteria(<fieldname>).contains(<keyword>)@ is one of Morphia's "fluent interface":http://code.google.com/p/morphia/wiki/Query#Fluent_Interface. You should not pass @Pattern@ object into the @contains@ interface. Instead, pass @String@ type object which will be automatically converted to @Pattern@ by the underline implementation.
