@@ -17,6 +17,6 @@ PlayMorphia is a Object-MongoDB mapping layer to help Play application developer
 ## Data binding and validation. You can continue enjoy Play's automatic data binding mechansim when you are working with PlayMorphia
 ## Fixtures. You can use Play's Fixture to load yaml data into your MongoDB. However you need to use MorphiaFixture to delete data
 
-h2. <a href="resource">See Also</a>
+h2. <a name="resource">See Also</a>
 
 # %(next)"PlayMorphia overview":overview%

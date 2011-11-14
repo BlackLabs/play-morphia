@@ -658,6 +658,14 @@ public class Model implements Serializable, play.db.Model {
     public static Datastore ds() {
         return MorphiaPlugin.ds();
     }
+    
+    /**
+     * Return MongoDB DBCollection for this model
+     */
+    public static DBCollection col() {
+        throw new UnsupportedOperationException(
+                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
 
     /**
      * Return MongoDB DB instance

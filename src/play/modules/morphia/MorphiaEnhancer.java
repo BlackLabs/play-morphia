@@ -254,6 +254,10 @@ public class MorphiaEnhancer extends Enhancer {
             CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return (Model)mf.findById(id); }",ctClass);
             ctClass.addMethod(findById);
         }
+        
+        // col
+        CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds().getCollection(" + className + "); }", ctClass);
+        ctClass.addMethod(col);
 
         // count
         CtMethod count = CtMethod.make("public static long count() { return ds().getCount(" + className + "); }", ctClass);
