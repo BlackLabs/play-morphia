@@ -1,5 +1,3 @@
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,19 +9,15 @@ import models.User;
 import org.junit.Before;
 import org.junit.Test;
 
-import play.modules.morphia.MorphiaPlugin;
 import play.test.Fixtures;
 import play.test.MorphiaFixtures;
 import play.test.UnitTest;
-
-import com.google.code.morphia.Datastore;
  
 public class BasicTest extends UnitTest {
-    protected Datastore ds = MorphiaPlugin.ds();
     
     @Before
     public void setup() {
-        MorphiaFixtures.deleteDatabase();
+        MorphiaFixtures.deleteAllModels();
     }
  
     @Test
@@ -32,7 +26,7 @@ public class BasicTest extends UnitTest {
         new User("bob@gmail.com", "secret", "Bob").save();
 
         // Retrieve the user with bob username
-        User bob = User.<User>find("byEmail", "bob@gmail.com").first();
+        User bob = User.find("byEmail", "bob@gmail.com").first();
 
         // Test 
         assertNotNull(bob);
@@ -53,8 +47,7 @@ public class BasicTest extends UnitTest {
     @Test
     public void createPost() {
         // Create a new user and save it
-        User bob = new User("bob@gmail.com", "secret", "Bob");
-        bob.save();
+        User bob = new User("bob@gmail.com", "secret", "Bob").save();
 
         // Create a new post
         new Post(bob, "My first post", "Hello world").save();
@@ -63,13 +56,13 @@ public class BasicTest extends UnitTest {
         assertEquals(1, Post.count());
 
         // Retrieve all post created by bob
-        List<Post> bobPosts = Post.<Post>find("byAuthor", bob).asList();
+        List<Post> bobPosts = Post.find("byAuthorEmail", bob.email).asList();
 
         // Tests
         assertEquals(1, bobPosts.size());
         Post firstPost = bobPosts.get(0);
         assertNotNull(firstPost);
-        assertEquals(bob, firstPost.author);
+        assertEquals(bob.email, firstPost.authorEmail);
         assertEquals("My first post", firstPost.title);
         assertEquals("Hello world", firstPost.content);
         assertNotNull(firstPost.postedAt);
@@ -78,19 +71,17 @@ public class BasicTest extends UnitTest {
     @Test
     public void postComments() {
         // Create a new user and save it
-        User bob = new User("bob@gmail.com", "secret", "Bob");
-        bob.save();
+        User bob = new User("bob@gmail.com", "secret", "Bob").save();
 
         // Create a new post
-        Post bobPost = new Post(bob, "My first post", "Hello world");
-        bobPost.save();
+        Post bobPost = new Post(bob, "My first post", "Hello world").save();
 
         // Post a first comment
-        new Comment(bobPost, "Jeff", "Nice post");
-        new Comment(bobPost, "Tom", "I knew that !");
+        new Comment(bobPost, "Jeff", "Nice post").save();
+        new Comment(bobPost, "Tom", "I knew that !").save();
 
         // Retrieve all comments
-        List<Comment> bobPostComments = bobPost.comments;
+        List<Comment> bobPostComments = Comment.q().filter("post in", bobPost).asList();
 
         // Tests
         assertEquals(2, bobPostComments.size());
@@ -111,8 +102,7 @@ public class BasicTest extends UnitTest {
     @Test
     public void useTheCommentsRelation() {
         // Create a new user and save it
-        User bob = new User("bob@gmail.com", "secret", "Bob");
-        bob.save();
+        User bob = new User("bob@gmail.com", "secret", "Bob").save();
 
         // Create a new post
         Post bobPost = new Post(bob, "My first post", "Hello world").save();
@@ -124,10 +114,10 @@ public class BasicTest extends UnitTest {
         // Count things
         assertEquals(1, User.count());
         assertEquals(1, Post.count());
-        assertEquals(2, bobPost.comments.size());
+        assertEquals(2, Comment.count());
 
         // Retrieve the bob post
-        bobPost = Post.<Post>find("byAuthor", bob).first();
+        bobPost = Post.find("byAuthorEmail", bob.email).first();
         assertNotNull(bobPost);
 
         // Navigate to comments
@@ -140,17 +130,17 @@ public class BasicTest extends UnitTest {
         // Chech the all comments have been deleted
         assertEquals(1, User.count());
         assertEquals(0, Post.count());
-        //assertEquals(0, Comment.count());
+        assertEquals(0, Comment.count());
     }
     
     @Test
     public void fullTest() {
-        Fixtures.loadModels("initial-data.yml");
+        Fixtures.loadModels("data.yml");
 
         // Count things
-        assertEquals(3, User.count());
+        assertEquals(2, User.count());
         assertEquals(3, Post.count());
-        // yml load does not support embedded items assertEquals(3, Comment.count());
+        assertEquals(3, Comment.count());
 
         // Try to connect as users
         assertNotNull(User.connect("bob@gmail.com", "secret"));
@@ -159,29 +149,25 @@ public class BasicTest extends UnitTest {
         assertNull(User.connect("tom@gmail.com", "secret"));
 
         // Find all bob posts
-        User u = User.<User>filter("email", "bob@gmail.com").first();
-        List<Post> bobPosts = Post.<Post>filter("author", u).asList();
+        List<Post> bobPosts = Post.find("authorEmail", "bob@gmail.com").asList();
         assertEquals(2, bobPosts.size());
 
         // Find all comments related to bob posts
-        /* yml load does not support embedded items
-        List<Comment> bobComments = Comment.filter("post.author.email", "bob@gmail.com").asList();
+        List<Comment> bobComments = Comment.q().filter("post in", Post.find("authorEmail", "bob@gmail.com").asKeyList()).asList();
         assertEquals(3, bobComments.size());
-        */
 
         // Find the most recent post
-        Post frontPost = (Post) Post.find().order("-postedAt").get();
+        Post frontPost = Post.q().order("-postedAt").first();
         assertNotNull(frontPost);
         assertEquals("About the model layer", frontPost.title);
 
         // Check that this post has two comments
-        // yml load does not support embedded items: assertEquals(2, frontPost.comments.size());
+        assertEquals(2, frontPost.comments.size());
 
         // Post a new comment
         frontPost.addComment("Jim", "Hello guys");
-        assertEquals(1, frontPost.comments.size());
-        // yml load does not support embedded items: assertEquals(3, frontPost.comments.size());
-        // yml load does not support embedded items: assertEquals(4, Comment.count());
+        assertEquals(3, frontPost.comments.size());
+        assertEquals(4, Comment.count());
     }
     
     @Test
@@ -210,25 +196,13 @@ public class BasicTest extends UnitTest {
         assertEquals(0, Post.findTaggedWith("Red", "Green", "Blue").size());  
         assertEquals(0, Post.findTaggedWith("Green", "Blue").size());    
         
-        List<Map<String, Integer>> cloud = Tag.getCloud();
-        Collections.sort(cloud, new Comparator<Map<String, Integer>>() {
-            public int compare(Map<String, Integer> m1, Map<String, Integer> m2) {
-                return m1.keySet().iterator().next().compareTo(m2.keySet().iterator().next());
-            }
-        });
-        assertEquals("[{Blue=1}, {Green=1}, {Red=2}]", cloud.toString());
-        
-    }
-    
-    @Test
-    public void testIsNew() {
-        User bob = new User("bob@gmail.com", "secret", "Bob");
-        assertTrue(bob.isNew());
-        bob.save();
-        assertFalse(bob.isNew());
-        
-        //User b2 = User.<User>filter("email", "bob@gmail.com").get();
-        assertFalse(bob.isNew());
+        Map<String, Long> cloud = Tag.getCloud();
+        long blue = cloud.get("Blue");
+        long green = cloud.get("Green");
+        long red = cloud.get("Red");
+        assertEquals(blue, 1);
+        assertEquals(green, 1);
+        assertEquals(red, 2);
     }
  
 }

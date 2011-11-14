@@ -38,7 +38,6 @@ import play.mvc.Scope.Params;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Key;
 import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.Mapper;
@@ -53,6 +52,8 @@ import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.MapReduceCommand;
+import com.mongodb.MapReduceOutput;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -303,7 +304,6 @@ public class Model implements Serializable, play.db.Model {
     }
 
     @SuppressWarnings("unused")
-    @PrePersist
     private void generateId_() {
         if (isEmbedded_())
             return;
@@ -491,6 +491,11 @@ public class Model implements Serializable, play.db.Model {
 
     public static AggregationResult groupCount(String field,
             String... groupKeys) {
+        throw new UnsupportedOperationException(
+                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+    
+    public static Map<String, Long> _cloud(String field) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -764,6 +769,7 @@ public class Model implements Serializable, play.db.Model {
         postEvent_(MorphiaEvent.ON_ADD, this);
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_ADD, this);
         h_OnAdd();
+        generateId_();
     }
     
     /**
@@ -854,6 +860,14 @@ public class Model implements Serializable, play.db.Model {
 
         public Query<? extends Model> getMorphiaQuery() {
             return q_;
+        }
+        
+        public DBObject getQueryObject() {
+            return q_.getQueryObject();
+        }
+        
+        public DBCollection col() {
+            return ds().getCollection(c_);
         }
 
         // constructor for clone() usage
@@ -1055,10 +1069,22 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public Set<?> distinct(String key) {
-            return new HashSet(ds().getCollection(c_).distinct(key,
-                    q_.getQueryObject()));
+            return new HashSet(col().distinct(key, getQueryObject()));
         }
-
+        
+        public Map<String, Long> cloud(String field) {
+            String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
+            String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
+            MapReduceCommand cmd = new MapReduceCommand(col(), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
+            MapReduceOutput out = col().mapReduce(cmd);
+            Map<String, Long> m = new HashMap<String, Long>();
+            for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+                DBObject dbo = itr.next();
+                m.put((String)dbo.get("_id"), ((Double)dbo.get("value")).longValue());
+            }
+            return m;
+        }
+        
         /**
          * 
          * @param groupKeys

@@ -373,8 +373,8 @@ public class MorphiaPlugin extends PlayPlugin {
         String loggerClass = c.getProperty("morphia.logger");
         Class<? extends LogrFactory> loggerClazz = SilentLogrFactory.class;
         if (null != loggerClass) {
-            final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes)", Pattern.CASE_INSENSITIVE);
-            final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no)", Pattern.CASE_INSENSITIVE);
+            final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes|on)", Pattern.CASE_INSENSITIVE);
+            final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no|off)", Pattern.CASE_INSENSITIVE);
             if (P_PLAY.matcher(loggerClass).matches()) {
                 loggerClazz = PlayLogrFactory.class;
             } else if (!P_SILENT.matcher(loggerClass).matches()) {
@@ -386,6 +386,7 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
         loggerRegistered_ = false;
+        MorphiaLoggerFactory.reset();
         MorphiaLoggerFactory.registerLogger(loggerClazz);
         morphia_ = new Morphia();
         loggerRegistered_ = true;

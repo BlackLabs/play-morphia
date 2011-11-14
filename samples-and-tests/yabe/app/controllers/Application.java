@@ -7,7 +7,6 @@ import play.libs.*;
 import play.cache.*;
  
 import java.util.*;
-
 import models.*;
  
 public class Application extends Controller {
@@ -19,19 +18,19 @@ public class Application extends Controller {
     }
  
     public static void index() {
-        Post frontPost = Post.find().order("-postedAt").first();
-        List<Post> olderPosts = Post.find().order("-postedAt").offset(1).limit(10).asList();
+        Post frontPost = Post.q().order("-postedAt").first();
+        List<Post> olderPosts = Post.q().order("-postedAt").from(1).fetch(10);
         render(frontPost, olderPosts);
     }
     
-    public static void show(String id) {
+    public static void show(Long id) {
         Post post = Post.findById(id);
         String randomID = Codec.UUID();
         render(post, randomID);
     }
     
     public static void postComment(
-        String postId, 
+        Long postId, 
         @Required(message="Author is required") String author, 
         @Required(message="A message is required") String content, 
         @Required(message="Please type the code") String code, 
@@ -41,7 +40,7 @@ public class Application extends Controller {
         if(!Play.id.equals("test")) {
             validation.equals(code, Cache.get(randomID)).message("Invalid code. Please type it again");
         }
-        if(Validation.hasErrors()) {
+        if(validation.hasErrors()) {
             render("Application/show.html", post, randomID);
         }
         post.addComment(author, content);

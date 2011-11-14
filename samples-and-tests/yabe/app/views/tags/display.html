@@ -5,7 +5,7 @@
         <a href="@{Application.show(_post.id)}">${_post.title}</a>
     </h2>
     <div class="post-metadata">
-        <span class="post-author">by ${_post.author.fullname}</span>,
+        <span class="post-author">by ${_post.author?.fullname}</span>,
         <span class="post-date">${_post.postedAt.format('dd MMM yy')}</span>
         #{if _as != 'full'}
             <span class="post-comments">

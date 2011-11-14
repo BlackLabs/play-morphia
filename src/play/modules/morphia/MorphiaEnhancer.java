@@ -264,43 +264,47 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(count2);
         
         // distinct
-        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return new java.util.HashSet(ds().getCollection(%s).distinct(key));}", className), ctClass);
+        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return q().distinct(key);}", className), ctClass);
         ctClass.addMethod(distinct);
         
+        // cloud
+        CtMethod cloud = CtMethod.make("public static java.util.Map _cloud(String key) {return q().cloud(key);}", ctClass);
+        ctClass.addMethod(cloud);
+        
         // max
-        CtMethod max = CtMethod.make(String.format("public static Long _max(String field) {return q().max(field);}", className), ctClass);
+        CtMethod max = CtMethod.make("public static Long _max(String field) {return q().max(field);}", ctClass);
         ctClass.addMethod(max);
 
         // group-max
-        CtMethod groupmax = CtMethod.make(String.format("public static AggregationResult groupMax(String field, String[] groupKeys) {return q().groupMax(field, groupKeys);}", className), ctClass);
+        CtMethod groupmax = CtMethod.make("public static AggregationResult groupMax(String field, String[] groupKeys) {return q().groupMax(field, groupKeys);}", ctClass);
         ctClass.addMethod(groupmax);
 
         // min
-        CtMethod min = CtMethod.make(String.format("public static Long _min(String field) {return q().min(field);}", className), ctClass);
+        CtMethod min = CtMethod.make("public static Long _min(String field) {return q().min(field);}", ctClass);
         ctClass.addMethod(min);
 
         // group-min
-        CtMethod groupMin = CtMethod.make(String.format("public static AggregationResult groupMin(String field, String[] groupKeys) {return q().groupMin(field, groupKeys);}", className), ctClass);
+        CtMethod groupMin = CtMethod.make("public static AggregationResult groupMin(String field, String[] groupKeys) {return q().groupMin(field, groupKeys);}", ctClass);
         ctClass.addMethod(groupMin);
 
         // average
-        CtMethod average = CtMethod.make(String.format("public static Long _average(String field) {return q().average(field);}", className), ctClass);
+        CtMethod average = CtMethod.make("public static Long _average(String field) {return q().average(field);}", ctClass);
         ctClass.addMethod(average);
 
         // group-average
-        CtMethod groupAverage = CtMethod.make(String.format("public static AggregationResult groupAverage(String field, String[] groupKeys) {return q().groupAverage(field, groupKeys);}", className), ctClass);
+        CtMethod groupAverage = CtMethod.make("public static AggregationResult groupAverage(String field, String[] groupKeys) {return q().groupAverage(field, groupKeys);}", ctClass);
         ctClass.addMethod(groupAverage);
 
         // sum
-        CtMethod sum = CtMethod.make(String.format("public static Long _sum(String field) {return q().sum(field);}", className), ctClass);
+        CtMethod sum = CtMethod.make("public static Long _sum(String field) {return q().sum(field);}", ctClass);
         ctClass.addMethod(sum);
 
         // group-sum
-        CtMethod groupSum = CtMethod.make(String.format("public static AggregationResult groupSum(String field, String[] groupKeys) {return q().groupSum(field, groupKeys);}", className), ctClass);
+        CtMethod groupSum = CtMethod.make("public static AggregationResult groupSum(String field, String[] groupKeys) {return q().groupSum(field, groupKeys);}", ctClass);
         ctClass.addMethod(groupSum);
 
         // group-count
-        CtMethod groupCount = CtMethod.make(String.format("public static AggregationResult groupCount(String field, String[] groupKeys) {return q().groupCount(field, groupKeys);}", className), ctClass);
+        CtMethod groupCount = CtMethod.make("public static AggregationResult groupCount(String field, String[] groupKeys) {return q().groupCount(field, groupKeys);}", ctClass);
         ctClass.addMethod(groupCount);
 
         // deleteAll

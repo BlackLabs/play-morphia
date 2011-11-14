@@ -19,7 +19,7 @@ User(paul):
 Post(firstBobPost):
     title:          About the model layer
     postedAt:       2009-06-14
-    author:         bob
+    authorEmail:    bob
     tags:           
                     - play
                     - architecture
@@ -37,7 +37,7 @@ Post(firstBobPost):
 Post(secondBobPost):
     title:          Just a test of YABE
     postedAt:       2009-03-25
-    author:         bob
+    authorEmail:    bob
     tags:           
                     - test
     content:        >
@@ -46,7 +46,7 @@ Post(secondBobPost):
 Post(jeffPost):
     title:          The MVC application
     postedAt:       2009-06-06
-    author:         jeff
+    authorEmail:    jeff
     tags:           
                     - play
                     - architecture
@@ -59,3 +59,23 @@ Post(jeffPost):
                     layer and the Model layer. The Presentation layer is further split into a 
                     View and a Controller layer.
                     
+Comment(c1):
+    author:         Guest
+    content:        >
+                    You are right !
+    postedAt:       2009-06-14
+    post:           firstBobPost
+    
+Comment(c2):
+    author:         Mike
+    content:        >
+                    I knew that ...
+    postedAt:       2009-06-15
+    post:           firstBobPost    
+    
+Comment(c3):
+    author:         Tom
+    content:        >
+                    This post is useless ?
+    postedAt:       2009-04-05
+    post:           secondBobPost    

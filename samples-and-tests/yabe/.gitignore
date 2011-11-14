@@ -2,7 +2,9 @@ logs
 eclipse
 tmp
 precompiled
+modules
 test-result
 .classpath
 .settings
-
+.project
+cobertura.ser

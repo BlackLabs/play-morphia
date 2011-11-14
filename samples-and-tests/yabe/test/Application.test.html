@@ -1,6 +1,6 @@
 *{ You can use plain selenium command using the selenium tag }*
 
-#{fixture delete:'all', load:'data.yml' /}
+#{morphiaFixture delete:'all', load:'data.yml' /}
  
 #{selenium 'Check home page'}
     clearSession()
@@ -12,7 +12,7 @@
     assertTextPresent('About the model layer')
     assertTextPresent('by Bob')
     assertTextPresent('2 comments*,*latest by Mike')
-    assertTextPresent('It is the domain-specific representation')
+    assertTextPresent('domain-specific')
     
     // Check older posts
     assertTextPresent('The MVC application')
