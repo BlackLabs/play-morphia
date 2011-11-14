@@ -23,6 +23,8 @@ h2. <a name="guide">Tutorials -- PlayMorphia guide, adapt YABE from JPA to PlayM
 
 Learn PlayMorhpia by adapting Play's YABE sample application from JPA to PlayMorphia. 
 
+TODO. For the moment, see the YABE sample application released along with the plugin
+
 h2. <a name="manual">The essential documentation</a>
 
 Everything you need to know about PlayMorphia
@@ -64,16 +66,17 @@ Everything you need to know about PlayMorphia
 # "Advanced topics":advance
 ## "Advanced PlayMorphia Models":advance#model
 ## "Statistics: aggregation and grouping":statistics
+## "Cloud: calculate tag weight":cloud
 ## "Handle lifecycle events":lifecycle#event
 <div style="display:none">
 # "Play integration":play
 ## "CRUD Support":play#crud
 ## "Lifecycle events":play#event
 ## "Morphia Fixture":play#fixture
+</div>
 
 h2. <a name="reference">References</a>
 
 # "Configuration":config
 # "Annotations":annotation
 # "API":todo
-</div>

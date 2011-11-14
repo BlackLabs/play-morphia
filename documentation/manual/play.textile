@@ -1,0 +1,4 @@
+h1. Play integration
+
+PlayMorphia integrate with Play!Framework seamlessly, even better than the integration of Play's JPA data layer.
+

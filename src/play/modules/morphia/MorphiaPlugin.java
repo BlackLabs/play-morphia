@@ -424,7 +424,7 @@ public class MorphiaPlugin extends PlayPlugin {
             try {
                 idType_ = IdType.valueOf(s);
                 debug("ID Type set to : %1$s", idType_.name());
-                if ("1.2beta".equals(VERSION) && idType_ == IdType.Long) {
+                if (idType_ == IdType.Long && "1.2beta".equals(VERSION)) {
                     warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
                 }
             } catch (Exception e) {

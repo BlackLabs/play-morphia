@@ -303,7 +303,6 @@ public class Model implements Serializable, play.db.Model {
                         + this.getClass().getName());
     }
 
-    @SuppressWarnings("unused")
     private void generateId_() {
         if (isEmbedded_())
             return;

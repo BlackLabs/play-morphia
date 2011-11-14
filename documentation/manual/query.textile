@@ -141,8 +141,14 @@ bc. @Entity public class BlogEntry extends Model {
 
 The following code find out all blog entries written by greenlaw110@gmail.com:
 
-bc. Author green = Author.find("email", "greenlaw110@gmail.com").get();
+bc. Key<Author> green = Author.find("email", "greenlaw110@gmail.com").getKey();
 List<BlogEntry> entries = BlogEntry.find("author", green).asList();
+
+And the following code find out all blog entries written by greenlaw110@gmail.com and greenlaw110@hotmail.com:
+
+bc. String[] emails = {"greenlaw110@gmail.com", "greenlaw110@hotmail.com"};
+List<Key<Author>> greens = Author.find("email in", emails).asKeyList();
+List<BlogEntry> entries = BlogEntry.q().filter("author in", greens).asList();
 
 If you are using the "manually reference approach":model#reference-manual to define reference model:
 

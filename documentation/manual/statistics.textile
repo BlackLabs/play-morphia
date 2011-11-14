@@ -98,5 +98,6 @@ System.out.println("IT min: " + byRegionDep.get("department, region", "IT", "AU"
 h2. <a name="resource">See Also</a>
 
 # "Understanding PlayMorphia model":model
+# %(next)"Cloud: calculate tag weight":cloud%
 # "Using Query":query
 # "How to do aggregation across models":todo
