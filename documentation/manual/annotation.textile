@@ -1,0 +1,33 @@
+h1. PlayMorphia annotations
+
+In this chapter we list all annotations used in PlayMorphia application development including annotations provided by Morphia and annotations supplied by PlayMorphia only.
+
+h2. <a name="morphia">Morphia annotations</a>
+
+You can use any Morphia annotation in your PlayMorphia application. Please visit the "Morphia all annotations page":http://code.google.com/p/morphia/wiki/AllAnnotations at Morphia site.
+
+h2. <a name="play">PlayMorphia annotations</a>
+
+The following annotations are scoped to @play.modules.morphia.Model@:
+
+|_. Annotation|_. Mark|_. Description|
+|Added|Model method|Mark a method to be called when an new entity has been saved|
+|AutoTimestamp|Model class|Indicate the model class shall be enhanced to support automatic timestamp|
+|BatchDeleted|Model method|Mark a method to be called when a query of the model has been deleted|
+|Column|Model field|Used to specify a different column name mapping to the field|
+|Deleted|Model method|Mark a method to be called when an entity is deleted from MongoDB|
+|Loaded|Model method|Mark a method to be called when an entity has been loaded from MongoDB|
+|NoId|Model class|Notify PlayMorphia enhancer not to generate ID field for the class (as it's parent class has ID field defined)|
+|OnAdd|Model method|Mark a method to be called when an new entity is about to be saved to MongoDB|
+|OnBatchDelete|Model method|Mark a method to be called when a query of entities is about to be deleted from MongoDB|
+|OnDelete|Model method|Mark a method to be called when an entity is about to be deleted from MongoDB|
+|OnLoad|Model method|Mark a method to be called when an entity is about to be loaded from MongoDB|
+|OnUpdate|Model method|Mark a method to be called when an existing entity is about to be saved to MongoDB|
+|Updated|Model method|Mark a method to be called when an existing entity has been saved to MongoDB|
+
+h2. <a name="resource">See also</a>
+
+# "PlayMorphia entity lifecycle events":lifecycle-def
+# "Specify name of mapped collection and columns":rename
+# "PlayMoprhia model inheritance":inherit
+# "Go back to PlayMorphia document home":home

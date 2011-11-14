@@ -27,3 +27,8 @@ h2. <a name="misc">Miscellaneous configurations</a>
 |@morphia.postPluginEvent@|When set to true, PlayMorphia will post entity lifecycle events to Play plugin's event framework. Note turning on this configuration might impact performance a little bit|@false@|
 |@morphia.autoRegisterEventHandler@|When set to true, PlayMorphia will automatically register lifecycle event handler using annotations. See "here":lifecycle#reg-ann|@true@|
 |@morphia.defaultWriteConcern@|Set default writeconcern. Could one of "@FSYNC_SAFE@", "@NONE@", "@NORMAL@", "@REPLICAS_SAFE@", "@SAFE@". See "here":http://api.mongodb.org/java/2.6/com/mongodb/WriteConcern.html for details|@SAFE@|
+
+h2. <a name="resource">See also</a>
+
+# "Getting start":start#config
+# "Morphia documetation home"#home

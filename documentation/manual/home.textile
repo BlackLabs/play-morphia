@@ -23,7 +23,7 @@ h2. <a name="guide">Tutorials -- PlayMorphia guide, adapt YABE from JPA to PlayM
 
 Learn PlayMorhpia by adapting Play's YABE sample application from JPA to PlayMorphia. 
 
-TODO. For the moment, see the YABE sample application released along with the plugin
+This section is under construction. For the moment, check the YABE sample application released along with the plugin, read the source code, and run the test.
 
 h2. <a name="manual">The essential documentation</a>
 
@@ -79,4 +79,4 @@ h2. <a name="reference">References</a>
 
 # "Configuration":config
 # "Annotations":annotation
-# "API":todo
+# "API":../api/index.html
