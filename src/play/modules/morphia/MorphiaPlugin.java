@@ -63,7 +63,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.4";
+    public static final String VERSION = "1.2.4a";
     
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -146,7 +146,7 @@ public class MorphiaPlugin extends PlayPlugin {
         Long, ObjectId
     }
 
-    private static IdType idType_ = IdType.ObjectId;
+    private static IdType idType_ = null;
 
     public static IdType getIdType() {
         return idType_;
@@ -334,6 +334,7 @@ public class MorphiaPlugin extends PlayPlugin {
         if (configured_)
             return;
         debug("reading configuration");
+        initIdType_();
         MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(Play.configuration.getProperty("morphia.postPluginEvent", "false"));
         configureConnection_();
         configured_ = true;
@@ -417,6 +418,7 @@ public class MorphiaPlugin extends PlayPlugin {
     }
     
     private void initIdType_() {
+        if (null != idType_) return;
         Properties c = Play.configuration;
         if (c.containsKey("morphia.id.type")) {
             debug("reading id type...");

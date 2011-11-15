@@ -1,6 +1,6 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.4 release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.4a release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history.
 
@@ -11,10 +11,10 @@ Your first steps with PlayMorphia module and your first 5 minutes of fun.
 # "PlayMorphia Features":feature
 # "PlayMorphia overview":overview
 # "Frequently Asked Questions":faq
+# %(next)"Installation and Configuration":start%
 <div style="display:none">
 # "Watch the screencast":http://screenr.com/
 # "Five cool things you can do with PlayMorphia":5things
-# %(next)"Installation and Configuration":start%
 # "Your first application —— the ‘Hello World’ tutorial":firstapp
 # "Sample applications":samples
 </div>
