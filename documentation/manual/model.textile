@@ -58,7 +58,9 @@ bc. morphia.id.type=Long
 
 Whichever ID type is used, PlayMorphia will always generate ID value automatically.
 
-p(note). See also "How to use customize ID field in the model class":cust_id  
+p(note). *Note* once you have set your app to use one type of ID you should stick to that type. If you change the type you will encounter problem when load existing data from database.
+
+See also "How to use customize ID field in the model class":cust_id  
 
 h3. <a name="rules">Rule of thumb</a>
 
@@ -309,4 +311,5 @@ You can refer to the following resource for more about MongoDB modeling:
 # Though not in Java, "MongoDB Data Modeling and Rails":http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails is an *excellent resource* to understand MongoDB's approach of modeling your data
 # %(next)"Using Model: CRUD":crud%
 # "Using Model: Query":query
+# "How to use customize ID field in the model class":cust_id  
 # Check out "Advanced Model Topics":advance#model to see more about PlayMorphia model
