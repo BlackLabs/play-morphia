@@ -9,6 +9,8 @@ import models.User;
 import org.junit.Before;
 import org.junit.Test;
 
+import play.modules.morphia.MorphiaPlugin;
+import play.modules.morphia.MorphiaPlugin.IdType;
 import play.test.Fixtures;
 import play.test.MorphiaFixtures;
 import play.test.UnitTest;
@@ -18,6 +20,11 @@ public class BasicTest extends UnitTest {
     @Before
     public void setup() {
         MorphiaFixtures.deleteAllModels();
+    }
+    
+    @Test
+    public void testBug46() {
+        assertEquals(IdType.Long, MorphiaPlugin.getIdType());
     }
  
     @Test
