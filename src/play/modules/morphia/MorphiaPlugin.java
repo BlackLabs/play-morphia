@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -366,7 +367,7 @@ public class MorphiaPlugin extends PlayPlugin {
         if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
             String username = c.getProperty(PREFIX + "username");
             String password = c.getProperty(PREFIX + "password");
-            if (!db.authenticate(username, password.toCharArray())) {
+            if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
         }
@@ -949,6 +950,15 @@ public class MorphiaPlugin extends PlayPlugin {
                         }
                     };
                 }
+            }
+            if (field.getType().isEnum()) {
+                modelProperty.choices = new Model.Choices() {
+
+                    @SuppressWarnings("unchecked")
+                    public List<Object> list() {
+                        return (List<Object>) Arrays.asList(field.getType().getEnumConstants());
+                    }
+                };
             }
             modelProperty.name = field.getName();
             if (field.getType().equals(String.class)) {
