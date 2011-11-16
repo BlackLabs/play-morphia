@@ -951,6 +951,15 @@ public class MorphiaPlugin extends PlayPlugin {
                     };
                 }
             }
+            if (field.getType().isEnum()) {
+                modelProperty.choices = new Model.Choices() {
+
+                    @SuppressWarnings("unchecked")
+                    public List<Object> list() {
+                        return (List<Object>) Arrays.asList(field.getType().getEnumConstants());
+                    }
+                };
+            }
             modelProperty.name = field.getName();
             if (field.getType().equals(String.class)) {
                 modelProperty.isSearchable = true;
