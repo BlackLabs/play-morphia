@@ -150,6 +150,9 @@ public class MorphiaPlugin extends PlayPlugin {
     private static IdType idType_ = null;
 
     public static IdType getIdType() {
+        if (null == idType_) {
+            initIdType_();
+        }
         return idType_;
     }
 
@@ -418,7 +421,7 @@ public class MorphiaPlugin extends PlayPlugin {
         });
     }
     
-    private void initIdType_() {
+    private static void initIdType_() {
         if (null != idType_) return;
         Properties c = Play.configuration;
         if (c.containsKey("morphia.id.type")) {
@@ -435,6 +438,8 @@ public class MorphiaPlugin extends PlayPlugin {
                 fatal(e, msg);
                 throw new ConfigurationException(msg);
             }
+        } else {
+            idType_ = IdType.ObjectId;
         }
     }
 
