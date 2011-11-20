@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -1175,6 +1176,15 @@ public class MorphiaPlugin extends PlayPlugin {
                         }
                     };
                 }
+            }
+            if (field.getType().isEnum()) {
+                modelProperty.choices = new Model.Choices() {
+
+                    @SuppressWarnings("unchecked")
+                    public List<Object> list() {
+                        return (List<Object>) Arrays.asList(field.getType().getEnumConstants());
+                    }
+                };
             }
             modelProperty.name = field.getName();
             if (field.getType().equals(String.class)) {
