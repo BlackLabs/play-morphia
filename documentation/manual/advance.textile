@@ -5,3 +5,9 @@ h2. <a name="model">Advanced PlayMorphia Models</a>
 # "Inside PlayMorphia Model":inside_model
 # "Create customized ID field":cust_id
 # "Model inheritance":inherit
+# "Specify collection and column names":rename
+
+h2. <a name="other">Other advanced topics</a>
+
+# "Statistics: aggregation and grouping":statistics
+# "Handle lifecycle events":lifecycle#event

@@ -12,6 +12,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -37,7 +38,6 @@ import play.mvc.Scope.Params;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.Key;
 import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.PrePersist;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.Mapper;
@@ -52,6 +52,8 @@ import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.MapReduceCommand;
+import com.mongodb.MapReduceOutput;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -302,8 +304,6 @@ public class Model implements Serializable, play.db.Model {
                         + this.getClass().getName());
     }
 
-    @SuppressWarnings("unused")
-    @PrePersist
     private void generateId_() {
         if (isEmbedded_())
             return;
@@ -495,6 +495,11 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
+    
+    public static Map<String, Long> _cloud(String field) {
+        throw new UnsupportedOperationException(
+                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
 
     @SuppressWarnings("unchecked")
     public <T extends Model> T delete() {
@@ -661,6 +666,14 @@ public class Model implements Serializable, play.db.Model {
     }
     
     /**
+     * Return MongoDB DBCollection for this model
+     */
+    public static DBCollection col() {
+        throw new UnsupportedOperationException(
+                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    /**
      * Return MongoDB DB instance
      * 
      * @return
@@ -729,6 +742,7 @@ public class Model implements Serializable, play.db.Model {
      */
     public final void _h_Loaded() {
         setSaved_();
+        loadBlobs();
         h_Loaded();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
         postEvent_(MorphiaEvent.LOADED, this);
@@ -780,6 +794,7 @@ public class Model implements Serializable, play.db.Model {
         postEvent_(MorphiaEvent.ON_ADD, this);
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_ADD, this);
         h_OnAdd();
+        generateId_();
     }
     
     /**
@@ -809,6 +824,18 @@ public class Model implements Serializable, play.db.Model {
         // used by enhancer 
     }
     
+    protected void loadBlobs() {
+        // used by enhander
+    }
+    
+    protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
+    protected final boolean blobChanged(String fieldName) {
+        return (blobFieldsTracker.containsKey(fieldName) && blobFieldsTracker.get(fieldName));
+    }
+    protected final void setBlobChanged(String fieldName) {
+        blobFieldsTracker.put(fieldName, true);
+    }
+    
     public String getBlobFileName(String fieldName) {
         return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
     }
@@ -820,7 +847,7 @@ public class Model implements Serializable, play.db.Model {
     public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
         for (String fieldName: fieldNames) {
             String fileName = getBlobFileName(className, id, fieldName);
-            new Blob(fileName).delete();
+            Blob.delete(fileName);
         }
     }
 
@@ -844,7 +871,7 @@ public class Model implements Serializable, play.db.Model {
     }
     
     private static void postEvent_(MorphiaEvent event, Object context) {
-        PlayPlugin.postEvent(event.getId(), context);
+        if (MorphiaPlugin.postPluginEvent) PlayPlugin.postEvent(event.getId(), context);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -858,6 +885,14 @@ public class Model implements Serializable, play.db.Model {
 
         public Query<? extends Model> getMorphiaQuery() {
             return q_;
+        }
+        
+        public DBObject getQueryObject() {
+            return q_.getQueryObject();
+        }
+        
+        public DBCollection col(String dsName) {
+            return ds(dsName).getCollection(c_);
         }
 
         // constructor for clone() usage
@@ -1063,10 +1098,24 @@ public class Model implements Serializable, play.db.Model {
         public Set<?> distinct(String key) {
             String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
 
-            return new HashSet(ds(dsName).getCollection(c_).distinct(key,
-                    q_.getQueryObject()));
+            return new HashSet(ds(dsName).getCollection(c_).distinct(key,getQueryObject()));
         }
-
+        
+        public Map<String, Long> cloud(String field) {
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+            
+            String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
+            String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
+            MapReduceCommand cmd = new MapReduceCommand(col(dsName), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
+            MapReduceOutput out = col(dsName).mapReduce(cmd);
+            Map<String, Long> m = new HashMap<String, Long>();
+            for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+                DBObject dbo = itr.next();
+                m.put((String)dbo.get("_id"), ((Double)dbo.get("value")).longValue());
+            }
+            return m;
+        }
+        
         /**
          * 
          * @param groupKeys

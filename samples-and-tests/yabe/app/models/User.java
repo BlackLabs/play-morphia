@@ -3,13 +3,10 @@ package models;
 import play.data.validation.Email;
 import play.data.validation.Required;
 import play.modules.morphia.Model;
-import play.modules.morphia.Model.AutoTimestamp;
 
 import com.google.code.morphia.annotations.Entity;
  
-@SuppressWarnings("serial")
 @Entity
-@AutoTimestamp
 public class User extends Model {
  
     @Email
@@ -30,7 +27,7 @@ public class User extends Model {
     }
     
     public static User connect(String email, String password) {
-        return User.find("byEmailAndPassword", email, password).first();
+        return find("byEmailAndPassword", email, password).first();
     }
     
     public String toString() {

@@ -1,6 +1,6 @@
 *{ You can use plain selenium command using the selenium tag }*
 
-#{fixture delete:'all', load:'initial-data.yml' /}
+#{morphiaFixture delete:'all', load:'data.yml' /}
  
 #{selenium 'Go to admin section'}
     clearSession()

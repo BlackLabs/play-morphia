@@ -14,7 +14,7 @@ User(jeff):
 Post(firstBobPost):
     title:          About the model layer
     postedAt:       2009-06-14
-    author:         bob
+    authorEmail:    bob@gmail.com
     content:        >
                     The model has a central position in a Play! application. It is the domain-specific 
                     representation of the information on which the application operates.
@@ -29,14 +29,14 @@ Post(firstBobPost):
 Post(secondBobPost):
     title:          Just a test of YABE
     postedAt:       2009-03-25
-    author:         bob
+    authorEmail:    bob@gmail.com
     content:        >
                     Well, it's just a test.
                     
 Post(jeffPost):
     title:          The MVC application
     postedAt:       2009-06-06
-    author:         jeff
+    authorEmail:    jeff@gmail.com
     content:        >
                     A Play! application follows the MVC architectural pattern as applied to the 
                     architecture of the Web.

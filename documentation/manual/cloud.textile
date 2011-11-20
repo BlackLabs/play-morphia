@@ -1,0 +1,70 @@
+h1. Cloud
+
+There is a special aggregation feature provided by PlayMorphia called cloud. One immediate example of cloud usage is found in the Yabe sample application.
+
+In Yabe sample application, a @Post@ model is defined to capture blog post data. Each @Post@ could be associated with zero or more tags. In the following example, PostA has been tagged with "play" and "architecture", PostB has been tagged with "play", "mvc" and "test".
+
+!images/cloud-model!
+
+Now we want to calculate the tag cloud, and we expect it should be like as follows:
+
+!images/cloud-diagram!
+
+Now let's see some source code:
+
+bc. // Post model class
+@Entity public class Post extends Model {
+    public String title;
+    public String content;
+    ...
+    public Set<String> tags = new HashSet<String>();
+    ...
+}
+// calculate tag cloud
+public class Tag {
+    public static Map<String, Long> getCloud() {
+        return Post._cloud("tags");
+    }
+}
+// Test code to verify the tag cloud computation
+Map<String, Long> cloud = Tag.getCloud();
+assertEquals(cloud.get("blue"), 1);
+assertEquals(cloud.get("green"), 1);
+assertEquals(cloud.get("red"), 2);
+
+And compare to the JPA version code:
+
+bc. // Post model class
+@Entity public class Post extends Model {
+    public String title;
+    public String content;
+    ...
+    public Set<Tag> tags;
+    ...
+}
+// Tag model class
+@Entity public class Tag extends Model {
+    public String name;
+    ...
+    public static List<Map> getCloud() {
+        List<Map> result = Tag.find(
+            "select new map(t.name as tag, count(p.id) as pound) from Post p join p.tags as t group by t.name"
+        ).fetch();
+        return result;
+    }
+}
+// Test code to verify the tag cloud computation
+List<Map> cloud = Tag.getCloud();
+Collections.sort(cloud, new Comparator<Map>() {
+    public int compare(Map m1, Map m2) {
+        return m1.get("tag").toString().compareTo(m2.get("tag").toString());
+    }
+});
+assertEquals("[{tag=Blue, pound=1}, {tag=Green, pound=1}, {tag=Red, pound=2}]", 
+  cloud.toString());
+
+
+h2. <a name="resource">See also</a>
+
+# "Understanding PlayMorphia model":model
+# "Aggregation and Group aggregation":statistics

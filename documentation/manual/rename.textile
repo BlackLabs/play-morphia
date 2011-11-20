@@ -1,0 +1,57 @@
+h1. Specifify the collection name and column names
+
+By default Morphia map your model class to the collection which is named after the model class's "simple name":http://download.oracle.com/javase/6/docs/api/java/lang/Class.html#getSimpleName(), all fields are mapped to MongoDB columns with the same name. E.g.
+
+bc. @Entity public class User extends Model {
+    public String firstName;
+    public String lastName;
+}
+
+Now suppose you have a @User@ instance:
+
+bc. User newUser = new User();
+newUser.firstName = "John";
+newUser.lastName = "Smith";
+newUser.save();
+
+After @newUser.save()@ called, one new document will be persist in MongoDB:
+
+bc. > db.User.findOne()
+{
+        "_id": ObjectId("4ec09133c9c18ffd64f93992"),
+        "className" : "models.User",
+        "firstName": "John",
+        "lastName": "Smith"
+}
+
+You might think it's a waste of space to store "firstName" and "lastName" for each User document, and yes we have a way to shorten the name in MongoDB. Change your @User@ model class as follows:
+
+bc. import play.modules.morphia.Model.Column;
+import ...
+@Entity("usr") public class User extends Model {
+    @Column("fn") public class firstName;
+    @Column("ln") public class lastName;
+}
+
+Now if we save an new user instance again and we get the following document in MongoDB:
+
+bc. > db.usr.findOne()
+{
+        "_id": ObjectId("4ec09133c9c18ffd64f93992"),
+        "className" : "models.User",
+        "fn": "John",
+        "ln": "Smith"
+}
+
+So with the parameters we put into the <code>@Entity</code> and <code>@Column</code> annotation we changed to collection name from "User" to "usr", and we changed to column name "firstName" to "fn", and "lastName" to "ln".
+
+p(note). You can also use <code>@com.google.code.morphia.annotations.Property</code> in place of <code>@play.modules.morphia.Model.Column</code>. However if you use <code>@Property</code> annotation you will be forced to use full qualified annotation class name always, because the word *Property* is used by @play.db.Model.Property@ interface and there is name confliction to <code>@com.google.code.morphia.annotations.Property</code>.
+
+People might want to ask why Morphia store @{"className": "models.User"}@, okay, that's for "model inheritance":inherit usage. If you are sure your model will never be involved in model inheritance, then you could suppress the class name storage as follows:
+
+bc. @Entity(value="usr", noClassnameStored=true) 
+public class User extends Model{
+    ...
+}
+
+And now the @User@ document in MongoDB will not have @{"className": "models.User"}@ column created.

@@ -155,6 +155,7 @@ com.google.code.morphia.Morphia morphia = MorphiaPlugin.morphia();
 com.google.code.morphia.Datastore ds = MorphiaPlugin.ds();
 // get AdvancedDatastore
 com.google.code.morphia.AdvancedDatastore ds = (AdvancedDatastore)MorphiaPlugin.ds();
+com.mongodb.DBCollection userCollection = User.col();
 
 h3. The MongoDB Java Driver interface
 

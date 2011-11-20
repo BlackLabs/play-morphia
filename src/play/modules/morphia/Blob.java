@@ -56,6 +56,10 @@ public class Blob implements BinaryField {
     }
     
     public void set(File file, String type) throws IOException {
+        if (!file.exists()) {
+            Logger.warn("File not exists: %s", file);
+            return;
+        }
         GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(file);
         inputFile.setContentType(type);
         inputFile.save();
@@ -86,6 +90,10 @@ public class Blob implements BinaryField {
     @Override
     public boolean exists() {
         return file != null && file.getId() != null;
+    }
+    
+    public static void delete(String name) {
+        MorphiaPlugin.gridFs().remove(new BasicDBObject("name", name));
     }
 
     public GridFSDBFile getGridFSFile() {

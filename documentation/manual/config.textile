@@ -1,0 +1,34 @@
+h1. PlayMorphia configuration
+
+This page list all available configuration items along with it's definition and default value. To use PlayMorphia configuration, you just need to add them into your @conf/application.conf@ file. If a configuration item is missing from the @conf/application.conf@ then it's default value will be used.
+
+h2. <a name="connection">MongoDB Connection</a>
+
+|_. ID |_. Description |_. default value |
+|@morphia.db.seeds@|define mongodb server to be connected. Note, this item takes precedence over @morphia.db.host@ and @morphia.db.port@. E.g, @server1:port1,server2:port2...@|None|
+|@morphia.db.host@|define the mongodb server host to be connected. Note this configuration is deprecated. Please use @morphia.db.seeds@ instead|@localhost@|
+|@morphia.db.port@|define the mongodb server port to be connected. Note this is deprecated. Please use @morphia.db.seeds@ instead|@27017@|
+|@morphia.db.name@|define the database name that is accessed by the application|@test@|
+
+h2. <a name="secure">Secure MongoDB access</a>
+
+|_. ID |_. Description |_. default value |
+|@morphia.db.username@|define the username to be used to access MongoDB. See <a href="http://www.mongodb.org/display/DOCS/Security+and+Authentication">MongoDB security and authentication</a>|blank|
+|@morphia.db.password@|define the password to be used to access MongoDB. See <a href="http://www.mongodb.org/display/DOCS/Security+and+Authentication">MongoDB security and authentication</a>|blank|
+
+p(note). When either one of the above configuration is missing, PlayMorphia will try to access MongoDB without authentication.
+
+h2. <a name="misc">Miscellaneous configurations</a>
+
+|_. ID |_. Description |_. default value |
+|@morphia.logger@|Enable/disable Morphia log. When this configuration set to true, Morphia log is enabled. Remove this confiuration item to disable Morphia log|@false@|
+|@morphia.collection.upload@|Set the GridFS collection name|@uploads@|
+|@morphia.id.type@|Define the default ID field type. Could be any one of "@Long@" and "@ObjectId@"|@ObjectId@|
+|@morphia.postPluginEvent@|When set to true, PlayMorphia will post entity lifecycle events to Play plugin's event framework. Note turning on this configuration might impact performance a little bit|@false@|
+|@morphia.autoRegisterEventHandler@|When set to true, PlayMorphia will automatically register lifecycle event handler using annotations. See "here":lifecycle#reg-ann|@true@|
+|@morphia.defaultWriteConcern@|Set default writeconcern. Could one of "@FSYNC_SAFE@", "@NONE@", "@NORMAL@", "@REPLICAS_SAFE@", "@SAFE@". See "here":http://api.mongodb.org/java/2.6/com/mongodb/WriteConcern.html for details|@SAFE@|
+
+h2. <a name="resource">See also</a>
+
+# "Getting start":start#config
+# "Morphia documetation home"#home

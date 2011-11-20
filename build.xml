@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="morphia module" default="build" basedir=".">
+<project name="morphia module" default="javadoc" basedir=".">
 
     <path id="project.classpath">
         <pathelement path="${play.path}/framework/classes"/>
@@ -35,6 +35,18 @@
             </manifest>
         </jar>
         <delete dir="tmp" />
+    </target>
+    
+    <target name="javadoc" depends="build">
+        <javadoc packagenames="play.modules.morphia.*"
+          sourcepath="src"
+          defaultexcludes="yes"
+          destdir="documentation/api"
+          author="true"
+          version="true"
+          use="true"
+          windowtitle="PlayMorphia API">
+        </javadoc>
     </target>
 
 </project>

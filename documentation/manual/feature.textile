@@ -1,0 +1,22 @@
+h1. PlayMorphia features
+
+PlayMorphia is a Object-MongoDB mapping layer to help Play application developers easily access MongoDB. PlayMorphia provides powerful yet simple enough interfaces and facilities to address nearly all aspect for application to access MongoDB:
+
+# Object-BSON mapping. Map between Java POJO object and MongoDB BSON format data. See "PlayMorphia model":model.
+# Support "embedded":model#embed and "reference":model#reference relationship between models
+# "Transparent GridFS support for Blob fields":model#gridfs
+# "Automatic create and update timestamp":model#timestamp
+# "Support arbitrary ID type":cust_id
+# "Creating index with annotations":model#index
+# "Super powerful and easy query interface":query
+# "Complete aggregation and group aggregation support":statistics
+# "Sophisticated Model entity lifecycle event handling framework":lifecycle
+# Play!Framework integration
+## @play.db.Model@ support. The PlayMorphia model class extends @play.db.Model@ class and you get all most everything you can get from Play's JPA model facilities. Actually you get more in PlayMorphia
+## CRUD support. PlayMorphia model support most CRUD operations transparently
+## Data binding and validation. You can continue enjoy Play's automatic data binding mechansim when you are working with PlayMorphia
+## Fixtures. You can use Play's Fixture to load yaml data into your MongoDB. However you need to use MorphiaFixture to delete data
+
+h2. <a name="resource">See Also</a>
+
+# %(next)"PlayMorphia overview":overview%

@@ -80,14 +80,16 @@ h3. <a name="regex">Search with regular expression</a>
 
 Application developer could implement regular expression based text search by using java.util.regex.Pattern class. The following query returns all users with firstName contains "john" or "John" 
 
-bc. List<User> johns = User.q().filter("firstName", Pattern.compile("[Jj]ohn")).asList();
+bc. List<User> johns = User.q().filter("firstName", 
+    Pattern.compile("john", Pattern.CASE_INSENSITIVE)).asList();
 
 h3. <a name="or">OR query</a>
 
 You can use the @filter()@ interface and @find()@ interface to apply contraints on mutiple fields using "AND" relationship. In order to implement a "OR" based query you need to use @MorphiaQuery.or()@ and @com.google.code.morphia.query.Criteria@ interface. The following query search for user who's first name contains "john" or last name contains "john":
 
 bc. MorphiaQuery q = User.q();
-q.or(q.criteria("firstName").contains("[Jj]ohn"), q.criteria("lastName").contains("[Jj]ohn"));
+q.or(q.criteria("firstName").containsIgnoreCase("john"), 
+    q.criteria("lastName").containsIgnoreCase("john"));
 List<User> johns = q.asList();
 
 p(note). Here @q.criteria(<fieldname>).contains(<keyword>)@ is one of Morphia's "fluent interface":http://code.google.com/p/morphia/wiki/Query#Fluent_Interface. You should not pass @Pattern@ object into the @contains@ interface. Instead, pass @String@ type object which will be automatically converted to @Pattern@ by the underline implementation.
@@ -139,8 +141,14 @@ bc. @Entity public class BlogEntry extends Model {
 
 The following code find out all blog entries written by greenlaw110@gmail.com:
 
-bc. Author green = Author.find("email", "greenlaw110@gmail.com").get();
+bc. Key<Author> green = Author.find("email", "greenlaw110@gmail.com").getKey();
 List<BlogEntry> entries = BlogEntry.find("author", green).asList();
+
+And the following code find out all blog entries written by greenlaw110@gmail.com and greenlaw110@hotmail.com:
+
+bc. String[] emails = {"greenlaw110@gmail.com", "greenlaw110@hotmail.com"};
+List<Key<Author>> greens = Author.find("email in", emails).asKeyList();
+List<BlogEntry> entries = BlogEntry.q().filter("author in", greens).asList();
 
 If you are using the "manually reference approach":model#reference-manual to define reference model:
 
@@ -240,4 +248,4 @@ h2. <a name="resource">See also</a>
 # "MongoDB Querying":http://www.mongodb.org/display/DOCS/Querying
 # "MongoDB Advanced Query":http://www.mongodb.org/display/DOCS/Advanced+Queries
 # "How do I perform SQL join equivalent in MongoDB":http://stackoverflow.com/questions/2350495/how-do-i-perform-the-sql-join-equivalent-in-mongodb
-# "Perform aggregation on Query":statistics
+# %(next)"Aggregation":statistics%

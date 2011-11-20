@@ -1,0 +1,62 @@
+h1. PlayMorphia FAQ
+
+h2. Why do I get the following error while running my play app in prod mode?
+
+bc.. play.exceptions.JavaExecutionException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.jobs.Job.call(Job.java:119)
+        at Invocation.Job(Play!)
+Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The JPA context is not initialized. JPA Entity Manager automatically start when one
+ or more classes annotated with the @javax.persistence.Entity annotation are found in the application.
+        at play.test.Fixtures.load(Fixtures.java:214)
+        at Bootstrap.doJob(Bootstrap.java:21)
+        at play.jobs.Job.doJobWithResult(Job.java:37)
+        at play.jobs.Job.call(Job.java:110)
+        
+p. This problem happens on Play v1.1-beta1. Please upgrade to the latest version
+
+h2. How to create an "OR" relation query?
+
+See "OR query":query#or
+
+h2. How to do aggregation and group aggregation?
+
+See "aggregation":statistics
+
+h2. There is a lot of compilation and runtime errors with this plugin!
+
+Make sure you have checked "Dependences" section already
+
+h2. Why do you choose Morphia? I've heard that GuiceyMongo is faster
+
+Well the goal of Play-Morphia is to provide a way to help Play app developer to migrate their existing apps from RDBMS (via JPA) to MongoDB with least effort. Morphia is by far the best thing I can find provides JPA style (annotation) access to mongodb. If you are developing new Play application, and would like to try a different way, GuiceyMongo might be a good choice for you.
+
+h2. How to create Entity with user defined @Id field?
+
+Check "here":cust_id
+
+h2. I got "Can not use dot-notation past  ..." exception when I try to query entity using relationship, what happened?
+
+Basically this error occurred when you try to query an entity using referenced entity property. E.g. Post p = Post.filter("author.email", "bob@gmail.com").first(). The solution is:
+
+bc. User bob = User.filter("email", "bob@gmail.com").first();
+Post p = Post.filter("author", bob).first();
+
+If the relationship is embedded rather than reference, you can safely use "dot" notation to do the query. 
+
+If you find yourself frequently query referenced entities, then you should consider taking a look at <a href="http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails">this</a> article.
+
+h2. How do I know if an entity object is an new object just constructed in the memory or represents an existing data in MongoDB?
+
+bc. boolean isNew = obj.isNew()
+
+h2. I try to call Fixtures.deleteAll() in my unit test setup methods, but I found the data is still there, what happened?
+
+The deleteAll() methods defined in play.test.Fixtures are hooked with JPA based database, try to use MorphiaFixtures.deleteAll() instead. Actually you are encouraged to use MorphiaFixtures in replace of Fixtures to deal with your Morphia models for all methods call.
+
+h2. Why setting morphia.defaultWriteConcern does not work?
+
+It might be caused by "this bug":http://code.google.com/p/morphia/issues/detail?id=209. Please upgrade your PlayMorphia to latest version.
+
+h2. I get duplicate ID field error. 
+
+If you define sub type models Morphia will probably enhance and add @Id field to both sub type and parent type. Therefore you got 2 @Id field in sub type model. To resolve the problem, annotate your sub type or parent type with @NoId annotation (available in morphia-1.2.1beta5)

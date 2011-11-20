@@ -1,6 +1,6 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.4 release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.4a release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history.
 
@@ -8,12 +8,13 @@ h2. <a name="started">Getting started</a>
 
 Your first steps with PlayMorphia module and your first 5 minutes of fun.
 
+# "PlayMorphia Features":feature
 # "PlayMorphia overview":overview
+# "Frequently Asked Questions":faq
+# %(next)"Installation and Configuration":start%
 <div style="display:none">
 # "Watch the screencast":http://screenr.com/
 # "Five cool things you can do with PlayMorphia":5things
-# "Frequently Asked Questions":faq
-# %(next)"Installation and Configuration":start%
 # "Your first application —— the ‘Hello World’ tutorial":firstapp
 # "Sample applications":samples
 </div>
@@ -21,6 +22,8 @@ Your first steps with PlayMorphia module and your first 5 minutes of fun.
 h2. <a name="guide">Tutorials -- PlayMorphia guide, adapt YABE from JPA to PlayMorphia</a>
 
 Learn PlayMorhpia by adapting Play's YABE sample application from JPA to PlayMorphia. 
+
+This section is under construction. For the moment, check the YABE sample application released along with the plugin, read the source code, and run the test.
 
 h2. <a name="manual">The essential documentation</a>
 
@@ -63,16 +66,17 @@ Everything you need to know about PlayMorphia
 # "Advanced topics":advance
 ## "Advanced PlayMorphia Models":advance#model
 ## "Statistics: aggregation and grouping":statistics
+## "Cloud: calculate tag weight":cloud
 ## "Handle lifecycle events":lifecycle#event
 <div style="display:none">
 # "Play integration":play
 ## "CRUD Support":play#crud
 ## "Lifecycle events":play#event
 ## "Morphia Fixture":play#fixture
+</div>
 
 h2. <a name="reference">References</a>
 
 # "Configuration":config
 # "Annotations":annotation
-# "API":todo
-</div>
+

@@ -67,3 +67,4 @@ h2. <a name="resource">See also</a>
 
 # "Understanding PlayMorphia model":model
 # %(next)"Using Query":query%
+# "Introduction to lifecycle event handling":lifecycle

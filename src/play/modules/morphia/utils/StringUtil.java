@@ -83,6 +83,13 @@ public class StringUtil {
         }
     }
     
+    public static String upperFirstChar(String s) {
+        if (StringUtil.isEmpty(s)) return s;
+        String init = s.substring(0, 1);
+        String rest = s.substring(1);
+        return String.format("%s%s", init.toUpperCase(), rest);
+    }
+    
     public static String lowerFirstChar(String s) {
         if (StringUtil.isEmpty(s)) return s;
         String init = s.substring(0, 1);
