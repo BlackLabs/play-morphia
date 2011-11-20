@@ -21,7 +21,7 @@ public class PureMorphiaModelTest extends UnitTest {
     protected Datastore ds = null;
     @Before
     public void setup() {
-        m = MorphiaPlugin.morphia();
+        m = MorphiaPlugin.morphia(MorphiaPlugin.DEFAULT_DS_NAME);
         ds = MorphiaPlugin.ds();
         
         m.map(PureMorphiaModel.class);

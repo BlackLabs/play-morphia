@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bson.types.ObjectId;
@@ -30,6 +32,7 @@ import play.data.binding.Binder;
 import play.db.Model.Factory;
 import play.exceptions.ConfigurationException;
 import play.exceptions.UnexpectedException;
+import play.modules.morphia.Model.Datasource;
 import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.PlayLogrFactory;
@@ -121,10 +124,10 @@ public class MorphiaPlugin extends PlayPlugin {
 
     public static final String PREFIX = "morphia.db.";
 
+    public static final String DEFAULT_DS_NAME = "default";
+    
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
 
-    private static Morphia morphia_ = null;
-    private static Datastore ds_ = null;
     private static GridFS gridfs;
     
     private static boolean configured_ = false;
@@ -153,32 +156,42 @@ public class MorphiaPlugin extends PlayPlugin {
         return idType_;
     }
 
+    @Deprecated
     public static Datastore ds() {
-        return ds_;
+        return ds(DEFAULT_DS_NAME);
     }
 
+    private static final ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
+    
+    public static Datastore ds(String datasourceName) {
+        Datastore ds = dataStores_.get(datasourceName);
+        if (ds == null) {
+            
+            if (DEFAULT_DS_NAME.equals(datasourceName)) {
+                throw new RuntimeException(
+                        "There is no default datasource configured.  Please check that the application.conf file " +
+                        "contains default morphia configuration or that the @Datasource annotations in your model " +
+                        "classes match the names of the configured morphia datasources ");
+            } else {
+                ds = dataStores_.get(DEFAULT_DS_NAME);
+                
+                if (ds == null) {
+                    throw new RuntimeException(
+                            "Application.conf does not contain a morphia configuration named " + datasourceName + 
+                            ", nor does it contain a default morphia configuration");
+                }
+            }
+        }
+        
+        return ds;
+    }
+    
     public static GridFS gridFs() {
         return gridfs;
     }
 
-    private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
-
-    public static Datastore ds(String dbName) {
-        if (StringUtil.isEmpty(dbName))
-            return ds();
-        Datastore ds = dataStores_.get(dbName);
-        if (null == ds) {
-            Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
-            ds = dataStores_.putIfAbsent(dbName, ds0);
-            if (null == ds) {
-                ds = ds0;
-            }
-        }
-        return ds;
-    }
-
-    public static Morphia morphia() {
-        return morphia_;
+    public static Morphia morphia(String dsName) {
+        return morphias_.get(dsName);
     }
 
     @Override
@@ -269,8 +282,6 @@ public class MorphiaPlugin extends PlayPlugin {
         }
     }
 
-    private static Mongo mongo_;
-
     /*
      * Connect using conf - morphia.db.host=host1,host2... -
      * morphia.db.port=port1,port2...
@@ -337,38 +348,143 @@ public class MorphiaPlugin extends PlayPlugin {
         debug("reading configuration");
         initIdType_();
         MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(Play.configuration.getProperty("morphia.postPluginEvent", "false"));
+        getDatasourceNames_();
         configureConnection_();
         configured_ = true;
     }
     
-    private void configureConnection_() {
+    private static final Set<String> datasourceNames_ = new HashSet<String>();
+    private final Pattern namedDatasourceKeyPattern   = Pattern.compile(PREFIX + "([a-zA-Z0-9]+)\\.(host|port|name|username|password|seeds)");
+    
+    private void getDatasourceNames_() {
         Properties c = Play.configuration;
-
-        String seeds = c.getProperty(PREFIX + "seeds");
-        if (!StringUtil.isEmpty(seeds))
-            mongo_ = connect_(seeds);
-        else {
-            String host = c.getProperty(PREFIX + "host", "localhost");
-            String port = c.getProperty(PREFIX + "port", "27017");
-            mongo_ = connect_(host, port);
+        Enumeration<String> propertyNames = (Enumeration<String>)c.propertyNames();
+        while(propertyNames.hasMoreElements()) {
+            String propertyName =  propertyNames.nextElement();
+            
+            Matcher matcher = namedDatasourceKeyPattern.matcher(propertyName);
+            if (matcher.matches()) {
+                String datasourceName = matcher.group(1);
+                
+                if (null != datasourceName && 
+                        !"".equals(datasourceName) && 
+                        !"collection".equals(datasourceName)) {
+                    
+                    datasourceNames_.add(datasourceName);
+                }
+            }
         }
+    }
+    
+    private void configureConnection_() {
+        if (!datasourceNames_.isEmpty()) {
+            for (String dsName : datasourceNames_) {
+                configureConnection_(dsName);
+            }
+        }
+        
+        //should only load this if there are no named datasources or if there are named datasources,
+        //then there needs to be properties defined.  Should not load default properties if named
+        //datasources are already loaded
+        if (containsDefaultDatasourceConfiguration()) {
+            configureConnection_(null);
+        }
+    }
+    
+    private static final ConcurrentMap<String, Mongo> mongos_ = new ConcurrentHashMap<String, Mongo>();
+    
+    private void configureConnection_(String datastoreName) {
+        Properties c = Play.configuration;
+        String prefix = (null == datastoreName || "".equals(datastoreName)) ? PREFIX : PREFIX + datastoreName + ".";
+        String dsKey = (null == datastoreName || "".equals(datastoreName)) ? DEFAULT_DS_NAME : datastoreName;
+        
+        Mongo  mongo = null;
+        
+        String seeds = c.getProperty(prefix + "seeds");
+        if (!StringUtil.isEmpty(seeds)) {
+            Logger.debug("Connecting to Mongo replica set %s", seeds);
+            mongo = connect_(seeds);
+        } else {
+            String host = c.getProperty(prefix + "host", "localhost");
+            String port = c.getProperty(prefix + "port", "27017");
+            Logger.debug("Connecting to Mongo %s:%s ", host, port);
+            mongo = connect_(host, port);
+        }
+  
+        if (null == mongo) {
+            throw new ConfigurationException("Could not connect to mongo with parameters defined for key " + dsKey);
+         } else {
+             mongos_.put(dsKey, mongo);
+         }
+    }
+    
+    private final Pattern defaultDatasourceKeyPattern = Pattern.compile(PREFIX + "(host|port|name|username|password|seeds)");
+    
+    private boolean containsDefaultDatasourceConfiguration() {
+        Properties c = Play.configuration;
+        Enumeration<String> propertyNames = (Enumeration<String>)c.propertyNames();
+        
+        while(propertyNames.hasMoreElements()) {
+            String propertyName =  propertyNames.nextElement();
+            
+            Matcher matcher = defaultDatasourceKeyPattern.matcher(propertyName);
+            if (matcher.matches()) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     @SuppressWarnings("unchecked")
     private void initMorphia_() {
-        Properties c = Play.configuration;
+        initMorphias_();
+        setupGridFS();
+        initIdType_();
+    }
+
+    private static final ConcurrentMap<String, DB> dbs_ = new ConcurrentHashMap<String, DB>();
+    private static final ConcurrentMap<String, Morphia> morphias_ = new ConcurrentHashMap<String, Morphia>();
+    
+    private void initMorphias_() {
+        if (!datasourceNames_.isEmpty()) {
+            
+            for (String dsName : datasourceNames_) {
+                Morphia morphia = initMorphia_(dsName, mongos_.get(dsName));
+            }
         
-        String dbName = c.getProperty(PREFIX + "name");
+            Logger.debug("Morphia datasource keys found in application.conf %s", datasourceNames_);
+        }
+        
+        //should only load this if there are no named datasources or if there are named datasources,
+        //then there needs to be properties defined.  Should not load default properties if named
+        //datasources are already loaded
+        if (containsDefaultDatasourceConfiguration()) {
+            Morphia morphia = initMorphia_(null, mongos_.get(DEFAULT_DS_NAME));
+        }
+    }
+    
+    private Morphia initMorphia_(String datastoreName, Mongo mongo) {
+        Properties c = Play.configuration;
+        String prefix = (null == datastoreName || "".equals(datastoreName)) ? PREFIX : PREFIX + datastoreName + ".";
+        String dsKey = (null == datastoreName || "".equals(datastoreName)) ? DEFAULT_DS_NAME : datastoreName;
+        
+        Logger.debug("Initializing %s morphia datasource", dsKey);
+        
+        String dbName = c.getProperty(prefix + "name");
         if (null == dbName) {
-            warn("mongodb name not configured! using [test] db");
+            Logger.warn("mongodb name not configured! using [test] db");
             dbName = "test";
         }
-        DB db = mongo_.getDB(dbName);
-        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
-            String username = c.getProperty(PREFIX + "username");
-            String password = c.getProperty(PREFIX + "password");
-            if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
-                throw new RuntimeException("MongoDB authentication failed: " + dbName);
+        
+        DB db = mongo.getDB(dbName);
+        if (c.containsKey(prefix + "username")
+                && c.containsKey(prefix + "password")) {
+            String username = c.getProperty(prefix + "username");
+            String password = c.getProperty(prefix + "password");
+            if (!db.authenticate(username, password.toCharArray())) {
+                throw new RuntimeException("MongoDB authentication failed: "
+                        + dbName);
             }
         }
 
@@ -390,15 +506,17 @@ public class MorphiaPlugin extends PlayPlugin {
         loggerRegistered_ = false;
         MorphiaLoggerFactory.reset();
         MorphiaLoggerFactory.registerLogger(loggerClazz);
-        morphia_ = new Morphia();
-        loggerRegistered_ = true;
-        ds_ = morphia_.createDatastore(mongo_, dbName);
-        dataStores_.put(dbName, ds_);
 
-        String uploadCollection = c.getProperty("morphia.collection.upload", "uploads");
-        gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
         
-        morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor(){
+        dbs_.put(dsKey, db);
+        
+        Morphia morphia = new Morphia();
+        morphias_.put(dsKey, morphia);
+        
+        Datastore ds = morphia.createDatastore(mongo, dbName);
+        ds.ensureIndexes();
+        
+        morphia.getMapper().addInterceptor(new AbstractEntityInterceptor(){
             @Override
             public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
                 if (ent instanceof Model) {
@@ -416,6 +534,65 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
         });
+        
+        
+        String writeConcern = Play.configuration.getProperty("morphia.defaultWriteConcern", "safe");
+        if (null != writeConcern) {
+            ds.setDefaultWriteConcern(WriteConcern.valueOf(writeConcern.toUpperCase()));
+        }
+        
+        dataStores_.put(dsKey, ds);
+        Logger.debug("Datasource %s initialized", dsKey);
+        
+        configured_ = true;
+        
+        return morphia;
+    }
+    
+    private final Pattern gridFSKeyPattern = Pattern.compile("morphia" + "([a-zA-Z0-9]+).collection.upload");
+    
+    //GridFS is special, it must be be configured on only one node 
+    //in a multi-node configuration due to have the Blob class in implemented
+    //If this is not a multi-node setup, then it can use a default 
+    //setup with the default ds.
+    private void setupGridFS() {
+        Properties c = Play.configuration;
+        Enumeration<String> propertyNames = (Enumeration<String>)c.propertyNames();
+        
+        String gridFsKeyName = null;
+        String gridFsNodeName = null;
+        
+        while(propertyNames.hasMoreElements()) {
+            String propertyName =  propertyNames.nextElement();
+            
+            Matcher matcher = gridFSKeyPattern.matcher(propertyName);
+            if (matcher.matches()) {
+                gridFsKeyName = matcher.group(0);
+                gridFsNodeName = matcher.group(1);
+            }
+        }
+        
+        String dbName = null;
+        String gridFsUploadDir = null;
+        
+        if (null != gridFsKeyName && !"".equals(gridFsKeyName)) {
+            gridFsUploadDir = c.getProperty(gridFsKeyName, "uploads");
+            dbName = gridFsNodeName;
+            
+        } else {
+            gridFsUploadDir = c.getProperty("morphia.collection.upload", "uploads");
+            dbName = DEFAULT_DS_NAME;
+        }
+       
+        
+        DB db = dbs_.get(dbName);
+        if (null == db) {
+            throw new ConfigurationException("Datasource name not configured: " + dbName);
+        }
+        
+        gridfs = new GridFS(db, gridFsUploadDir);
+        Logger.debug("Initialized GridFS for db %s using path %s", db.getName(), gridFsUploadDir);
+        
     }
     
     private void initIdType_() {
@@ -435,6 +612,9 @@ public class MorphiaPlugin extends PlayPlugin {
                 fatal(e, msg);
                 throw new ConfigurationException(msg);
             }
+        } else {
+            idType_ = IdType.ObjectId;
+            debug("Id type set to default: ObjectId.");
         }
     }
 
@@ -526,6 +706,23 @@ public class MorphiaPlugin extends PlayPlugin {
     }
 
     private void configureDs_() {
+        if (!datasourceNames_.isEmpty()) {
+            
+            for (String dsName : datasourceNames_) {
+                Morphia morphia = morphias_.get(dsName);
+                configureDs_(morphia, dsName);
+            }
+        
+            Logger.debug("Morphia datasource keys found in application.conf %s", datasourceNames_);
+        }
+        
+        if (containsDefaultDatasourceConfiguration()) {
+            Morphia morphia = morphias_.get(DEFAULT_DS_NAME);
+            configureDs_(morphia, DEFAULT_DS_NAME);
+        }
+    }
+    
+    private void configureDs_(Morphia morphia, String dsName) {
         List<Class<?>> pending = new ArrayList<Class<?>>();
         Map<Class<?>, Integer> retries = new HashMap<Class<?>, Integer>();
         List<ApplicationClass> cs = Play.classes.all();
@@ -534,7 +731,7 @@ public class MorphiaPlugin extends PlayPlugin {
             if (clz.isAnnotationPresent(Entity.class)) {
                 try {
                     debug("mapping class: %1$s", clz.getName());
-                    morphia_.map(clz);
+                    morphia.map(clz);
                 } catch (ConstraintViolationException e) {
                     error(e, "error mapping class [%1$s]", clz);
                     pending.add(clz);
@@ -547,7 +744,7 @@ public class MorphiaPlugin extends PlayPlugin {
             for (Class<?> clz : pending) {
                 try {
                     debug("mapping class: ", clz.getName());
-                    morphia_.map(clz);
+                    morphia.map(clz);
                     pending.remove(clz);
                 } catch (ConstraintViolationException e) {
                     error(e, "error mapping class [%1$s]", clz);
@@ -561,12 +758,12 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
 
-        ds().ensureIndexes();
+        ds(dsName).ensureIndexes();
 
         String writeConcern = Play.configuration.getProperty(
                 "morphia.defaultWriteConcern", "safe");
         if (null != writeConcern) {
-            ds().setDefaultWriteConcern(
+            ds(dsName).setDefaultWriteConcern(
                     WriteConcern.valueOf(writeConcern.toUpperCase()));
         }
     }
@@ -604,6 +801,36 @@ public class MorphiaPlugin extends PlayPlugin {
         return null;
     }
 
+    private static final ConcurrentMap<Class, String> datasourceNameMap = new ConcurrentHashMap<Class, String>();
+    
+    public static String getDatasourceNameFromAnnotation(Class clazz) {
+        
+        if (datasourceNameMap.containsKey(clazz)) {
+            return datasourceNameMap.get(clazz);
+            
+        } else {
+        
+            if (Model.class.isAssignableFrom(clazz)) {
+                for (Annotation annotation : clazz.getAnnotations()) {
+                    if (Datasource.class.isAssignableFrom(annotation.annotationType())) {
+                        Datasource ds = (Datasource)annotation;
+                        
+                        datasourceNameMap.put(clazz, ds.name());
+                        warn("associating %s with %s", clazz, ds.name());
+                        
+                        return ds.name();
+                    }
+                }
+            }
+            
+            datasourceNameMap.put(clazz, DEFAULT_DS_NAME);
+            return DEFAULT_DS_NAME; 
+        
+        
+        }
+        
+    }
+    
     @SuppressWarnings("unchecked")
     @Override
     public Model.Factory modelFactory(Class<? extends play.db.Model> modelClass) {

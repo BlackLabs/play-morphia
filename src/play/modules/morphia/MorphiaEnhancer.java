@@ -256,11 +256,11 @@ public class MorphiaEnhancer extends Enhancer {
         }
         
         // col
-        CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds().getCollection(" + className + "); }", ctClass);
+        CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCollection(" + className + "); }", ctClass);
         ctClass.addMethod(col);
 
         // count
-        CtMethod count = CtMethod.make("public static long count() { return ds().getCount(" + className + "); }", ctClass);
+        CtMethod count = CtMethod.make("public static long count() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCount(" + className + "); }", ctClass);
         ctClass.addMethod(count);
 
         // count (String keys, Object... params)

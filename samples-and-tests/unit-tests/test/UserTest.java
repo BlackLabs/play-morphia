@@ -9,9 +9,11 @@ import models.User;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import play.modules.morphia.Blob;
+import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
@@ -136,7 +138,9 @@ public class UserTest extends UnitTest {
         file = Blob.findFile(b.getBlobFileName("photo"));
         assertThatPhotoBlobIsValid(file, "user.png");
 
-        User.q("tag", "testing").delete();
+        MorphiaQuery q = User.q("tag", "testing");
+        q.asList().size();
+        q.delete();
         
         file = Blob.findFile(a.getBlobFileName("photo"));
         assertNull(file);

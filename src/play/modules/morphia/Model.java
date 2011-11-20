@@ -82,7 +82,8 @@ public class Model implements Serializable, play.db.Model {
     public void _delete() {
         if (isNew()) return;
         _h_OnDelete();
-        ds().delete(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        ds(dsName).delete(this);
         _h_Deleted();
     }
 
@@ -393,7 +394,8 @@ public class Model implements Serializable, play.db.Model {
      */
     @SuppressWarnings("unchecked")
     public <T extends Model> T refresh() {
-        return (T) ds().get(this);
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        return (T) ds(dsName).get(this);
     }
 
     public static <T extends Model> MorphiaQuery all() {
@@ -655,8 +657,12 @@ public class Model implements Serializable, play.db.Model {
      * 
      * @return
      */
+    @Deprecated
     public static Datastore ds() {
-        return MorphiaPlugin.ds();
+        return MorphiaPlugin.ds(MorphiaPlugin.DEFAULT_DS_NAME);
+    }
+    public static Datastore ds(String dsName) {
+        return MorphiaPlugin.ds(dsName);
     }
     
     /**
@@ -672,6 +678,7 @@ public class Model implements Serializable, play.db.Model {
      * 
      * @return
      */
+    @Deprecated
     public static DB db() {
         return ds().getDB();
     }
@@ -694,10 +701,21 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public Key<? extends Model> save2() {
+        String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(this.getClass());
+        Datastore ds = ds(dsName);
+        if (ds == null) {
+            if (MorphiaPlugin.DEFAULT_DS_NAME.equals(dsName)) {
+                throw new RuntimeException("No morphia datasources are configured in application.conf");
+            } else {
+                throw new RuntimeException("Model class is annotated with @Datasource(name=" + dsName + ") but no datasource is configured in application.conf");
+            }
+        }
+        
+
         boolean isNew = isNew();
         postEvent_(isNew ? MorphiaEvent.ON_ADD : MorphiaEvent.ON_UPDATE, this);
         if (isNew) _h_OnAdd(); else _h_OnUpdate();
-        Key<? extends Model> k = ds().save(this);
+        Key<? extends Model> k = ds.save(this);
         saveBlobs();
         if (isNew) {setSaved_();_h_Added();} else _h_Updated();
         return k;
@@ -858,8 +876,8 @@ public class Model implements Serializable, play.db.Model {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static class MorphiaQuery {
-        public static Datastore ds() {
-            return MorphiaPlugin.ds();
+        public static Datastore ds(String dsName) {
+            return MorphiaPlugin.ds(dsName);
         }
 
         private QueryImpl<? extends Model> q_;
@@ -873,8 +891,8 @@ public class Model implements Serializable, play.db.Model {
             return q_.getQueryObject();
         }
         
-        public DBCollection col() {
-            return ds().getCollection(c_);
+        public DBCollection col(String dsName) {
+            return ds(dsName).getCollection(c_);
         }
 
         // constructor for clone() usage
@@ -883,7 +901,8 @@ public class Model implements Serializable, play.db.Model {
 
         public MorphiaQuery(Class<? extends Model> clazz) {
             // super(clazz, ds().getCollection(clazz), ds());
-            q_ = (QueryImpl<? extends Model>) ds().createQuery(clazz);
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(clazz);
+            q_ = (QueryImpl<? extends Model>) ds(dsName).createQuery(clazz);
             c_ = clazz;
         }
 
@@ -919,7 +938,8 @@ public class Model implements Serializable, play.db.Model {
                 m.h_OnBatchDelete(this);
                 m.deleteBlobsInBatch(this);
             }
-            ds().delete(q_);
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+            ds(dsName).delete(q_);
             if (null != m) {
                 m.h_BatchDeleted(this);
             }
@@ -1076,14 +1096,18 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public Set<?> distinct(String key) {
-            return new HashSet(col().distinct(key, getQueryObject()));
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+
+            return new HashSet(ds(dsName).getCollection(c_).distinct(key,getQueryObject()));
         }
         
         public Map<String, Long> cloud(String field) {
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+            
             String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
             String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
-            MapReduceCommand cmd = new MapReduceCommand(col(), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
-            MapReduceOutput out = col().mapReduce(cmd);
+            MapReduceCommand cmd = new MapReduceCommand(col(dsName), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
+            MapReduceOutput out = col(dsName).mapReduce(cmd);
             Map<String, Long> m = new HashMap<String, Long>();
             for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
                 DBObject dbo = itr.next();
@@ -1109,7 +1133,8 @@ public class Model implements Serializable, play.db.Model {
                     key.put(s, true);
                 }
             }
-            return (List<CommandResult>) ds().getCollection(c_).group(key,
+            String dsName = MorphiaPlugin.getDatasourceNameFromAnnotation(c_);
+            return (List<CommandResult>) ds(dsName).getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
         }
 
@@ -1351,7 +1376,17 @@ public class Model implements Serializable, play.db.Model {
     }
 
     /**
-     * OnLoad mark a method be called after an new instance of an entity is initialized and
+     * Associate an entity with a named Datasource.
+     * 
+     * @author dbusch
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE})
+    public @interface Datasource {
+        String name() default "default";
+    }
+
+    /* OnLoad mark a method be called after an new instance of an entity is initialized and
      * before the properties are filled with mongo db columns
      * 
      * @author luog

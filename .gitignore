@@ -3,5 +3,5 @@ build.bat
 .classpath
 .project
 .eclipse
-play-morphia.jar
 dist
+/eclipse

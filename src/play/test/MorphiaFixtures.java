@@ -13,7 +13,7 @@ import com.google.code.morphia.Datastore;
 public class MorphiaFixtures extends Fixtures {
     
 	private static Datastore ds() {
-        return MorphiaPlugin.ds();
+        return MorphiaPlugin.ds(MorphiaPlugin.DEFAULT_DS_NAME);
     }
     
     public static void deleteDatabase() {
