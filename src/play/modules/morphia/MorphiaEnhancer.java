@@ -256,7 +256,7 @@ public class MorphiaEnhancer extends Enhancer {
         }
         
         // col
-        CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds().getCollection(" + className + "); }", ctClass);
+        CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds(MorphiaPlugin.getDatasourceNameFromAnnotation(" + className + ")).getCollection(" + className + "); }", ctClass);
         ctClass.addMethod(col);
 
         // count
@@ -268,7 +268,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(count2);
         
         // distinct
-        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return new java.util.HashSet(ds(MorphiaPlugin.getDatasourceNameFromAnnotation(%s)).getCollection(%s).distinct(key));}", className, className), ctClass);
+        CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return q().distinct(key);}", className), ctClass);
         ctClass.addMethod(distinct);
         
         // cloud
