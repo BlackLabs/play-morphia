@@ -282,8 +282,6 @@ public class MorphiaPlugin extends PlayPlugin {
         }
     }
 
-    private static Mongo mongo_;
-
     /*
      * Connect using conf - morphia.db.host=host1,host2... -
      * morphia.db.port=port1,port2...
@@ -348,9 +346,9 @@ public class MorphiaPlugin extends PlayPlugin {
         if (configured_)
             return;
         debug("reading configuration");
-        getDatasourceNames_();
         initIdType_();
         MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(Play.configuration.getProperty("morphia.postPluginEvent", "false"));
+        getDatasourceNames_();
         configureConnection_();
         configured_ = true;
     }
@@ -614,6 +612,9 @@ public class MorphiaPlugin extends PlayPlugin {
                 fatal(e, msg);
                 throw new ConfigurationException(msg);
             }
+        } else {
+            idType_ = IdType.ObjectId;
+            debug("Id type set to default: ObjectId.");
         }
     }
 
