@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="morphia module" default="javadoc" basedir=".">
-
+    <property file="build.properties" />
     <path id="project.classpath">
         <pathelement path="${play.path}/framework/classes"/>
         <fileset dir="${play.path}/framework">
