@@ -64,7 +64,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.4a";
+    public static final String VERSION = "1.2.4a-multitenant";
     
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -124,7 +124,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private MorphiaEnhancer e_ = new MorphiaEnhancer();
 
     private static Morphia morphia_ = null;
-    private static Datastore ds_ = null;
+    private static TenantDatastore ds_ = null;
     private static GridFS gridfs;
     
     private static boolean configured_ = false;
@@ -150,6 +150,11 @@ public class MorphiaPlugin extends PlayPlugin {
     private static IdType idType_ = null;
 
     public static IdType getIdType() {
+    	//Default to ObjectId if idType_ is not configured
+    	if(idType_==null){
+    		return IdType.ObjectId;
+    	}
+    	
         return idType_;
     }
 
@@ -161,14 +166,14 @@ public class MorphiaPlugin extends PlayPlugin {
         return gridfs;
     }
 
-    private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
+    private final static ConcurrentMap<String, TenantDatastore> dataStores_ = new ConcurrentHashMap<String, TenantDatastore>();
 
     public static Datastore ds(String dbName) {
         if (StringUtil.isEmpty(dbName))
             return ds();
         Datastore ds = dataStores_.get(dbName);
         if (null == ds) {
-            Datastore ds0 = morphia_.createDatastore(mongo_, dbName);
+            TenantDatastore ds0 = new TenantDatastore(morphia_,  mongo_, dbName, null, null);
             ds = dataStores_.putIfAbsent(dbName, ds0);
             if (null == ds) {
                 ds = ds0;
@@ -181,6 +186,29 @@ public class MorphiaPlugin extends PlayPlugin {
         return morphia_;
     }
 
+
+    /**
+     * Sets the tenantContext implementation to all known Datastores. If
+     * multitenantMode is enabled, this should usually be called when Play is
+     * starting up.
+     * 
+     * @param tenantContext
+     *            tells which tenant Morphia plugin is operating with.
+     */
+    public static void setTenantContext(TenantContext tenantContext) {
+        ds_.setTenantContext(tenantContext);
+        for (TenantDatastore ds : dataStores_.values()) {
+            ds.setTenantContext(tenantContext);
+        }
+    }
+    
+    public static void setMultitenantMode(boolean multitenantMode){
+        ds_.setMultitenantMode(multitenantMode);
+        for (TenantDatastore ds : dataStores_.values()) {
+            ds.setMultitenantMode(multitenantMode);
+        }
+    }
+    
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
         //onConfigurationRead(); // ensure configuration be read before
@@ -392,7 +420,7 @@ public class MorphiaPlugin extends PlayPlugin {
         MorphiaLoggerFactory.registerLogger(loggerClazz);
         morphia_ = new Morphia();
         loggerRegistered_ = true;
-        ds_ = morphia_.createDatastore(mongo_, dbName);
+        ds_ = new TenantDatastore(morphia_,mongo_, dbName, null, null);
         dataStores_.put(dbName, ds_);
 
         String uploadCollection = c.getProperty("morphia.collection.upload", "uploads");
@@ -561,7 +589,14 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
 
-        ds().ensureIndexes();
+        // indexes cannot be automatically ensured in multitenantMode because
+        // this module doesn't know all tenants during startup. Instead the
+        // application should be responsible for calling db().ensureIndexes()
+        // for each tenant in an appropriate moment
+        boolean multitenantMode = "true".equals(Play.configuration.getProperty("morphia.multitenantMode", "false"));
+        if (!multitenantMode) {
+            ds().ensureIndexes();
+        }
 
         String writeConcern = Play.configuration.getProperty(
                 "morphia.defaultWriteConcern", "safe");
