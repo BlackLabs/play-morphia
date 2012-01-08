@@ -284,6 +284,11 @@ public class Model implements Serializable, play.db.Model {
     public Object getId() {
         return null;
     }
+    
+    @SuppressWarnings("unchecked")
+    public <T> T getId(Class<T> clazz) {
+        return (T) getId();
+    }
 
     public final void setId(Object id) {
         if (null != getId()) {

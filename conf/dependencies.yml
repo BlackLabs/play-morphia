@@ -1,4 +1,4 @@
-self: play -> morphia 1.2.4b
+self: play -> morphia 1.2.4c
 
 require:
     - play 1.2

@@ -92,6 +92,7 @@ public class UserTest extends UnitTest {
         u = User.find("byName", "alex").first();
         assertFalse(u.isNew());
         assertThatPhotoBlobIsValid(u.photo.getGridFSFile());
+        assertThatPhotoBlobIsValid(u.photo.getGridFSFile());
     }
     
     @Test

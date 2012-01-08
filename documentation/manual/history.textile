@@ -5,6 +5,11 @@ h2. <a name="roadmap">TODO list</a>
 * MongoDB multi-tenant support
 * Provide easy interface for update and batch update
 
+h2. <a name="1.2.4c">Updates in 1.2.4c</a>
+
+* Support @Column annotation on @Embedded class
+* Add T getId(Class<T> class) interface to suppress type casting
+
 h2. <a name="1.2.4b">Updates in 1.2.4b</a>
 
 * Fix bug: <a href="https://github.com/greenlaw110/play-morphia/issues/48">#48 error when play restart in dev mode when authentication needed</a>
