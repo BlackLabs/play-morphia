@@ -54,6 +54,12 @@ under the License.
                 <enabled>false</enabled>
             </releases>
         </repository>
+
+        <repository>
+            <id>com.google.code.morphia</id>
+            <name>Morphia - releases and snapshots</name>
+            <url>http://morphia.googlecode.com/svn/mavenrepo</url>
+        </repository>
     </repositories>
 
     <properties>
