@@ -64,7 +64,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.4b";
+    public static final String VERSION = "1.2.4d";
     
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));

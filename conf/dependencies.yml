@@ -1,4 +1,6 @@
-self: play -> morphia 1.2.4c
+# History
+# 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
+self: play -> morphia 1.2.4d
 
 require:
     - play 1.2

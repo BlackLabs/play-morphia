@@ -5,6 +5,10 @@ h2. <a name="roadmap">TODO list</a>
 * MongoDB multi-tenant support
 * Provide easy interface for update and batch update
 
+h2. <a name="1.2.4c">Updates in 1.2.4d</a>
+
+* Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
+
 h2. <a name="1.2.4c">Updates in 1.2.4c</a>
 
 * Support @Column annotation on @Embedded class

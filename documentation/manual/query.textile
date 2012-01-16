@@ -30,7 +30,7 @@ bc. List<User> users = User.find("country department", "China", "IT").asList();
 
 or with the "Play JPA style":http://www.playframework.org/documentation/1.2.3/jpa#Findusingasimplifiedquery:
 
-bc. List<User> users = user.find("byCountryAndDepartment", "China", "IT").asList();
+bc. List<User> users = User.find("byCountryAndDepartment", "China", "IT").asList();
 
 h2. <a name="build">Build MorphiaQuery object</a>
 
@@ -55,7 +55,7 @@ Here is a list of <a name="operator" href="http://code.google.com/p/morphia/wiki
 |in|"$in":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in|field value is in the supplied list [2]|
 |nin|"$nin":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nin|field value is not in the supplied list [2]|
 |elem|"$elemMatch":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24elemMatch|field (array or list) has element matches the supplied object|
-|exists|"$exists":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists|field exist (not null in Java term)|
+|exists|"$exists":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists|field exist (not null in Java term) [3]|
 |all|"$all":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all|field value (array or list) contains all elements supplied by argument|
 |size|"$size":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24size|the size of field value (array or list) equals to the supplied argument|
 |type|"$type":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type|The type of the field value equals to the "type number":http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type specified by argument| 
@@ -75,6 +75,12 @@ fn2. When you have the "@in@" or "@nin@" operators in the filter constraint, you
 # array
 # Any object with class implements <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Iterable.html">@java.lang.Iterable@</a>
 # a single object. In this case @in@ is the same as @=@, @nin@ is the same as @!=@ 
+
+fn3. To filter record by identifying whether a field exists you can issue the following statement:
+
+bc. List<User> users = User.q().filter("attributes.email exists", true).asList();
+
+This is extremely useful when you want to filter a model which contains an embedded hashmap (dynamic attributes).
 
 h3. <a name="regex">Search with regular expression</a>
 
@@ -212,6 +218,13 @@ You can also instruct query to skip first N records:
 bc. List<User> = User.q().filter(...).offset(10).asList();
 
 p(note). Combining @limit@ and @offset@ call you get an nice pagination support from @MorphiaQuery@
+
+h3. <a name="sort">Sort records in the returned list</a>
+
+It's easy to sort records in the returned list in a specific order:
+
+bc. List<User> users = User.q().filter(...).order('-_created').asList(); // sort by create timestamp in descending order
+List<User> users = User.q().filter(...).order('_modified').asList(); // sort by modified timestamp in ascending order
 
 h3. <a name="get">Get only one record</a>
 
