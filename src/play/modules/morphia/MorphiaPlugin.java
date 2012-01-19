@@ -363,27 +363,27 @@ public class MorphiaPlugin extends PlayPlugin {
     private static MongoOptions readMongoOptions(Properties c) {
         MongoOptions options = new MongoOptions();        
         for (Field field : options.getClass().getFields()) {
-        	String property = c.getProperty("mongo." + field.getName());        	
-        	if (StringUtils.isEmpty(property))
-        		continue;
-        	
-			Class<?> fieldType = field.getType();
-			Object value = null;
-			try {
-				if (fieldType == int.class)
-					value = Integer.parseInt(property);
-				else if (fieldType == long.class)
-					value = Long.parseLong(property);
-				else if (fieldType == String.class)
-					value = property;
-				else if (fieldType == Double.class)
-					value = Double.parseDouble(property);
-				else if (fieldType == boolean.class)
-					value = Boolean.parseBoolean(property);
-				field.set(options, value);
-			} catch (Exception e) {
-				error(e, "error setting mongo option " + field.getName());
-			}
+            String property = c.getProperty("mongo." + field.getName());            
+            if (StringUtils.isEmpty(property))
+                continue;
+
+            Class<?> fieldType = field.getType();
+            Object value = null;
+            try {
+                if (fieldType == int.class)
+                    value = Integer.parseInt(property);
+                else if (fieldType == long.class)
+                    value = Long.parseLong(property);
+                else if (fieldType == String.class)
+                    value = property;
+                else if (fieldType == Double.class)
+                    value = Double.parseDouble(property);
+                else if (fieldType == boolean.class)
+                    value = Boolean.parseBoolean(property);
+                field.set(options, value);
+            } catch (Exception e) {
+                error(e, "error setting mongo option " + field.getName());
+            }
         }
         return options;
     }
