@@ -381,19 +381,25 @@ public class MorphiaPlugin extends PlayPlugin {
         
         String url = c.getProperty(PREFIX + "url");
         String dbName = c.getProperty(PREFIX + "name");
+        String username = c.getProperty(PREFIX + "username");
+        String password = c.getProperty(PREFIX + "password");
+
         if (!StringUtil.isEmpty(url)) {
             MongoURI mongoURI = new MongoURI(url);
-            dbName = mongoURI.getDatabase(); // overwrite if set via url
+            // overwrite these if set via url
+            dbName = mongoURI.getDatabase();
+            username = mongoURI.getUsername(); 
+            password = new String(mongoURI.getPassword());
         }
 
         if (null == dbName) {
             warn("mongodb name not configured! using [test] db");
             dbName = "test";
         }
+
         DB db = mongo_.getDB(dbName);
-        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
-            String username = c.getProperty(PREFIX + "username");
-            String password = c.getProperty(PREFIX + "password");
+
+        if (!StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
             if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
