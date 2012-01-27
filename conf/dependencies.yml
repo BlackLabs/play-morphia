@@ -1,6 +1,7 @@
 # History
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.4d
+# 1.2.4e - Add support for morphia.db.url
+self: play -> morphia 1.2.4e
 
 require:
     - play 1.2
