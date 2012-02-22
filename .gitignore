@@ -6,3 +6,4 @@ build.bat
 play-morphia.jar
 dist
 target
+lib
