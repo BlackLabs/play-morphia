@@ -69,14 +69,23 @@ public class MorphiaEnhancer extends Enhancer {
         
         final CtClass ctClass = makeClass(applicationClass);
         final CtClass modelClass = classPool.getCtClass("play.modules.morphia.Model");
+        // convert annotation (Column to Property) on fields for Embedded class
+        if (!ctClass.subclassOf(modelClass) && hasAnnotation(ctClass, Embedded.class.getName())) {
+            processFields(ctClass);
+            applicationClass.enhancedByteCode = ctClass.toBytecode();
+            ctClass.defrost();
+            return;
+        }
+
         if (!ctClass.subclassOf(modelClass)) return;
         if (hasAnnotation(ctClass, Embedded.class.getName()) ) {
             throw new Exception(String.format("Error enhancing [%s]: Embedded entity shall NOT extend play.modules.morphia.Model class!", ctClass.getName()));
         }
+
         if (!hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, ByPass.class.getName())) return;
 
         boolean addId = true;
-    	boolean autoTS = hasAnnotation(ctClass, Model.AutoTimestamp.class.getName());
+    	boolean autoTS = hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName());
     	if (hasAnnotation(ctClass, NoId.class.getName())) {
             addId = false;
         } else {
@@ -105,7 +114,7 @@ public class MorphiaEnhancer extends Enhancer {
      */
     private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean autoTS) throws Exception {
         String entityName = ctClass.getName();
-        MorphiaPlugin.debug("enhancing %s ...", entityName);
+        play.modules.morphia.MorphiaPlugin.debug("enhancing %s ...", entityName);
 
         // Don't need to fully qualify types when compiling methods below
         classPool.importPackage(PACKAGE_NAME);

@@ -5,6 +5,23 @@ h2. <a name="roadmap">TODO list</a>
 * MongoDB multi-tenant support
 * Provide easy interface for update and batch update
 
+h2. <a name="1.2.4c">Updates in 1.2.4d</a>
+
+* Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
+
+h2. <a name="1.2.4c">Updates in 1.2.4c</a>
+
+* Support @Column annotation on @Embedded class
+* Add T getId(Class<T> class) interface to suppress type casting
+
+h2. <a name="1.2.4b">Updates in 1.2.4b</a>
+
+* Fix bug: <a href="https://github.com/greenlaw110/play-morphia/issues/48">#48 error when play restart in dev mode when authentication needed</a>
+* Fix bug: <a href="https://github.com/greenlaw110/play-morphia/pull/50">#50: Support enum type in MorphiaPlugin.MorphiaModelLoader.buildProperty</a>
+* Fix bug: <a href="https://github.com/greenlaw110/play-morphia/issues/51">#51: NullPointerException when morphia.id.type configuration not set</a>
+
+p(note). Thank "Vincent Buzzano":https://github.com/vbuzzano for contributing to bug fix of #48 and #50 
+
 h2. <a name="1.2.4a">Updates in 1.2.4a</a>
 
 * Fix bug: <a href="https://github.com/greenlaw110/play-morphia/issues/46">#46: [*morphia.id.type*] configuration are not read by MorphiaPlugin when application class has already enhanced</a>.

@@ -284,6 +284,11 @@ public class Model implements Serializable, play.db.Model {
     public Object getId() {
         return null;
     }
+    
+    @SuppressWarnings("unchecked")
+    public <T> T getId(Class<T> clazz) {
+        return (T) getId();
+    }
 
     public final void setId(Object id) {
         if (null != getId()) {
@@ -613,7 +618,7 @@ public class Model implements Serializable, play.db.Model {
      * Shortcut to find(String, Object...)
      * 
      * @param keys
-     * @param objects
+     * @param keys
      * @return
      */
     public static <T extends Model> MorphiaQuery q(String keys, Object value) {
@@ -809,8 +814,8 @@ public class Model implements Serializable, play.db.Model {
     protected void loadBlobs() {
         // used by enhander
     }
-    
-    protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
+
+    transient protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
     protected final boolean blobChanged(String fieldName) {
         return (blobFieldsTracker.containsKey(fieldName) && blobFieldsTracker.get(fieldName));
     }
@@ -1341,7 +1346,7 @@ public class Model implements Serializable, play.db.Model {
      * NoID is used to annotate on sub types which is sure to get ID field from
      * parent type
      * 
-     * @see https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
+     * @see //groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
      *      
      * @author luog
      */

@@ -7,6 +7,6 @@ import java.lang.String;
 
 @SuppressWarnings("serial")
 @Entity
-public class Extend extends Base {
-    public String email;
+public class Extend2 extends Base {
+    public String name;
 }

@@ -64,7 +64,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.4a";
+    public static final String VERSION = "1.2.4d";
     
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -150,6 +150,9 @@ public class MorphiaPlugin extends PlayPlugin {
     private static IdType idType_ = null;
 
     public static IdType getIdType() {
+        if (null == idType_) {
+            initIdType_();
+        }
         return idType_;
     }
 
@@ -418,7 +421,7 @@ public class MorphiaPlugin extends PlayPlugin {
         });
     }
     
-    private void initIdType_() {
+    private static void initIdType_() {
         if (null != idType_) return;
         Properties c = Play.configuration;
         if (c.containsKey("morphia.id.type")) {
@@ -435,6 +438,8 @@ public class MorphiaPlugin extends PlayPlugin {
                 fatal(e, msg);
                 throw new ConfigurationException(msg);
             }
+        } else {
+            idType_ = IdType.ObjectId;
         }
     }
 

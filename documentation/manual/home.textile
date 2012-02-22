@@ -61,6 +61,7 @@ Everything you need to know about PlayMorphia
 ## "Fetch entities from MorphiaQuery":query#fetch
 ### "Limit the number of records returned":query#limit
 ### "Skip the first N number of records":query#skip
+### "Sort records in the returned list":query#sort
 ### "Get one record only":query#get
 ## "Aliases of query methods":query#alias
 # "Advanced topics":advance
