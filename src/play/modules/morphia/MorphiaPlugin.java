@@ -60,32 +60,32 @@ import com.mongodb.gridfs.GridFS;
 
 /**
  * The plugin for the Morphia module.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.4d";
-    
+    public static final String VERSION = "1.2.5a";
+
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
     }
-    
+
     public static void info(Throwable t, String msg, Object... args) {
         Logger.info(t, msg_(msg, args));
     }
-    
+
     public static void debug(String msg, Object... args) {
         Logger.debug(msg_(msg, args));
     }
-    
+
     public static void debug(Throwable t, String msg, Object... args) {
         Logger.debug(t, msg_(msg, args));
     }
-    
+
     public static void trace(String msg, Object... args) {
         Logger.trace(msg_(msg, args));
     }
-    
+
     public static void trace(Throwable t, String msg, Object... args) {
         Logger.warn(t, msg_(msg, args));
     }
@@ -126,17 +126,17 @@ public class MorphiaPlugin extends PlayPlugin {
     private static Morphia morphia_ = null;
     private static Datastore ds_ = null;
     private static GridFS gridfs;
-    
+
     private static boolean configured_ = false;
-    
+
     private static boolean appStarted_ = false;
-    
-    private static boolean loggerRegistered_ = false; 
-    
+
+    private static boolean loggerRegistered_ = false;
+
     public static boolean loggerRegistered() {
         return loggerRegistered_;
     }
-    
+
     static boolean postPluginEvent = false;
 
     public static boolean configured() {
@@ -191,25 +191,25 @@ public class MorphiaPlugin extends PlayPlugin {
         initIdType_();
         e_.enhanceThisClass(applicationClass);
     }
-    
+
     private static List<IMorphiaEventHandler> globalEventHandlers_ =  new ArrayList<IMorphiaEventHandler>();
     private static Map<Class<? extends Model>, List<IMorphiaEventHandler>> modelEventHandlers_ = new HashMap<Class<? extends Model>, List<IMorphiaEventHandler>>();
-    
+
     public static synchronized void registerGlobalEventHandler(IMorphiaEventHandler handler) {
         if (null == handler) throw new NullPointerException();
         if (!globalEventHandlers_.contains(handler)) globalEventHandlers_.add(handler);
-        
+
     }
-    
+
     public static synchronized void unregisterGlobalEventHandler(IMorphiaEventHandler handler) {
         if (null == handler) throw new NullPointerException();
         globalEventHandlers_.remove(handler);
     }
-    
+
     public static synchronized void clearGlobalEventHandler() {
         globalEventHandlers_.clear();
     }
-    
+
     public static synchronized void registerModelEventHandler(Class<? extends Model> model, IMorphiaEventHandler handler) {
         if (null == handler || null == model) throw new NullPointerException();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
@@ -221,7 +221,7 @@ public class MorphiaPlugin extends PlayPlugin {
             l.add(handler);
         }
     }
-    
+
     public static synchronized void unregisterModelEventHandler(Class<? extends Model> model, IMorphiaEventHandler handler) {
         if (null == handler || null == model) throw new NullPointerException();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
@@ -230,7 +230,7 @@ public class MorphiaPlugin extends PlayPlugin {
         }
         l.remove(handler);
     }
-    
+
     public static synchronized void clearModelEventHandler(Class<? extends Model> model) {
         if (null == model) throw new NullPointerException();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(model);
@@ -239,11 +239,11 @@ public class MorphiaPlugin extends PlayPlugin {
             modelEventHandlers_.remove(model);
         }
     }
-    
+
     public static synchronized void clearAllModelEventHandler() {
         modelEventHandlers_.clear();
     }
-    
+
     static void onLifeCycleEvent(MorphiaEvent event, Model model) {
         Class<? extends Model> c = model.getClass();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
@@ -252,12 +252,12 @@ public class MorphiaPlugin extends PlayPlugin {
                 event.invokeOn(h, model);
             }
         }
-        
+
         for (IMorphiaEventHandler h: globalEventHandlers_) {
             event.invokeOn(h, model);
         }
     }
-    
+
     static void onBatchLifeCycleEvent(MorphiaEvent event, MorphiaQuery query) {
         Class<? extends Model> c = query.getEntityClass();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
@@ -266,7 +266,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 event.invokeOn(h, query);
             }
         }
-        
+
         for (IMorphiaEventHandler h: globalEventHandlers_) {
             event.invokeOn(h, query);
         }
@@ -343,7 +343,7 @@ public class MorphiaPlugin extends PlayPlugin {
         configureConnection_();
         configured_ = true;
     }
-    
+
     private void configureConnection_() {
         Properties c = Play.configuration;
 
@@ -356,11 +356,11 @@ public class MorphiaPlugin extends PlayPlugin {
             mongo_ = connect_(host, port);
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private void initMorphia_() {
         Properties c = Play.configuration;
-        
+
         String dbName = c.getProperty(PREFIX + "name");
         if (null == dbName) {
             warn("mongodb name not configured! using [test] db");
@@ -400,7 +400,7 @@ public class MorphiaPlugin extends PlayPlugin {
 
         String uploadCollection = c.getProperty("morphia.collection.upload", "uploads");
         gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
-        
+
         morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor(){
             @Override
             public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
@@ -409,7 +409,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     ((Model)ent)._h_OnLoad();
                 }
             }
-            
+
             @Override
             public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
                 if (ent instanceof Model) {
@@ -420,7 +420,7 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         });
     }
-    
+
     private static void initIdType_() {
         if (null != idType_) return;
         Properties c = Play.configuration;
@@ -455,11 +455,11 @@ public class MorphiaPlugin extends PlayPlugin {
         info("initialized");
         appStarted_ = true;
     }
-    
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void registerEventHandlers_() {
         if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.autoRegisterEventHandler", "true"))) return;
-        
+
         // -- register handlers from event handler class --
         List<Class> classes = Play.classloader.getAssignableClasses(IMorphiaEventHandler.class);
         for (Class c: classes) {
@@ -480,7 +480,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
         }
-        
+
         // -- register handlers from model class --
         classes = Play.classloader.getAssignableClasses(Model.class);
         for (Class c: classes) {
@@ -503,7 +503,7 @@ public class MorphiaPlugin extends PlayPlugin {
             }
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private void registerModelEventHandlers_(@SuppressWarnings("rawtypes") Class modelClass, IMorphiaEventHandler h) {
         if (Model.class.equals(modelClass)) {
@@ -737,6 +737,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     }
                     String prop = sa[0];
                     String val = sa[1];
+                    val = StringUtil.trim(val);
                     debug("where prop val pair found: %1$s = %2$s", prop, val);
                     prop = prop.replaceAll("[\"' ]", "");
                     if (val.matches("[\"'].*[\"']")) {

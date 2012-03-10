@@ -7,11 +7,11 @@ public class StringUtil {
     public static String join(String separator, Collection<?> list) {
         return join(separator, null, null, list);
     }
-    
+
     public static String join(String separator, Collection<?> list, boolean quoted) {
         return join(separator, null, null, list, quoted);
     }
-    
+
     public static String join(String separator, String prefix, String suffix, Collection<?> list, boolean quoted) {
         StringBuilder sb = new StringBuilder();
 
@@ -82,14 +82,14 @@ public class StringUtil {
             return s1.equals(s2);
         }
     }
-    
+
     public static String upperFirstChar(String s) {
         if (StringUtil.isEmpty(s)) return s;
         String init = s.substring(0, 1);
         String rest = s.substring(1);
         return String.format("%s%s", init.toUpperCase(), rest);
     }
-    
+
     public static String lowerFirstChar(String s) {
         if (StringUtil.isEmpty(s)) return s;
         String init = s.substring(0, 1);
@@ -97,10 +97,15 @@ public class StringUtil {
         return String.format("%s%s", init.toLowerCase(), rest);
     }
 
+    public static String trim(String s) {
+        if (null == s) return null;
+        return s.trim();
+    }
+
     private static void echo(String msg, Object... args) {
         System.out.println(String.format(msg, args));
     }
-    
+
     public static void main(String[] sa) {
         echo("%s", lowerFirstChar(""));
         echo("%s", lowerFirstChar("s"));
