@@ -5,7 +5,16 @@ h2. <a name="roadmap">TODO list</a>
 * MongoDB multi-tenant support
 * Provide easy interface for update and batch update
 
-h2. <a name="1.2.4c">Updates in 1.2.4d</a>
+h2. <a name="1.2.5b">Updates in 1.2.5b</a>
+
+* **break change** Calling MorphiaPlugin.MorphiaModelLoader.fetch(), the @keywords@ parameter will be splited by non-words characters (@\W@), and compose @And@ condition first, then the @And@ criteria container will be composed to final criteria with @Or@ condition among the searched fields.
+
+h2. <a name="1.2.5a">Updates in 1.2.5a<a/>
+
+* Synchronize to class when get long ID
+* trim value when processing where statement in Factory.fetch
+
+h2. <a name="1.2.4d">Updates in 1.2.4d</a>
 
 * Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
 

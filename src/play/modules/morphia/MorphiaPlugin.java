@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
+import com.google.code.morphia.query.CriteriaContainer;
+import com.google.code.morphia.query.CriteriaContainerImpl;
 import org.bson.types.ObjectId;
 
 import play.Logger;
@@ -64,7 +66,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.5a";
+    public static final String VERSION = "1.2.5b";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -668,10 +670,15 @@ public class MorphiaPlugin extends PlayPlugin {
 
             if (keywords != null && !keywords.equals("")) {
                 List<Criteria> cl = new ArrayList<Criteria>();
+                String[] sa = keywords.split("[\\W]+");
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    cl.add(q.criteria(f).containsIgnoreCase(keywords));
+                    List<Criteria> cl0 = new ArrayList<Criteria>();
+                    for (String s: sa) {
+                        cl0.add(q.criteria(f).containsIgnoreCase(s));
+                    }
+                    cl.add(q.and(cl0.toArray(new Criteria[]{})));
                 }
-                q.or(cl.toArray(new Criteria[] {}));
+                q.or(cl.toArray(new Criteria[]{}));
             }
 
             processWhere(q, where);
@@ -701,8 +708,11 @@ public class MorphiaPlugin extends PlayPlugin {
 
             if (keywords != null && !keywords.equals("")) {
                 List<Criteria> cl = new ArrayList<Criteria>();
+                String[] sa = keywords.split("[\\W]+");
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    cl.add(q.criteria(f).contains(keywords));
+                    for (String s: sa) {
+                        cl.add(q.criteria(f).contains(keywords));
+                    }
                 }
                 q.or(cl.toArray(new Criteria[] {}));
             }
