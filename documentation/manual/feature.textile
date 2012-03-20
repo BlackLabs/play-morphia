@@ -9,6 +9,7 @@ PlayMorphia is a Object-MongoDB mapping layer to help Play application developer
 # "Support arbitrary ID type":cust_id
 # "Creating index with annotations":model#index
 # "Super powerful and easy query interface":query
+# "Support atomic update operations":update
 # "Complete aggregation and group aggregation support":statistics
 # "Sophisticated Model entity lifecycle event handling framework":lifecycle
 # Play!Framework integration
