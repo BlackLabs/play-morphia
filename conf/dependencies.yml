@@ -1,9 +1,10 @@
 # History
+# 1.2.5b - process keywords in MorphiaPlugin.MorphiaModelLoader.fetch(), simulate google search
 # 1.2.5a - Synchronize to class when get long ID
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.5a
+self: play -> morphia 1.2.5b
 
 require:
     - play 1.2

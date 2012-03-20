@@ -1,6 +1,6 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.4a release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.5b release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history.
 

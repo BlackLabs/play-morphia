@@ -1,29 +1,16 @@
 package play.modules.morphia;
 
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
+import com.google.code.morphia.Datastore;
+import com.google.code.morphia.DatastoreImpl;
+import com.google.code.morphia.Key;
+import com.google.code.morphia.annotations.Embedded;
+import com.google.code.morphia.annotations.Reference;
+import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
+import com.google.code.morphia.query.*;
+import com.mongodb.*;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
-
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -35,34 +22,21 @@ import play.modules.morphia.utils.IdGenerator;
 import play.modules.morphia.utils.StringUtil;
 import play.mvc.Scope.Params;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Key;
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Reference;
-import com.google.code.morphia.annotations.Transient;
-import com.google.code.morphia.mapping.Mapper;
-import com.google.code.morphia.query.Criteria;
-import com.google.code.morphia.query.CriteriaContainer;
-import com.google.code.morphia.query.CriteriaContainerImpl;
-import com.google.code.morphia.query.FieldEnd;
-import com.google.code.morphia.query.Query;
-import com.google.code.morphia.query.QueryImpl;
-import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.MapReduceCommand;
-import com.mongodb.MapReduceOutput;
+import java.io.Serializable;
+import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.*;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
  * of these declarations are provided by the MorphiaEnhancer.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class Model implements Serializable, play.db.Model {
-    
+
     public static final String ALL = "__all__";
 
     private static final long serialVersionUID = -719759872826848048L;
@@ -244,7 +218,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * This method is deprecated as Embedded object shall not extends Model class
      * and shall not be enhanced
-     * 
+     *
      * @deprecated
      * @return
      */
@@ -255,7 +229,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * MorphiaEnhancer will override this method for sub class with \@Id
      * annotation specified
-     * 
+     *
      * @return
      */
     protected boolean isUserDefinedId_() {
@@ -264,7 +238,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Any sub class with \@Id annotation specified need to rewrite this method
-     * 
+     *
      * @return
      */
     protected static Object processId_(Object id) {
@@ -274,17 +248,17 @@ public class Model implements Serializable, play.db.Model {
     /**
      * MorphiaEnhancer will override this method for sub class without \@Embedded
      * annotation specified
-     * 
+     *
      * If user defined customized \@Id field, it's better to override this
      * method for the sake of performance. Otherwise framework will use
      * reflection to get the value
-     * 
+     *
      * @return
      */
     public Object getId() {
         return null;
     }
-    
+
     @SuppressWarnings("unchecked")
     public <T> T getId(Class<T> clazz) {
         return (T) getId();
@@ -372,7 +346,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * A utility method determine whether this entity is a newly constructed
      * object in memory or represents a data from mongodb
-     * 
+     *
      * @return true if this is a memory object which has not been saved to db
      *         yet, false otherwise
      */
@@ -413,7 +387,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to createQuery
-     * 
+     *
      * @return
      */
     public static <T extends Model> MorphiaQuery q() {
@@ -443,7 +417,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return a Set of distinct values for the given key
-     * 
+     *
      * @param key
      * @return a distinct set of key values
      */
@@ -498,7 +472,7 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
-    
+
     public static Map<String, Long> _cloud(String field) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
@@ -510,45 +484,45 @@ public class Model implements Serializable, play.db.Model {
             Logger.warn("invocation of delete on new entity ignored");
             return (T) this;
         }
-        
+
         _delete();
-        
+
         return (T) this;
     }
-    
+
     private void _h_OnDelete() {
         postEvent_(MorphiaEvent.ON_DELETE, this);
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_DELETE, this);
         h_OnDelete();
         deleteBlobs();
     }
-    
+
     protected void h_OnDelete() {
         // for enhancer usage
     }
-    
+
     private void _h_Deleted() {
         h_Deleted();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.DELETED, this);
         postEvent_(MorphiaEvent.DELETED, this);
     }
-    
+
     protected void h_Deleted() {
         // for enhancer usage
     }
-    
+
     protected void h_OnBatchDelete(MorphiaQuery q) {
         // for enhancer usage
     }
-    
+
     protected void h_BatchDeleted(MorphiaQuery q) {
         // for enhancer usage
     }
-    
+
     protected void deleteBlobs() {
         // for enhancer usage
     }
-    
+
     protected void deleteBlobsInBatch(MorphiaQuery q) {
         // for enhancer usage
     }
@@ -570,7 +544,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to Model.delete(find())
-     * 
+     *
      * @return
      */
     public static long deleteAll() {
@@ -580,7 +554,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to createQuery()
-     * 
+     *
      * @return
      */
     public static <T extends Model> MorphiaQuery find() {
@@ -590,7 +564,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * JPA style find method
-     * 
+     *
      * @param keys
      *            could be either "byKey1[AndKey2[AndKey3...]]" or
      *            "Key1[AndKey2[AndKey3...]]" or "key1 key2..."
@@ -616,7 +590,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to find(String, Object...)
-     * 
+     *
      * @param keys
      * @param keys
      * @return
@@ -628,11 +602,11 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Morphia style filter method.
-     * 
+     *
      * <p>
      * if you have MyModel.find("byNameAndAge", "John", 20), you can also use
      * MyModel.filter("name", "John").filter("age", 20) for the same query
-     * 
+     *
      * @param property
      *            should be the filter name
      * @param value
@@ -643,6 +617,19 @@ public class Model implements Serializable, play.db.Model {
             Object value) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    public static <T extends Model> MorphiaUpdateOperations createUpdateOperations() {
+        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    /**
+     * Alias of #updateOperations()
+     * @param <T>
+     * @return
+     */
+    public static <T extends Model> MorphiaUpdateOperations o() {
+        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
     // -- additional quick access method
@@ -657,13 +644,13 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return Morphia Datastore instance
-     * 
+     *
      * @return
      */
     public static Datastore ds() {
         return MorphiaPlugin.ds();
     }
-    
+
     /**
      * Return MongoDB DBCollection for this model
      */
@@ -674,7 +661,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return MongoDB DB instance
-     * 
+     *
      * @return
      */
     public static DB db() {
@@ -683,7 +670,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Save and return this entity
-     * 
+     *
      * @param <T>
      * @return
      */
@@ -695,7 +682,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Save and return Morphia Key
-     * 
+     *
      * @return
      */
     public Key<? extends Model> save2() {
@@ -707,7 +694,7 @@ public class Model implements Serializable, play.db.Model {
         if (isNew) {setSaved_();_h_Added();} else _h_Updated();
         return k;
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -716,14 +703,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_LOAD, this);
         h_OnLoad();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnLoad() {
         // for enhancer usage
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -734,14 +721,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
         postEvent_(MorphiaEvent.LOADED, this);
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_Loaded() {
         // for enhancer usage
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -750,14 +737,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ADDED, this);
         postEvent_(MorphiaEvent.ADDED, this);
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_Added() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -773,7 +760,7 @@ public class Model implements Serializable, play.db.Model {
     protected void h_Updated() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -783,14 +770,14 @@ public class Model implements Serializable, play.db.Model {
         h_OnAdd();
         generateId_();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnAdd() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -799,18 +786,18 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_UPDATE, this);
         h_OnUpdate();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnUpdate() {
         // used by enhancer
     }
-    
+
     protected void saveBlobs() {
-        // used by enhancer 
+        // used by enhancer
     }
-    
+
     protected void loadBlobs() {
         // used by enhander
     }
@@ -822,15 +809,15 @@ public class Model implements Serializable, play.db.Model {
     protected final void setBlobChanged(String fieldName) {
         blobFieldsTracker.put(fieldName, true);
     }
-    
+
     public String getBlobFileName(String fieldName) {
         return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
     }
-    
+
     public static String getBlobFileName(String className, Object id, String fieldName) {
         return String.format("%s_%s_%s", className, StringUtils.capitalize(fieldName), id);
     }
-    
+
     public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
         for (String fieldName: fieldNames) {
             String fileName = getBlobFileName(className, id, fieldName);
@@ -856,9 +843,192 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException(
                 "Please annotate model with @AutoTimestamp annotation");
     }
-    
+
     private static void postEvent_(MorphiaEvent event, Object context) {
         if (MorphiaPlugin.postPluginEvent) PlayPlugin.postEvent(event.getId(), context);
+    }
+
+    public static class MorphiaUpdateOperations {
+        public static Datastore ds() {
+            return MorphiaPlugin.ds();
+        }
+
+        private UpdateOpsImpl<? extends Model> u_;
+        private Class <? extends Model> c_;
+
+        public UpdateOperations<? extends Model> getMorphiaUpdateOperations() {
+            return u_;
+        }
+
+        public DBObject getUpdateOperationsObject() {
+            return u_.getOps();
+        }
+
+        public DBCollection col() {
+            return ds().getCollection(c_);
+        }
+
+        private MorphiaUpdateOperations() {
+            // constructor for clone() usage
+        }
+
+        public MorphiaUpdateOperations(Class<? extends Model> clazz) {
+            u_ = new UpdateOpsImpl(clazz, ((DatastoreImpl)ds()).getMapper());
+        }
+
+        private boolean multi = true;
+        public MorphiaUpdateOperations multi(boolean multi) {
+            this.multi = multi;
+            return this;
+        }
+        public boolean multi() {
+            return multi;
+        }
+
+        public MorphiaUpdateOperations validation(boolean validate) {
+            if (validate) u_.enableValidation();
+            else u_.disableValidation();
+            return this;
+        }
+
+        public MorphiaUpdateOperations enableValidation() {
+            return validation(true);
+        }
+
+        public MorphiaUpdateOperations disableValidation() {
+            return validation(false);
+        }
+
+        public MorphiaUpdateOperations isolate(boolean isolate) {
+            if (isolate) u_.isolated();
+            else {
+                throw new UnsupportedOperationException("Morphia does not support set isolated to false");
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations enableIsolate() {
+            return isolate(true);
+        }
+
+        public MorphiaUpdateOperations disableIsolate() {
+            return isolate(false);
+        }
+
+        public MorphiaUpdateOperations isolated() {
+            return enableIsolate();
+        }
+
+        public MorphiaUpdateOperations add(String fieldExpr, Object value) {
+            u_.add(fieldExpr, value);
+            return this;
+        }
+
+        public MorphiaUpdateOperations add(String fieldExpr, Object value, boolean addDups) {
+            u_.add(fieldExpr, value, addDups);
+            return this;
+        }
+
+        public MorphiaUpdateOperations addAll(String fieldExpr, List<?> values, boolean addDups) {
+            u_.addAll(fieldExpr, values, addDups);
+            return this;
+        }
+
+        public MorphiaUpdateOperations dec(String fieldExpr) {
+            u_.dec(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations inc(String fieldExpr) {
+            u_.inc(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations inc(String fieldExpr, Number value) {
+            u_.inc(fieldExpr, value);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeAll(String fieldExpr, Object value) {
+            u_.removeAll(fieldExpr, value);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeAll(String fieldExpr, List<?> values) {
+            u_.removeAll(fieldExpr, values);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeFirst(String fieldExpr) {
+            u_.removeFirst(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeLast(String fieldExpr) {
+            u_.removeLast(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations set(String fieldExpr, Object... values) {
+            if (null == fieldExpr || values.length == 0) {
+                throw new IllegalArgumentException("Invalid query or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            if ((values.length != 1) && (keys.length != values.length)) {
+                throw new IllegalArgumentException(
+                        "Query key number does not match the params number");
+            }
+
+            Object oneVal = values.length == 1 ? values[0] : null;
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.set(sb.toString(), oneVal == null ? values[i] : oneVal);
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations unset(String fieldExpr) {
+            u_.unset(fieldExpr);
+            return this;
+        }
+
+        public <T> T updateFirst(MorphiaQuery q) {
+            return (T)findAndModify(q);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_);
+        }
+
+        public <T> T updateFirst(MorphiaQuery q, boolean oldVersion) {
+            return (T)findAndModify(q, oldVersion);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q, boolean oldVersion) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion);
+        }
+
+        public <T> T updateFirst(MorphiaQuery q, boolean oldVersion, boolean createIfMissing) {
+            return (T)findAndModify(q, oldVersion, createIfMissing);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q, boolean oldVersion, boolean createIfMissing) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion, createIfMissing);
+        }
+
+        public <T> UpdateResults<T> update(MorphiaQuery q) {
+            return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
+        }
+
+        public <T> UpdateResults<T> updateAll() {
+            return update(all());
+        }
+
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -873,11 +1043,11 @@ public class Model implements Serializable, play.db.Model {
         public Query<? extends Model> getMorphiaQuery() {
             return q_;
         }
-        
+
         public DBObject getQueryObject() {
             return q_.getQueryObject();
         }
-        
+
         public DBCollection col() {
             return ds().getCollection(c_);
         }
@@ -934,7 +1104,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Alias of countAll()
-         * 
+         *
          * @return
          */
         public long count() {
@@ -943,11 +1113,11 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Used to simulate JPA.find("byXXAndYY", ...);
-         * 
+         *
          * @param query
          *            could be either "Key1[AndKey2[AndKey3]]" or
          *            "byKey1[AndKey2[AndKey3]]" or "key1 key2 ..."
-         * 
+         *
          * @param params
          *            the number of params should either be exactly one or the
          *            number match the key number
@@ -991,7 +1161,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Set the position to start
-         * 
+         *
          * @param position
          *            Position of the first element
          * @return A new query
@@ -1003,10 +1173,10 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve all results of the query
-         * 
+         *
          * This is a correspondence to JPAQuery's fetch(), which however, used
          * as another method signature of Morphia Query
-         * 
+         *
          * @return A list of entities
          */
         public <T extends Model> List<T> fetchAll() {
@@ -1015,7 +1185,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve results of the query
-         * 
+         *
          * @param max
          *            Max results to fetch
          * @return A list of entities
@@ -1026,7 +1196,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve a page of result
-         * 
+         *
          * @param page
          *            Page number (start at 1)
          * @param length
@@ -1083,7 +1253,7 @@ public class Model implements Serializable, play.db.Model {
         public Set<?> distinct(String key) {
             return new HashSet(col().distinct(key, getQueryObject()));
         }
-        
+
         public Map<String, Long> cloud(String field) {
             String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
             String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
@@ -1096,9 +1266,9 @@ public class Model implements Serializable, play.db.Model {
             }
             return m;
         }
-        
+
         /**
-         * 
+         *
          * @param groupKeys
          *            could be either "f1Andf2.." or "f1 f2" or "f1,f2"
          * @return
@@ -1345,9 +1515,9 @@ public class Model implements Serializable, play.db.Model {
     /**
      * NoID is used to annotate on sub types which is sure to get ID field from
      * parent type
-     * 
+     *
      * @see //groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
-     *      
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1358,7 +1528,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnLoad mark a method be called after an new instance of an entity is initialized and
      * before the properties are filled with mongo db columns
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1368,7 +1538,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * OnLoad mark a method be called immediately after an entity loaded from mongodb
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1379,7 +1549,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnAdd mark a method be called before an new entity is saved. If any exception get thrown
      * out in the method the entity will not be saved
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1390,74 +1560,74 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnUpdate mark a method be called before an existing entity is saved. If any exception get thrown
      * out in the method the entity will not be saved
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnUpdate {
     }
-    
+
     /**
      * Added mark a method be called after an new entity is saved.
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Added {
     }
-    
+
     /**
      * Updated mark a method be called after an existing entity is saved.
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Updated {
     }
-    
+
     /**
      * OnDelete mark a method be called before an entity is deleted. If any exception throw out
      * in this method the entity will not be removed
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnDelete {
     }
-    
+
     /**
      * Deleted mark a method be called after an entity is deleted
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Deleted {
     }
-    
+
     /**
      * OnBatchDelete mark a method be called before a query's delete method get called. If any exception throw out
      * in this method the query deletion will be canceled
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnBatchDelete {
     }
-    
+
     /**
      * Deleted mark a method be called after an a query deletion executed
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface BatchDeleted {
     }
-    
+
 }
