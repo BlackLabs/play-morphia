@@ -970,6 +970,7 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public MorphiaUpdateOperations set(String fieldExpr, Object... values) {
+            if (null == values) values = new Object[] {null};
             if (null == fieldExpr || values.length == 0) {
                 throw new IllegalArgumentException("Invalid query or params");
             }
@@ -1124,6 +1125,7 @@ public class Model implements Serializable, play.db.Model {
          * @return
          */
         public MorphiaQuery findBy(String query, Object... params) {
+            if (null == params) params = new Object[] {null};
             if (null == query || params.length == 0) {
                 throw new IllegalArgumentException("Invalid query or params");
             }
