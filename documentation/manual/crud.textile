@@ -33,15 +33,21 @@ user.save();
 
 h3. <a name="batch-update">Batch update</a>
 
-Batch update not directly supported in PlayMorphia yet, but it's easy to do via the morphia @Datastore@ interface:
+-Batch update not directly supported in PlayMorphia yet, but it's easy to do via the morphia @Datastore@ interface:-
 
-bc. Query smartGuys = Employee.find("department", "IT").getMorphiaQuery();
-Datastore ds = Employee.ds();
-UpdateOperations incSalary = 
-    ds.createUpdateOperations(Employee.class).inc("salary", 10000);
-ds.update(smartGuys, incSalary);
+Before v1.2.6 you do batch update like this:
 
-p(note). Refer to "Morphia documentation":http://code.google.com/p/morphia/wiki/Updating for more about updating
+bc. Datastore ds = Employee.ds();
+UpdateOperations op = ds.createUpdateOperations(Employee.class);
+UpdateOperations<Employee> op = ds.createUpdateOperations(Employee.class).inc("salary", 10000).inc("bonus", 99999);
+Query<Employee> q = (Query<Employee>)Employee.q().findBy("department", "IT").getMorphiaQuery();
+ds.update(q, op);
+
+Now you do it this way:
+
+bc. Employee.o().inc("salary, bonus", 10000, 99999).update("department", "IT");
+
+p(note). util v1.2.6 PlayMorphia does NOT provide lifecycle events for batch update yet
 
 h2. <a name="delete">Delete model</a>
 
@@ -67,4 +73,5 @@ h2. <a name="resource">See also</a>
 
 # "Understanding PlayMorphia model":model
 # %(next)"Using Query":query%
+# "Atomic update operations":update
 # "Introduction to lifecycle event handling":lifecycle

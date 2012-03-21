@@ -874,6 +874,7 @@ public class Model implements Serializable, play.db.Model {
 
         public MorphiaUpdateOperations(Class<? extends Model> clazz) {
             u_ = new UpdateOpsImpl(clazz, ((DatastoreImpl)ds()).getMapper());
+            c_ = clazz;
         }
 
         private boolean multi = true;
@@ -934,18 +935,64 @@ public class Model implements Serializable, play.db.Model {
             return this;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            return super.equals(obj);    //To change body of overridden methods use File | Settings | File Templates.
+        }
+
         public MorphiaUpdateOperations dec(String fieldExpr) {
-            u_.dec(fieldExpr);
+            if (StringUtil.isEmpty(fieldExpr)) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.dec(sb.toString());
+            }
             return this;
         }
 
         public MorphiaUpdateOperations inc(String fieldExpr) {
-            u_.inc(fieldExpr);
+            if (StringUtil.isEmpty(fieldExpr)) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.inc(sb.toString());
+            }
             return this;
         }
 
-        public MorphiaUpdateOperations inc(String fieldExpr, Number value) {
-            u_.inc(fieldExpr, value);
+        public MorphiaUpdateOperations inc(String fieldExpr, Number... values) {
+            if (null == values) values = new Number[] {null};
+            if (StringUtil.isEmpty(fieldExpr) || values.length == 0) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            if ((values.length != 1) && (keys.length != values.length)) {
+                throw new IllegalArgumentException(
+                        "Query key number does not match the params number");
+            }
+
+            Number oneVal = values.length == 1 ? values[0] : null;
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.inc(sb.toString(), oneVal == null ? values[i] : oneVal);
+            }
             return this;
         }
 
@@ -1002,16 +1049,36 @@ public class Model implements Serializable, play.db.Model {
             return (T)findAndModify(q);
         }
 
+        public <T> T updateFirst(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q);
+        }
+
         public <T> T findAndModify(MorphiaQuery q) {
             return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_);
+        }
+
+        public <T> T findAndModify(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q);
         }
 
         public <T> T updateFirst(MorphiaQuery q, boolean oldVersion) {
             return (T)findAndModify(q, oldVersion);
         }
 
+        public <T> T updateFirst(boolean oldVersion, String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q, oldVersion);
+        }
+
         public <T> T findAndModify(MorphiaQuery q, boolean oldVersion) {
             return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion);
+        }
+
+        public <T> T findAndModify(boolean oldVersion, String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q, oldVersion);
         }
 
         public <T> T updateFirst(MorphiaQuery q, boolean oldVersion, boolean createIfMissing) {
@@ -1026,8 +1093,17 @@ public class Model implements Serializable, play.db.Model {
             return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
         }
 
+        public <T> UpdateResults<T> update(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
+        }
+
+        private <T> UpdateResults<T> update(Query<T> q) {
+            return ds().update(q, (UpdateOperations<T>)u_);
+        }
+
         public <T> UpdateResults<T> updateAll() {
-            return update(all());
+            return ds().update((QueryImpl) ds().createQuery(c_), (UpdateOperations<T>)u_);
         }
 
     }
