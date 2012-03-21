@@ -3,7 +3,6 @@ h1. PlayMorphia version history
 h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
-* Provide easy interface for update and batch update
 
 h2. <a name="1.2.6">Updates in 1.2.6</a>
 
