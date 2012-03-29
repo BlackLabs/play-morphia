@@ -4,6 +4,10 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
+h2. <a name="1.2.6a">Updates in 1.2.6a</a>
+
+* Bug fix: https://github.com/greenlaw110/play-morphia/issues/75
+
 h2. <a name="1.2.6">Updates in 1.2.6</a>
 
 * Support atomic update operations

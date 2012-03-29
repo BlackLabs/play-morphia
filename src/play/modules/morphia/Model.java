@@ -1219,7 +1219,7 @@ public class Model implements Serializable, play.db.Model {
             for (int i = 0; i < keys.length; ++i) {
                 StringBuilder sb = new StringBuilder(keys[i]);
                 sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
-                q_.filter(sb.toString(), oneVal == null ? params[i] : oneVal);
+                q_.filter(sb.toString(), params.length > 1 ? params[i] : oneVal);
             }
 
             return this;
