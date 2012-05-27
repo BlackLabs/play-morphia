@@ -387,7 +387,8 @@ public class MorphiaEnhancer extends Enhancer {
 
     /*
      * 1. Add @Transparent to all Blob field
-     * 2. Convert @play.modules.morphia.Model.Column to com.google.code.morphia.annotations.Property
+     * 2. Convert @play.modules.morphia.Model.Column to @com.google.code.morphia.annotations.Property
+     * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */
     private List<String> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
@@ -408,11 +409,17 @@ public class MorphiaEnhancer extends Enhancer {
             Annotation[] aa = attr.getAnnotations();
             Annotation colA = null;
             Annotation propA = null;
+            Annotation uniquePlay = null;
+            Annotation uniqueMorhpia = null;
             for (Annotation a: aa) {
                 if (a.getTypeName().equals(Column.class.getName())) {
                     colA = a;
                 } else if (a.getTypeName().equals(Property.class.getName())) {
                     propA = a;
+                } else if (a.getTypeName().equals(play.modules.morphia.validation.Unique.class.getName())) {
+                    uniqueMorhpia = a;
+                } else if (a.getTypeName().equals(play.data.validation.Unique.class.getName())) {
+                    uniquePlay = a;
                 }
             }
             if (null == propA && null != colA) {
@@ -424,6 +431,25 @@ public class MorphiaEnhancer extends Enhancer {
                 if (null != concreteClass) propA.addMemberValue("concreteClass", concreteClass);
                 attr.addAnnotation(propA);
             }
+            if (null == uniqueMorhpia && null != uniquePlay) {
+                MemberValue value = uniquePlay.getMemberValue("value");
+                MemberValue message = uniquePlay.getMemberValue("message");
+                uniqueMorhpia = new Annotation(play.modules.morphia.validation.Unique.class.getName(), ctClass.getClassFile().getConstPool());
+                if (null != value) uniqueMorhpia.addMemberValue("value", value);
+                if (null != message) uniqueMorhpia.addMemberValue("message", message);
+                attr.addAnnotation(uniqueMorhpia);
+            }
+            if (null != uniquePlay) {
+                Annotation[] anns = attr.getAnnotations();
+                List<Annotation> newAnns = new ArrayList<Annotation>(anns.length - 1);
+                for (Annotation ann: anns) {
+                    if (!ann.getTypeName().equals(play.data.validation.Unique.class.getName())) {
+                        newAnns.add(ann);
+                    }
+                }
+                attr.setAnnotations(newAnns.toArray(new Annotation[]{}));
+            }
+            cf.getFieldInfo().addAttribute(attr);
         }
         return blobs;
     }

@@ -11,11 +11,11 @@ import play.modules.morphia.MorphiaPlugin;
 import com.google.code.morphia.Datastore;
 
 public class MorphiaFixtures extends Fixtures {
-    
+
 	private static Datastore ds() {
         return MorphiaPlugin.ds();
     }
-    
+
     public static void deleteDatabase() {
     	idCache.clear();
         Datastore ds = ds();
@@ -23,21 +23,21 @@ public class MorphiaFixtures extends Fixtures {
             ds.getCollection(clz).drop();
         }
     }
-    
+
     public static void delete(Class<? extends Model> ... types) {
     	idCache.clear();
         for (Class<? extends Model> type: types) {
             ds().getCollection(type).drop();
         }
     }
-    
+
     public static void delete(List<Class<? extends Model>> classes) {
     	idCache.clear();
         for (Class<? extends Model> type: classes) {
             ds().getCollection(type).drop();
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     public static void deleteAllModels() {
         List<Class<? extends Model>> mongoClasses = new ArrayList<Class<? extends Model>>();

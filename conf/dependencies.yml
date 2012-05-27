@@ -1,4 +1,5 @@
 # History
+# 1.2.7  - support playframework 1.2.4+
 # 1.2.6a - Bug fix: https://github.com/greenlaw110/play-morphia/issues/75
 # 1.2.6  - Support atomic update operations
 #        - Bug fix: https://github.com/greenlaw110/play-morphia/issues/71
@@ -7,7 +8,7 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.6a
+self: play -> morphia 1.2.7
 
 require:
     - play 1.2

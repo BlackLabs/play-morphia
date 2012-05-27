@@ -11,7 +11,7 @@ Caused by: java.lang.RuntimeException: Cannot load fixture initial-data.yml: The
         at Bootstrap.doJob(Bootstrap.java:21)
         at play.jobs.Job.doJobWithResult(Job.java:37)
         at play.jobs.Job.call(Job.java:110)
-        
+
 p. This problem happens on Play v1.1-beta1. Please upgrade to the latest version
 
 h2. How to create an "OR" relation query?
@@ -41,7 +41,7 @@ Basically this error occurred when you try to query an entity using referenced e
 bc. User bob = User.filter("email", "bob@gmail.com").first();
 Post p = Post.filter("author", bob).first();
 
-If the relationship is embedded rather than reference, you can safely use "dot" notation to do the query. 
+If the relationship is embedded rather than reference, you can safely use "dot" notation to do the query.
 
 If you find yourself frequently query referenced entities, then you should consider taking a look at <a href="http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails">this</a> article.
 
@@ -57,6 +57,16 @@ h2. Why setting morphia.defaultWriteConcern does not work?
 
 It might be caused by "this bug":http://code.google.com/p/morphia/issues/detail?id=209. Please upgrade your PlayMorphia to latest version.
 
-h2. I get duplicate ID field error. 
+h2. I get duplicate ID field error.
 
 If you define sub type models Morphia will probably enhance and add @Id field to both sub type and parent type. Therefore you got 2 @Id field in sub type model. To resolve the problem, annotate your sub type or parent type with @NoId annotation (available in morphia-1.2.1beta5)
+
+h2. Serializing ObjectId fields
+
+BSON @ObjectId@ fields are serialized as:
+
+bc. "_id" : {"_time":1321956457,"_machine":445180991, "_inc":-1889682652,"_new":false}
+
+when used @renderJSON(List<play.modules.morphia.Model>)@ method of @play.mvc.Controller@, which is pretty ugly.
+
+To solve this issue, use @renderJSON(List<play.modules.morphia.Model>, play.modules.morphia.utils.ObjectIdGsonAdapter())@

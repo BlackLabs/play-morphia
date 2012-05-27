@@ -8,6 +8,7 @@ import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.query.*;
+import com.google.code.morphia.query.Query;
 import com.mongodb.*;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
@@ -15,13 +16,18 @@ import play.Logger;
 import play.Play;
 import play.PlayPlugin;
 import play.data.binding.BeanWrapper;
+import play.data.binding.Binder;
+import play.data.binding.ParamNode;
 import play.data.validation.Validation;
+import play.db.jpa.JPA;
+import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.MorphiaPlugin.MorphiaModelLoader;
 import play.modules.morphia.utils.IdGenerator;
 import play.modules.morphia.utils.StringUtil;
 import play.mvc.Scope.Params;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
@@ -61,142 +67,172 @@ public class Model implements Serializable, play.db.Model {
     }
 
     // -- porting from play.db.GenericModel
-    @SuppressWarnings("unchecked")
-    public static <T extends Model> T create(Class<?> type, String name,
-            Map<String, String[]> params, Annotation[] annotations) {
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public static <T extends Model> T create(ParamNode rootParamNode, String name, Class<?> type, Annotation[] annotations)
+     */
+    @Deprecated
+    public static <T extends Model> T create(Class<?> type, String name, Map<String, String[]> params, Annotation[] annotations) {
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)create(rootParamNode, name, type, annotations);
+    }
+
+    public static <T extends Model> T create(ParamNode rootParamNode, String name, Class<?> type, Annotation[] annotations) {
         try {
-            Constructor<?> c = type.getDeclaredConstructor();
+            Constructor c = type.getDeclaredConstructor();
             c.setAccessible(true);
             Object model = c.newInstance();
-            return (T) edit(model, name, params, annotations);
+            return (T) edit(rootParamNode, name, model, annotations);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends Model> T edit(Object o, String name,
-            Map<String, String[]> params, Annotation[] annotations) {
-         try {
+
+    @SuppressWarnings("deprecation")
+    public static <T extends Model> T edit(ParamNode rootParamNode, String name, Object o, Annotation[] annotations) {
+        ParamNode paramNode = rootParamNode.getChild(name, true);
+        // #1195 - Needs to keep track of whick keys we remove so that we can restore it before
+        // returning from this method.
+        List<ParamNode.RemovedNode> removedNodesList = new ArrayList<ParamNode.RemovedNode>();
+        try {
             BeanWrapper bw = new BeanWrapper(o.getClass());
             // Start with relations
             Set<Field> fields = new HashSet<Field>();
-            Class<?> clazz = o.getClass();
+            Class clazz = o.getClass();
             while (!clazz.equals(Object.class)) {
-               Collections.addAll(fields, clazz.getDeclaredFields());
-               clazz = clazz.getSuperclass();
+                Collections.addAll(fields, clazz.getDeclaredFields());
+                clazz = clazz.getSuperclass();
             }
             for (Field field : fields) {
-               boolean isEntity = false;
-               String relation = null;
-               boolean multiple = false;
-               boolean isEmbedded = field.isAnnotationPresent(Embedded.class);
+                boolean isEntity = false;
+                String relation = null;
+                boolean multiple = false;
+                boolean isEmbedded = field.isAnnotationPresent(Embedded.class);
+                //
+                if (isEmbedded || field.isAnnotationPresent(Reference.class)) {
+                    isEntity = true;
+                    multiple = false;
+                    Class<?> clz = field.getType();
+                    Class<?>[] supers = clz.getInterfaces();
+                    for (Class<?> c : supers) {
+                        if (c.equals(Collection.class)) {
+                            multiple = true;
+                            break;
+                        }
+                    }
+                    // TODO handle Map<X, Y> relationship
+                    // TODO handle Collection<Collection2<..>>
+                    relation = multiple ? ((Class<?>) ((ParameterizedType) field
+                            .getGenericType()).getActualTypeArguments()[0]).getName()
+                            : clz.getName();
+                }
 
-               if (isEmbedded || field.isAnnotationPresent(Reference.class)) {
-                  isEntity = true;
-                  multiple = false;
-                  Class<?> clz = field.getType();
-                  Class<?>[] supers = clz.getInterfaces();
-                  for (Class<?> c : supers) {
-                     if (c.equals(Collection.class)) {
-                        multiple = true;
-                        break;
-                     }
-                  }
-                  // TODO handle Map<X, Y> relationship
-                  // TODO handle Collection<Collection2<..>>
-                  relation = multiple ? ((Class<?>) ((ParameterizedType) field
-                        .getGenericType()).getActualTypeArguments()[0]).getName()
-                        : clz.getName();
-               }
+                if (isEntity) {
 
-               if (isEntity) {
-                  Logger.debug("loading relation: %1$s", relation);
-                  Class<Model> c = (Class<Model>) Play.classloader
-                        .loadClass(relation);
-                  if (Model.class.isAssignableFrom(c)) {
-                     MorphiaPlugin.MorphiaModelLoader f = (MorphiaModelLoader) MorphiaPlugin.MorphiaModelLoader
-                           .getFactory(c);
-                     String keyName = null;
-                     if (!isEmbedded) {
-                        keyName = f.keyName();
-                     }
-                     if (multiple
-                           && Collection.class.isAssignableFrom(field.getType())) {
-                        Collection<Model> l = new ArrayList<Model>();
-                        if (SortedSet.class.isAssignableFrom(field.getType())) {
-                           l = new TreeSet<Model>();
-                        } else if (Set.class.isAssignableFrom(field.getType())) {
-                           l = new HashSet<Model>();
-                        }
-                        Logger.debug("Collection intialized: %1$s", l.getClass()
-                              .getName());
-                        /*
-                         * Embedded class does not support Id
-                         */
-                        if (!isEmbedded) {
-                           String[] ids = params.get(name + "." + field.getName()
-                                 + "." + keyName);
-                           if (ids != null) {
-                              params.remove(name + "." + field.getName() + "."
-                                    + keyName);
-                              for (String _id : ids) {
-                                 if (_id.equals("")) {
-                                    continue;
-                                 }
-                                 try {
-                                    l.add(f.findById(_id));
-                                 } catch (Exception e) {
-                                    Validation.addError(
-                                          name + "." + field.getName(),
-                                          "validation.notFound", _id);
-                                 }
-                              }
-                           }
+                    ParamNode fieldParamNode = paramNode.getChild(field.getName(), true);
+
+                    Class<Model> c = (Class<Model>) Play.classloader.loadClass(relation);
+                    if (Model.class.isAssignableFrom(c)) {
+                        String keyName = Model.Manager.factoryFor(c).keyName();
+                        if (multiple && Collection.class.isAssignableFrom(field.getType())) {
+                            Collection l = new ArrayList();
+                            if (SortedSet.class.isAssignableFrom(field.getType())) {
+                                l = new TreeSet();
+                            } else if (Set.class.isAssignableFrom(field.getType())) {
+                                l = new HashSet();
+                            }
+                            String[] ids = fieldParamNode.getChild(keyName, true).getValues();
+                            if (ids != null) {
+                                // Remove it to prevent us from finding it again later
+                                fieldParamNode.removeChild(keyName, removedNodesList);
+                                for (String _id : ids) {
+                                    if (_id.equals("")) {
+                                        continue;
+                                    }
+
+                                    MorphiaQuery q = new MorphiaQuery(c);
+                                    q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, _id, Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
+                                    try {
+                                        l.add(q.get());
+
+                                    } catch (NoResultException e) {
+                                        Validation.addError(name + "." + field.getName(), "validation.notFound", _id);
+                                    }
+                                }
+                                bw.set(field.getName(), o, l);
+                            }
                         } else {
-                           Logger.debug("multiple embedded objects not supported yet");
+                            String[] ids = fieldParamNode.getChild(keyName, true).getValues();
+                            if (ids != null && ids.length > 0 && !ids[0].equals("")) {
+
+                                MorphiaQuery q = new MorphiaQuery(c);
+                                q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, ids[0], Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
+                                try {
+                                    Object to = q.get();
+                                    edit(paramNode, field.getName(), to, field.getAnnotations());
+                                    // Remove it to prevent us from finding it again later
+                                    paramNode.removeChild( field.getName(), removedNodesList);
+                                    bw.set(field.getName(), o, to);
+                                } catch (NoResultException e) {
+                                    Validation.addError(fieldParamNode.getOriginalKey(), "validation.notFound", ids[0]);
+                                    // Remove only the key to prevent us from finding it again later
+                                    // This how the old impl does it..
+                                    fieldParamNode.removeChild(keyName, removedNodesList);
+                                    if (fieldParamNode.getAllChildren().size()==0) {
+                                        // remove the whole node..
+                                        paramNode.removeChild( field.getName(), removedNodesList);
+                                    }
+
+                                }
+
+                            } else if (ids != null && ids.length > 0 && ids[0].equals("")) {
+                                bw.set(field.getName(), o, null);
+                                // Remove the key to prevent us from finding it again later
+                                fieldParamNode.removeChild(keyName, removedNodesList);
+                            }
                         }
-                        bw.set(field.getName(), o, l);
-                        Logger.debug(
-                              "Entity[%1$s]'s field[%2$s] has been set to %3$s", o
-                                    .getClass().getName(), field.getName(), l);
-                     } else {
-                        String name0 = name + "." + field.getName();
-                        String name1 = name0 + "." + keyName;
-                        String[] ids = params.get(name1);
-                        if (ids != null && ids.length > 0 && !ids[0].equals("")) {
-                           params.remove(name1);
-                           try {
-                              Object to = f.findById(ids[0]);
-                              bw.set(field.getName(), o, to);
-                           } catch (Exception e) {
-                              Validation.addError(name0, "validation.notFound",
-                                    ids[0]);
-                           }
-                        } else if (ids != null && ids.length > 0
-                              && ids[0].equals("")) {
-                           bw.set(field.getName(), o, null);
-                           params.remove(name1);
-                        } else {
-                           // Fix bug: StackOverflowException when one field reference to null with same type
-//                           Object o0 = Model.create(field.getType(), name0,
-//                                 params, null);
-//                           bw.set(field.getName(), o, o0);
-                        }
-                     }
-                  }
-               }
+                    }
+                }
             }
-            bw.bind(name, o.getClass(), params, "", o, annotations);
+            ParamNode beanNode = rootParamNode.getChild(name, true);
+            Binder.bindBean(beanNode, o, annotations);
             return (T) o;
-         } catch (Exception e) {
+        } catch (Exception e) {
             throw new UnexpectedException(e);
-         }
+        } finally {
+            // restoring changes to paramNode
+            ParamNode.restoreRemovedChildren( removedNodesList );
+        }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public static <T extends Model> T edit(ParamNode rootParamNode, String name, Object o, Annotation[] annotations)
+     *
+     * @return
+     */
+    @Deprecated
+    public static <T extends Model> T edit(Object o, String name, Map<String, String[]> params, Annotation[] annotations) {
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)edit( rootParamNode, name, o, annotations);
+    }
+
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public <T extends Model> T edit(ParamNode rootParamNode, String name)
+     */
+    @Deprecated
     public <T extends Model> T edit(String name, Map<String, String[]> params) {
-        edit(this, name, params, new Annotation[0]);
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)edit(rootParamNode, name, this, null);
+    }
+
+    public <T extends Model> T edit(ParamNode rootParamNode, String name) {
+        edit(rootParamNode, name, this, null);
         return (T) this;
     }
 
@@ -1351,7 +1387,7 @@ public class Model implements Serializable, play.db.Model {
          *            could be either "f1Andf2.." or "f1 f2" or "f1,f2"
          * @return
          */
-        public List<CommandResult> group(String groupKeys, DBObject initial,
+        public List<BasicDBObject> group(String groupKeys, DBObject initial,
                 String reduce, String finalize) {
             DBObject key = new BasicDBObject();
             if (!StringUtil.isEmpty(groupKeys)) {
@@ -1362,7 +1398,7 @@ public class Model implements Serializable, play.db.Model {
                     key.put(s, true);
                 }
             }
-            return (List<CommandResult>) ds().getCollection(c_).group(key,
+            return (List<BasicDBObject>) ds().getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
         }
 
