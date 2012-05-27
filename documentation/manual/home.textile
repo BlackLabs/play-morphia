@@ -1,8 +1,10 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.6a release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.7 release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history.
+
+p(note). Break changes: v1.2.7 now works for Play-1.2.4+. If you are still using Play-1.2.3 or below, please use v1.2.6a instead.
 
 h2. <a name="started">Getting started</a>
 
@@ -21,7 +23,7 @@ Your first steps with PlayMorphia module and your first 5 minutes of fun.
 
 h2. <a name="guide">Tutorials -- PlayMorphia guide, adapt YABE from JPA to PlayMorphia</a>
 
-Learn PlayMorhpia by adapting Play's YABE sample application from JPA to PlayMorphia. 
+Learn PlayMorhpia by adapting Play's YABE sample application from JPA to PlayMorphia.
 
 This section is under construction. For the moment, check the YABE sample application released along with the plugin, read the source code, and run the test.
 
