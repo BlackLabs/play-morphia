@@ -1,12 +1,13 @@
 package models;
 
-import play.modules.morphia.Model;
+
 import com.google.code.morphia.annotations.Entity;
+import play.modules.morphia.Model;
 
 @SuppressWarnings("serial")
 @Entity
-public class Child extends Model{
-	
+public class Child extends Model {
+
 	public String childName;
 
 }

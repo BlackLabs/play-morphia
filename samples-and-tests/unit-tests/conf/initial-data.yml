@@ -1,6 +1,5 @@
- Child(child1):
+Child(child1):
    childName: child
- Parent(parent1):
+Parent(parent1):
    parentName: parent
-   childName: child1
- 
+   child: child1
