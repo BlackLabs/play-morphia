@@ -33,15 +33,17 @@ public class IdGenerator {
     }
     
     public static <T extends Model> Long generateLongId(Class<T> clazz){
-        String collName = ds().getCollection(clazz).getName();
-        Query<StoredId> q = ds().find(StoredId.class, "_id", collName);
-        UpdateOperations<StoredId> uOps = ds().createUpdateOperations(StoredId.class).inc("value");
-        StoredId newId = ds().findAndModify(q, uOps);
-        if (newId == null) {
-            newId = new StoredId(collName);
-            ds().save(newId);
+        synchronized (clazz) {
+            String collName = ds().getCollection(clazz).getName();
+            Query<StoredId> q = ds().find(StoredId.class, "_id", collName);
+            UpdateOperations<StoredId> uOps = ds().createUpdateOperations(StoredId.class).inc("value");
+            StoredId newId = ds().findAndModify(q, uOps);
+            if (newId == null) {
+                newId = new StoredId(collName);
+                ds().save(newId);
+            }
+            return newId.getValue();
         }
-        return newId.getValue();
     }
     
     public static <T extends Model> ObjectId generateObjectIdId(T entity) {

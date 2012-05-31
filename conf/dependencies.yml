@@ -1,7 +1,16 @@
 # History
+# 1.2.7-20120530 Fix issue: Doesn't compile when Rythm presented
+# 1.2.7-20120528 Fix issue: #55 Play 1.2.4 - Loading of fixtures no longer supports references?
+# 1.2.7  - support playframework 1.2.4+
+# 1.2.6a - Bug fix: https://github.com/greenlaw110/play-morphia/issues/75
+# 1.2.6  - Support atomic update operations
+#        - Bug fix: https://github.com/greenlaw110/play-morphia/issues/71
+# 1.2.5b - process keywords in MorphiaPlugin.MorphiaModelLoader.fetch(), simulate google search
+# 1.2.5a - Synchronize to class when get long ID
+#        - trim value when processing where statement in Factory.fetch
+# 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-# 1.2.4e - Add support for morphia.db.url
-self: play -> morphia 1.2.4e
+self: play -> morphia 1.2.7-20120530
 
 require:
     - play 1.2

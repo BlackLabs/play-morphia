@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="morphia module" default="javadoc" basedir=".">
+<project name="morphia module" default="build" basedir=".">
 
     <path id="project.classpath">
         <pathelement path="${play.path}/framework/classes"/>
@@ -17,7 +17,7 @@
 
     <target name="build">
         <mkdir dir="tmp/classes" />
-        <javac srcdir="src" destdir="tmp/classes" target="1.6" debug="true" debuglevel="lines,vars,source">
+        <javac srcdir="src" destdir="tmp/classes" source="1.6" target="1.6" bootclasspath="c:/l/j/jdk1.6.0_29/jre/lib/rt.jar" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.classpath" />
         </javac>
         <copy todir="tmp/classes">
@@ -30,23 +30,11 @@
         <jar destfile="lib/play-morphia.jar" basedir="tmp/classes">
             <manifest>
                 <section name="Play">
-                    <attribute name="Specification-Title" value="Morphia module"/>
+                    <attribute name="Specification-Title" value="Rythm module"/>
                 </section>
             </manifest>
         </jar>
         <delete dir="tmp" />
     </target>
     
-    <target name="javadoc" depends="build">
-        <javadoc packagenames="play.modules.morphia.*"
-          sourcepath="src"
-          defaultexcludes="yes"
-          destdir="documentation/api"
-          author="true"
-          version="true"
-          use="true"
-          windowtitle="PlayMorphia API">
-        </javadoc>
-    </target>
-
 </project>

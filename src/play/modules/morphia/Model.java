@@ -1,68 +1,48 @@
 package play.modules.morphia;
 
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
+import com.google.code.morphia.Datastore;
+import com.google.code.morphia.DatastoreImpl;
+import com.google.code.morphia.Key;
+import com.google.code.morphia.annotations.Embedded;
+import com.google.code.morphia.annotations.Reference;
+import com.google.code.morphia.annotations.Transient;
+import com.google.code.morphia.mapping.Mapper;
+import com.google.code.morphia.query.*;
+import com.google.code.morphia.query.Query;
+import com.mongodb.*;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
-
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
 import play.data.binding.BeanWrapper;
+import play.data.binding.Binder;
+import play.data.binding.ParamNode;
 import play.data.validation.Validation;
+import play.db.jpa.JPA;
+import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.MorphiaPlugin.MorphiaModelLoader;
 import play.modules.morphia.utils.IdGenerator;
 import play.modules.morphia.utils.StringUtil;
 import play.mvc.Scope.Params;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Key;
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Reference;
-import com.google.code.morphia.annotations.Transient;
-import com.google.code.morphia.mapping.Mapper;
-import com.google.code.morphia.query.Criteria;
-import com.google.code.morphia.query.CriteriaContainer;
-import com.google.code.morphia.query.CriteriaContainerImpl;
-import com.google.code.morphia.query.FieldEnd;
-import com.google.code.morphia.query.Query;
-import com.google.code.morphia.query.QueryImpl;
-import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.MapReduceCommand;
-import com.mongodb.MapReduceOutput;
+import javax.persistence.*;
+import java.io.Serializable;
+import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.*;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
  * of these declarations are provided by the MorphiaEnhancer.
- * 
+ *
  * @author greenlaw110@gmail.com
  */
 public class Model implements Serializable, play.db.Model {
-    
+
     public static final String ALL = "__all__";
 
     private static final long serialVersionUID = -719759872826848048L;
@@ -87,142 +67,172 @@ public class Model implements Serializable, play.db.Model {
     }
 
     // -- porting from play.db.GenericModel
-    @SuppressWarnings("unchecked")
-    public static <T extends Model> T create(Class<?> type, String name,
-            Map<String, String[]> params, Annotation[] annotations) {
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public static <T extends Model> T create(ParamNode rootParamNode, String name, Class<?> type, Annotation[] annotations)
+     */
+    @Deprecated
+    public static <T extends Model> T create(Class<?> type, String name, Map<String, String[]> params, Annotation[] annotations) {
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)create(rootParamNode, name, type, annotations);
+    }
+
+    public static <T extends Model> T create(ParamNode rootParamNode, String name, Class<?> type, Annotation[] annotations) {
         try {
-            Constructor<?> c = type.getDeclaredConstructor();
+            Constructor c = type.getDeclaredConstructor();
             c.setAccessible(true);
             Object model = c.newInstance();
-            return (T) edit(model, name, params, annotations);
+            return (T) edit(rootParamNode, name, model, annotations);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends Model> T edit(Object o, String name,
-            Map<String, String[]> params, Annotation[] annotations) {
-         try {
+
+    @SuppressWarnings("deprecation")
+    public static <T extends Model> T edit(ParamNode rootParamNode, String name, Object o, Annotation[] annotations) {
+        ParamNode paramNode = rootParamNode.getChild(name, true);
+        // #1195 - Needs to keep track of whick keys we remove so that we can restore it before
+        // returning from this method.
+        List<ParamNode.RemovedNode> removedNodesList = new ArrayList<ParamNode.RemovedNode>();
+        try {
             BeanWrapper bw = new BeanWrapper(o.getClass());
             // Start with relations
             Set<Field> fields = new HashSet<Field>();
-            Class<?> clazz = o.getClass();
+            Class clazz = o.getClass();
             while (!clazz.equals(Object.class)) {
-               Collections.addAll(fields, clazz.getDeclaredFields());
-               clazz = clazz.getSuperclass();
+                Collections.addAll(fields, clazz.getDeclaredFields());
+                clazz = clazz.getSuperclass();
             }
             for (Field field : fields) {
-               boolean isEntity = false;
-               String relation = null;
-               boolean multiple = false;
-               boolean isEmbedded = field.isAnnotationPresent(Embedded.class);
+                boolean isEntity = false;
+                String relation = null;
+                boolean multiple = false;
+                boolean isEmbedded = field.isAnnotationPresent(Embedded.class);
+                //
+                if (isEmbedded || field.isAnnotationPresent(Reference.class)) {
+                    isEntity = true;
+                    multiple = false;
+                    Class<?> clz = field.getType();
+                    Class<?>[] supers = clz.getInterfaces();
+                    for (Class<?> c : supers) {
+                        if (c.equals(Collection.class)) {
+                            multiple = true;
+                            break;
+                        }
+                    }
+                    // TODO handle Map<X, Y> relationship
+                    // TODO handle Collection<Collection2<..>>
+                    relation = multiple ? ((Class<?>) ((ParameterizedType) field
+                            .getGenericType()).getActualTypeArguments()[0]).getName()
+                            : clz.getName();
+                }
 
-               if (isEmbedded || field.isAnnotationPresent(Reference.class)) {
-                  isEntity = true;
-                  multiple = false;
-                  Class<?> clz = field.getType();
-                  Class<?>[] supers = clz.getInterfaces();
-                  for (Class<?> c : supers) {
-                     if (c.equals(Collection.class)) {
-                        multiple = true;
-                        break;
-                     }
-                  }
-                  // TODO handle Map<X, Y> relationship
-                  // TODO handle Collection<Collection2<..>>
-                  relation = multiple ? ((Class<?>) ((ParameterizedType) field
-                        .getGenericType()).getActualTypeArguments()[0]).getName()
-                        : clz.getName();
-               }
+                if (isEntity) {
 
-               if (isEntity) {
-                  Logger.debug("loading relation: %1$s", relation);
-                  Class<Model> c = (Class<Model>) Play.classloader
-                        .loadClass(relation);
-                  if (Model.class.isAssignableFrom(c)) {
-                     MorphiaPlugin.MorphiaModelLoader f = (MorphiaModelLoader) MorphiaPlugin.MorphiaModelLoader
-                           .getFactory(c);
-                     String keyName = null;
-                     if (!isEmbedded) {
-                        keyName = f.keyName();
-                     }
-                     if (multiple
-                           && Collection.class.isAssignableFrom(field.getType())) {
-                        Collection<Model> l = new ArrayList<Model>();
-                        if (SortedSet.class.isAssignableFrom(field.getType())) {
-                           l = new TreeSet<Model>();
-                        } else if (Set.class.isAssignableFrom(field.getType())) {
-                           l = new HashSet<Model>();
-                        }
-                        Logger.debug("Collection intialized: %1$s", l.getClass()
-                              .getName());
-                        /*
-                         * Embedded class does not support Id
-                         */
-                        if (!isEmbedded) {
-                           String[] ids = params.get(name + "." + field.getName()
-                                 + "." + keyName);
-                           if (ids != null) {
-                              params.remove(name + "." + field.getName() + "."
-                                    + keyName);
-                              for (String _id : ids) {
-                                 if (_id.equals("")) {
-                                    continue;
-                                 }
-                                 try {
-                                    l.add(f.findById(_id));
-                                 } catch (Exception e) {
-                                    Validation.addError(
-                                          name + "." + field.getName(),
-                                          "validation.notFound", _id);
-                                 }
-                              }
-                           }
+                    ParamNode fieldParamNode = paramNode.getChild(field.getName(), true);
+
+                    Class<Model> c = (Class<Model>) Play.classloader.loadClass(relation);
+                    if (Model.class.isAssignableFrom(c)) {
+                        String keyName = Model.Manager.factoryFor(c).keyName();
+                        if (multiple && Collection.class.isAssignableFrom(field.getType())) {
+                            Collection l = new ArrayList();
+                            if (SortedSet.class.isAssignableFrom(field.getType())) {
+                                l = new TreeSet();
+                            } else if (Set.class.isAssignableFrom(field.getType())) {
+                                l = new HashSet();
+                            }
+                            String[] ids = fieldParamNode.getChild(keyName, true).getValues();
+                            if (ids != null) {
+                                // Remove it to prevent us from finding it again later
+                                fieldParamNode.removeChild(keyName, removedNodesList);
+                                for (String _id : ids) {
+                                    if (_id.equals("")) {
+                                        continue;
+                                    }
+
+                                    MorphiaQuery q = new MorphiaQuery(c);
+                                    q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, _id, Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
+                                    try {
+                                        l.add(q.get());
+
+                                    } catch (NoResultException e) {
+                                        Validation.addError(name + "." + field.getName(), "validation.notFound", _id);
+                                    }
+                                }
+                                bw.set(field.getName(), o, l);
+                            }
                         } else {
-                           Logger.debug("multiple embedded objects not supported yet");
+                            String[] ids = fieldParamNode.getChild(keyName, true).getValues();
+                            if (ids != null && ids.length > 0 && !ids[0].equals("")) {
+
+                                MorphiaQuery q = new MorphiaQuery(c);
+                                q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, ids[0], Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
+                                try {
+                                    Object to = q.get();
+                                    edit(paramNode, field.getName(), to, field.getAnnotations());
+                                    // Remove it to prevent us from finding it again later
+                                    paramNode.removeChild( field.getName(), removedNodesList);
+                                    bw.set(field.getName(), o, to);
+                                } catch (NoResultException e) {
+                                    Validation.addError(fieldParamNode.getOriginalKey(), "validation.notFound", ids[0]);
+                                    // Remove only the key to prevent us from finding it again later
+                                    // This how the old impl does it..
+                                    fieldParamNode.removeChild(keyName, removedNodesList);
+                                    if (fieldParamNode.getAllChildren().size()==0) {
+                                        // remove the whole node..
+                                        paramNode.removeChild( field.getName(), removedNodesList);
+                                    }
+
+                                }
+
+                            } else if (ids != null && ids.length > 0 && ids[0].equals("")) {
+                                bw.set(field.getName(), o, null);
+                                // Remove the key to prevent us from finding it again later
+                                fieldParamNode.removeChild(keyName, removedNodesList);
+                            }
                         }
-                        bw.set(field.getName(), o, l);
-                        Logger.debug(
-                              "Entity[%1$s]'s field[%2$s] has been set to %3$s", o
-                                    .getClass().getName(), field.getName(), l);
-                     } else {
-                        String name0 = name + "." + field.getName();
-                        String name1 = name0 + "." + keyName;
-                        String[] ids = params.get(name1);
-                        if (ids != null && ids.length > 0 && !ids[0].equals("")) {
-                           params.remove(name1);
-                           try {
-                              Object to = f.findById(ids[0]);
-                              bw.set(field.getName(), o, to);
-                           } catch (Exception e) {
-                              Validation.addError(name0, "validation.notFound",
-                                    ids[0]);
-                           }
-                        } else if (ids != null && ids.length > 0
-                              && ids[0].equals("")) {
-                           bw.set(field.getName(), o, null);
-                           params.remove(name1);
-                        } else {
-                           // Fix bug: StackOverflowException when one field reference to null with same type
-//                           Object o0 = Model.create(field.getType(), name0,
-//                                 params, null);
-//                           bw.set(field.getName(), o, o0);
-                        }
-                     }
-                  }
-               }
+                    }
+                }
             }
-            bw.bind(name, o.getClass(), params, "", o, annotations);
+            ParamNode beanNode = rootParamNode.getChild(name, true);
+            Binder.bindBean(beanNode, o, annotations);
             return (T) o;
-         } catch (Exception e) {
+        } catch (Exception e) {
             throw new UnexpectedException(e);
-         }
+        } finally {
+            // restoring changes to paramNode
+            ParamNode.restoreRemovedChildren( removedNodesList );
+        }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public static <T extends Model> T edit(ParamNode rootParamNode, String name, Object o, Annotation[] annotations)
+     *
+     * @return
+     */
+    @Deprecated
+    public static <T extends Model> T edit(Object o, String name, Map<String, String[]> params, Annotation[] annotations) {
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)edit( rootParamNode, name, o, annotations);
+    }
+
+    /**
+     * This method is deprecated. Use this instead:
+     *
+     *  public <T extends Model> T edit(ParamNode rootParamNode, String name)
+     */
+    @Deprecated
     public <T extends Model> T edit(String name, Map<String, String[]> params) {
-        edit(this, name, params, new Annotation[0]);
+        ParamNode rootParamNode = ParamNode.convert(params);
+        return (T)edit(rootParamNode, name, this, null);
+    }
+
+    public <T extends Model> T edit(ParamNode rootParamNode, String name) {
+        edit(rootParamNode, name, this, null);
         return (T) this;
     }
 
@@ -244,7 +254,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * This method is deprecated as Embedded object shall not extends Model class
      * and shall not be enhanced
-     * 
+     *
      * @deprecated
      * @return
      */
@@ -255,7 +265,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * MorphiaEnhancer will override this method for sub class with \@Id
      * annotation specified
-     * 
+     *
      * @return
      */
     protected boolean isUserDefinedId_() {
@@ -264,7 +274,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Any sub class with \@Id annotation specified need to rewrite this method
-     * 
+     *
      * @return
      */
     protected static Object processId_(Object id) {
@@ -274,17 +284,17 @@ public class Model implements Serializable, play.db.Model {
     /**
      * MorphiaEnhancer will override this method for sub class without \@Embedded
      * annotation specified
-     * 
+     *
      * If user defined customized \@Id field, it's better to override this
      * method for the sake of performance. Otherwise framework will use
      * reflection to get the value
-     * 
+     *
      * @return
      */
     public Object getId() {
         return null;
     }
-    
+
     @SuppressWarnings("unchecked")
     public <T> T getId(Class<T> clazz) {
         return (T) getId();
@@ -372,7 +382,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * A utility method determine whether this entity is a newly constructed
      * object in memory or represents a data from mongodb
-     * 
+     *
      * @return true if this is a memory object which has not been saved to db
      *         yet, false otherwise
      */
@@ -413,7 +423,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to createQuery
-     * 
+     *
      * @return
      */
     public static <T extends Model> MorphiaQuery q() {
@@ -443,7 +453,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return a Set of distinct values for the given key
-     * 
+     *
      * @param key
      * @return a distinct set of key values
      */
@@ -498,7 +508,7 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
-    
+
     public static Map<String, Long> _cloud(String field) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
@@ -510,45 +520,45 @@ public class Model implements Serializable, play.db.Model {
             Logger.warn("invocation of delete on new entity ignored");
             return (T) this;
         }
-        
+
         _delete();
-        
+
         return (T) this;
     }
-    
+
     private void _h_OnDelete() {
         postEvent_(MorphiaEvent.ON_DELETE, this);
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_DELETE, this);
         h_OnDelete();
         deleteBlobs();
     }
-    
+
     protected void h_OnDelete() {
         // for enhancer usage
     }
-    
+
     private void _h_Deleted() {
         h_Deleted();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.DELETED, this);
         postEvent_(MorphiaEvent.DELETED, this);
     }
-    
+
     protected void h_Deleted() {
         // for enhancer usage
     }
-    
+
     protected void h_OnBatchDelete(MorphiaQuery q) {
         // for enhancer usage
     }
-    
+
     protected void h_BatchDeleted(MorphiaQuery q) {
         // for enhancer usage
     }
-    
+
     protected void deleteBlobs() {
         // for enhancer usage
     }
-    
+
     protected void deleteBlobsInBatch(MorphiaQuery q) {
         // for enhancer usage
     }
@@ -570,7 +580,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to Model.delete(find())
-     * 
+     *
      * @return
      */
     public static long deleteAll() {
@@ -580,7 +590,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to createQuery()
-     * 
+     *
      * @return
      */
     public static <T extends Model> MorphiaQuery find() {
@@ -590,7 +600,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * JPA style find method
-     * 
+     *
      * @param keys
      *            could be either "byKey1[AndKey2[AndKey3...]]" or
      *            "Key1[AndKey2[AndKey3...]]" or "key1 key2..."
@@ -616,9 +626,9 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Shortcut to find(String, Object...)
-     * 
+     *
      * @param keys
-     * @param objects
+     * @param keys
      * @return
      */
     public static <T extends Model> MorphiaQuery q(String keys, Object value) {
@@ -628,11 +638,11 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Morphia style filter method.
-     * 
+     *
      * <p>
      * if you have MyModel.find("byNameAndAge", "John", 20), you can also use
      * MyModel.filter("name", "John").filter("age", 20) for the same query
-     * 
+     *
      * @param property
      *            should be the filter name
      * @param value
@@ -643,6 +653,19 @@ public class Model implements Serializable, play.db.Model {
             Object value) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    public static <T extends Model> MorphiaUpdateOperations createUpdateOperations() {
+        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    /**
+     * Alias of #updateOperations()
+     * @param <T>
+     * @return
+     */
+    public static <T extends Model> MorphiaUpdateOperations o() {
+        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
     // -- additional quick access method
@@ -657,13 +680,13 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return Morphia Datastore instance
-     * 
+     *
      * @return
      */
     public static Datastore ds() {
         return MorphiaPlugin.ds();
     }
-    
+
     /**
      * Return MongoDB DBCollection for this model
      */
@@ -674,7 +697,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Return MongoDB DB instance
-     * 
+     *
      * @return
      */
     public static DB db() {
@@ -683,7 +706,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Save and return this entity
-     * 
+     *
      * @param <T>
      * @return
      */
@@ -695,7 +718,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * Save and return Morphia Key
-     * 
+     *
      * @return
      */
     public Key<? extends Model> save2() {
@@ -707,7 +730,7 @@ public class Model implements Serializable, play.db.Model {
         if (isNew) {setSaved_();_h_Added();} else _h_Updated();
         return k;
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -716,14 +739,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_LOAD, this);
         h_OnLoad();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnLoad() {
         // for enhancer usage
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -734,14 +757,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
         postEvent_(MorphiaEvent.LOADED, this);
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_Loaded() {
         // for enhancer usage
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -750,14 +773,14 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ADDED, this);
         postEvent_(MorphiaEvent.ADDED, this);
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_Added() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -773,7 +796,7 @@ public class Model implements Serializable, play.db.Model {
     protected void h_Updated() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -783,14 +806,14 @@ public class Model implements Serializable, play.db.Model {
         h_OnAdd();
         generateId_();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnAdd() {
         // used by enhancer
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
@@ -799,38 +822,38 @@ public class Model implements Serializable, play.db.Model {
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ON_UPDATE, this);
         h_OnUpdate();
     }
-    
+
     /**
      * for PlayMorphia internal usage only
      */
     protected void h_OnUpdate() {
         // used by enhancer
     }
-    
+
     protected void saveBlobs() {
-        // used by enhancer 
+        // used by enhancer
     }
-    
+
     protected void loadBlobs() {
         // used by enhander
     }
-    
-    protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
+
+    transient protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
     protected final boolean blobChanged(String fieldName) {
         return (blobFieldsTracker.containsKey(fieldName) && blobFieldsTracker.get(fieldName));
     }
     protected final void setBlobChanged(String fieldName) {
         blobFieldsTracker.put(fieldName, true);
     }
-    
+
     public String getBlobFileName(String fieldName) {
         return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
     }
-    
+
     public static String getBlobFileName(String className, Object id, String fieldName) {
         return String.format("%s_%s_%s", className, StringUtils.capitalize(fieldName), id);
     }
-    
+
     public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
         for (String fieldName: fieldNames) {
             String fileName = getBlobFileName(className, id, fieldName);
@@ -856,9 +879,269 @@ public class Model implements Serializable, play.db.Model {
         throw new UnsupportedOperationException(
                 "Please annotate model with @AutoTimestamp annotation");
     }
-    
+
     private static void postEvent_(MorphiaEvent event, Object context) {
         if (MorphiaPlugin.postPluginEvent) PlayPlugin.postEvent(event.getId(), context);
+    }
+
+    public static class MorphiaUpdateOperations {
+        public static Datastore ds() {
+            return MorphiaPlugin.ds();
+        }
+
+        private UpdateOpsImpl<? extends Model> u_;
+        private Class <? extends Model> c_;
+
+        public UpdateOperations<? extends Model> getMorphiaUpdateOperations() {
+            return u_;
+        }
+
+        public DBObject getUpdateOperationsObject() {
+            return u_.getOps();
+        }
+
+        public DBCollection col() {
+            return ds().getCollection(c_);
+        }
+
+        private MorphiaUpdateOperations() {
+            // constructor for clone() usage
+        }
+
+        public MorphiaUpdateOperations(Class<? extends Model> clazz) {
+            u_ = new UpdateOpsImpl(clazz, ((DatastoreImpl)ds()).getMapper());
+            c_ = clazz;
+        }
+
+        private boolean multi = true;
+        public MorphiaUpdateOperations multi(boolean multi) {
+            this.multi = multi;
+            return this;
+        }
+        public boolean multi() {
+            return multi;
+        }
+
+        public MorphiaUpdateOperations validation(boolean validate) {
+            if (validate) u_.enableValidation();
+            else u_.disableValidation();
+            return this;
+        }
+
+        public MorphiaUpdateOperations enableValidation() {
+            return validation(true);
+        }
+
+        public MorphiaUpdateOperations disableValidation() {
+            return validation(false);
+        }
+
+        public MorphiaUpdateOperations isolate(boolean isolate) {
+            if (isolate) u_.isolated();
+            else {
+                throw new UnsupportedOperationException("Morphia does not support set isolated to false");
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations enableIsolate() {
+            return isolate(true);
+        }
+
+        public MorphiaUpdateOperations disableIsolate() {
+            return isolate(false);
+        }
+
+        public MorphiaUpdateOperations isolated() {
+            return enableIsolate();
+        }
+
+        public MorphiaUpdateOperations add(String fieldExpr, Object value) {
+            u_.add(fieldExpr, value);
+            return this;
+        }
+
+        public MorphiaUpdateOperations add(String fieldExpr, Object value, boolean addDups) {
+            u_.add(fieldExpr, value, addDups);
+            return this;
+        }
+
+        public MorphiaUpdateOperations addAll(String fieldExpr, List<?> values, boolean addDups) {
+            u_.addAll(fieldExpr, values, addDups);
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return super.equals(obj);    //To change body of overridden methods use File | Settings | File Templates.
+        }
+
+        public MorphiaUpdateOperations dec(String fieldExpr) {
+            if (StringUtil.isEmpty(fieldExpr)) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.dec(sb.toString());
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations inc(String fieldExpr) {
+            if (StringUtil.isEmpty(fieldExpr)) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.inc(sb.toString());
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations inc(String fieldExpr, Number... values) {
+            if (null == values) values = new Number[] {null};
+            if (StringUtil.isEmpty(fieldExpr) || values.length == 0) {
+                throw new IllegalArgumentException("Invalid fieldExpr or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            if ((values.length != 1) && (keys.length != values.length)) {
+                throw new IllegalArgumentException(
+                        "Query key number does not match the params number");
+            }
+
+            Number oneVal = values.length == 1 ? values[0] : null;
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.inc(sb.toString(), oneVal == null ? values[i] : oneVal);
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeAll(String fieldExpr, Object value) {
+            u_.removeAll(fieldExpr, value);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeAll(String fieldExpr, List<?> values) {
+            u_.removeAll(fieldExpr, values);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeFirst(String fieldExpr) {
+            u_.removeFirst(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations removeLast(String fieldExpr) {
+            u_.removeLast(fieldExpr);
+            return this;
+        }
+
+        public MorphiaUpdateOperations set(String fieldExpr, Object... values) {
+            if (null == values) values = new Object[] {null};
+            if (null == fieldExpr || values.length == 0) {
+                throw new IllegalArgumentException("Invalid query or params");
+            }
+            if (fieldExpr.startsWith("by"))
+                fieldExpr = fieldExpr.substring(2);
+            String[] keys = fieldExpr.split("(And|[,;\\s]+)");
+
+            if ((values.length != 1) && (keys.length != values.length)) {
+                throw new IllegalArgumentException(
+                        "Query key number does not match the params number");
+            }
+
+            Object oneVal = values.length == 1 ? values[0] : null;
+
+            for (int i = 0; i < keys.length; ++i) {
+                StringBuilder sb = new StringBuilder(keys[i]);
+                sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+                u_.set(sb.toString(), oneVal == null ? values[i] : oneVal);
+            }
+            return this;
+        }
+
+        public MorphiaUpdateOperations unset(String fieldExpr) {
+            u_.unset(fieldExpr);
+            return this;
+        }
+
+        public <T> T updateFirst(MorphiaQuery q) {
+            return (T)findAndModify(q);
+        }
+
+        public <T> T updateFirst(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_);
+        }
+
+        public <T> T findAndModify(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q);
+        }
+
+        public <T> T updateFirst(MorphiaQuery q, boolean oldVersion) {
+            return (T)findAndModify(q, oldVersion);
+        }
+
+        public <T> T updateFirst(boolean oldVersion, String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q, oldVersion);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q, boolean oldVersion) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion);
+        }
+
+        public <T> T findAndModify(boolean oldVersion, String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return (T)findAndModify(q, oldVersion);
+        }
+
+        public <T> T updateFirst(MorphiaQuery q, boolean oldVersion, boolean createIfMissing) {
+            return (T)findAndModify(q, oldVersion, createIfMissing);
+        }
+
+        public <T> T findAndModify(MorphiaQuery q, boolean oldVersion, boolean createIfMissing) {
+            return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion, createIfMissing);
+        }
+
+        public <T> UpdateResults<T> update(MorphiaQuery q) {
+            return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
+        }
+
+        public <T> UpdateResults<T> update(String query, Object... params) {
+            MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
+            return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
+        }
+
+        private <T> UpdateResults<T> update(Query<T> q) {
+            return ds().update(q, (UpdateOperations<T>)u_);
+        }
+
+        public <T> UpdateResults<T> updateAll() {
+            return ds().update((QueryImpl) ds().createQuery(c_), (UpdateOperations<T>)u_);
+        }
+
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -873,11 +1156,11 @@ public class Model implements Serializable, play.db.Model {
         public Query<? extends Model> getMorphiaQuery() {
             return q_;
         }
-        
+
         public DBObject getQueryObject() {
             return q_.getQueryObject();
         }
-        
+
         public DBCollection col() {
             return ds().getCollection(c_);
         }
@@ -934,7 +1217,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Alias of countAll()
-         * 
+         *
          * @return
          */
         public long count() {
@@ -943,17 +1226,18 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Used to simulate JPA.find("byXXAndYY", ...);
-         * 
+         *
          * @param query
          *            could be either "Key1[AndKey2[AndKey3]]" or
          *            "byKey1[AndKey2[AndKey3]]" or "key1 key2 ..."
-         * 
+         *
          * @param params
          *            the number of params should either be exactly one or the
          *            number match the key number
          * @return
          */
         public MorphiaQuery findBy(String query, Object... params) {
+            if (null == params) params = new Object[] {null};
             if (null == query || params.length == 0) {
                 throw new IllegalArgumentException("Invalid query or params");
             }
@@ -971,7 +1255,7 @@ public class Model implements Serializable, play.db.Model {
             for (int i = 0; i < keys.length; ++i) {
                 StringBuilder sb = new StringBuilder(keys[i]);
                 sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
-                q_.filter(sb.toString(), oneVal == null ? params[i] : oneVal);
+                q_.filter(sb.toString(), params.length > 1 ? params[i] : oneVal);
             }
 
             return this;
@@ -991,7 +1275,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Set the position to start
-         * 
+         *
          * @param position
          *            Position of the first element
          * @return A new query
@@ -1003,10 +1287,10 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve all results of the query
-         * 
+         *
          * This is a correspondence to JPAQuery's fetch(), which however, used
          * as another method signature of Morphia Query
-         * 
+         *
          * @return A list of entities
          */
         public <T extends Model> List<T> fetchAll() {
@@ -1015,7 +1299,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve results of the query
-         * 
+         *
          * @param max
          *            Max results to fetch
          * @return A list of entities
@@ -1026,7 +1310,7 @@ public class Model implements Serializable, play.db.Model {
 
         /**
          * Retrieve a page of result
-         * 
+         *
          * @param page
          *            Page number (start at 1)
          * @param length
@@ -1083,7 +1367,7 @@ public class Model implements Serializable, play.db.Model {
         public Set<?> distinct(String key) {
             return new HashSet(col().distinct(key, getQueryObject()));
         }
-        
+
         public Map<String, Long> cloud(String field) {
             String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
             String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
@@ -1096,14 +1380,14 @@ public class Model implements Serializable, play.db.Model {
             }
             return m;
         }
-        
+
         /**
-         * 
+         *
          * @param groupKeys
          *            could be either "f1Andf2.." or "f1 f2" or "f1,f2"
          * @return
          */
-        public List<CommandResult> group(String groupKeys, DBObject initial,
+        public List<BasicDBObject> group(String groupKeys, DBObject initial,
                 String reduce, String finalize) {
             DBObject key = new BasicDBObject();
             if (!StringUtil.isEmpty(groupKeys)) {
@@ -1114,7 +1398,7 @@ public class Model implements Serializable, play.db.Model {
                     key.put(s, true);
                 }
             }
-            return (List<CommandResult>) ds().getCollection(c_).group(key,
+            return (List<BasicDBObject>) ds().getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
         }
 
@@ -1345,9 +1629,9 @@ public class Model implements Serializable, play.db.Model {
     /**
      * NoID is used to annotate on sub types which is sure to get ID field from
      * parent type
-     * 
-     * @see https://groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
-     *      
+     *
+     * @see //groups.google.com/d/topic/play-framework/hPWJCvefPoI/discussion
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1358,7 +1642,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnLoad mark a method be called after an new instance of an entity is initialized and
      * before the properties are filled with mongo db columns
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1368,7 +1652,7 @@ public class Model implements Serializable, play.db.Model {
 
     /**
      * OnLoad mark a method be called immediately after an entity loaded from mongodb
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1379,7 +1663,7 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnAdd mark a method be called before an new entity is saved. If any exception get thrown
      * out in the method the entity will not be saved
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
@@ -1390,74 +1674,74 @@ public class Model implements Serializable, play.db.Model {
     /**
      * OnUpdate mark a method be called before an existing entity is saved. If any exception get thrown
      * out in the method the entity will not be saved
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnUpdate {
     }
-    
+
     /**
      * Added mark a method be called after an new entity is saved.
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Added {
     }
-    
+
     /**
      * Updated mark a method be called after an existing entity is saved.
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Updated {
     }
-    
+
     /**
      * OnDelete mark a method be called before an entity is deleted. If any exception throw out
      * in this method the entity will not be removed
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnDelete {
     }
-    
+
     /**
      * Deleted mark a method be called after an entity is deleted
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface Deleted {
     }
-    
+
     /**
      * OnBatchDelete mark a method be called before a query's delete method get called. If any exception throw out
      * in this method the query deletion will be canceled
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface OnBatchDelete {
     }
-    
+
     /**
      * Deleted mark a method be called after an a query deletion executed
-     * 
+     *
      * @author luog
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface BatchDeleted {
     }
-    
+
 }
