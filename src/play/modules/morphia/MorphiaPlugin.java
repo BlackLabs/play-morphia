@@ -55,6 +55,7 @@ import com.google.code.morphia.query.Query;
 import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+import com.mongodb.MongoURI;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
@@ -335,6 +336,17 @@ public class MorphiaPlugin extends PlayPlugin {
         return new Mongo(addrs);
     }
 
+    /*
+     * Connect using conf morphia.db.url=mongodb://fred:foobar@host:port/db
+     */
+    private final Mongo connect_(MongoURI mongoURI) {
+        try {
+            return new Mongo(mongoURI);
+        } catch (UnknownHostException e) {
+            throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
+        }
+    }
+
     @Override
     public void onConfigurationRead() {
         if (configured_)
@@ -349,9 +361,15 @@ public class MorphiaPlugin extends PlayPlugin {
     private void configureConnection_() {
         Properties c = Play.configuration;
 
+        String url = c.getProperty(PREFIX + "url");
         String seeds = c.getProperty(PREFIX + "seeds");
-        if (!StringUtil.isEmpty(seeds))
+        if (!StringUtil.isEmpty(url)) {
+            MongoURI mongoURI = new MongoURI(url);
+            mongo_ = connect_(mongoURI);
+        }
+        else if (!StringUtil.isEmpty(seeds)) {
             mongo_ = connect_(seeds);
+        }
         else {
             String host = c.getProperty(PREFIX + "host", "localhost");
             String port = c.getProperty(PREFIX + "port", "27017");
@@ -363,15 +381,31 @@ public class MorphiaPlugin extends PlayPlugin {
     private void initMorphia_() {
         Properties c = Play.configuration;
 
+        String url = c.getProperty(PREFIX + "url");
         String dbName = c.getProperty(PREFIX + "name");
+        String username = c.getProperty(PREFIX + "username");
+        String password = c.getProperty(PREFIX + "password");
+
+        if (!StringUtil.isEmpty(url)) {
+            MongoURI mongoURI = new MongoURI(url);
+            dbName = mongoURI.getDatabase();
+            // overwrite these if set via url
+            if (mongoURI.getUsername() != null) {
+                username = mongoURI.getUsername(); 
+            }
+            if (mongoURI.getPassword() != null) {
+                password = new String(mongoURI.getPassword());
+            }
+        }
+
         if (null == dbName) {
             warn("mongodb name not configured! using [test] db");
             dbName = "test";
         }
+
         DB db = mongo_.getDB(dbName);
-        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
-            String username = c.getProperty(PREFIX + "username");
-            String password = c.getProperty(PREFIX + "password");
+
+        if (!StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
             if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
