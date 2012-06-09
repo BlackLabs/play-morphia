@@ -14,19 +14,19 @@ import play.modules.morphia.MorphiaPlugin.IdType;
 import play.test.Fixtures;
 import play.test.MorphiaFixtures;
 import play.test.UnitTest;
- 
+
 public class BasicTest extends UnitTest {
-    
+
     @Before
     public void setup() {
         MorphiaFixtures.deleteAllModels();
     }
-    
+
     @Test
     public void testBug46() {
-        assertEquals(IdType.Long, MorphiaPlugin.getIdType());
+        assertEquals(IdType.LONG, MorphiaPlugin.getIdType());
     }
- 
+
     @Test
     public void createAndRetrieveUser() {
         // Create a new user and save it
@@ -35,22 +35,22 @@ public class BasicTest extends UnitTest {
         // Retrieve the user with bob username
         User bob = User.find("byEmail", "bob@gmail.com").first();
 
-        // Test 
+        // Test
         assertNotNull(bob);
         assertEquals("Bob", bob.fullname);
     }
-    
+
     @Test
     public void tryConnectAsUser() {
         // Create a new user and save it
         new User("bob@gmail.com", "secret", "Bob").save();
 
-        // Test 
+        // Test
         assertNotNull(User.connect("bob@gmail.com", "secret"));
         assertNull(User.connect("bob@gmail.com", "badpassword"));
         assertNull(User.connect("tom@gmail.com", "secret"));
     }
-    
+
     @Test
     public void createPost() {
         // Create a new user and save it
@@ -74,7 +74,7 @@ public class BasicTest extends UnitTest {
         assertEquals("Hello world", firstPost.content);
         assertNotNull(firstPost.postedAt);
     }
-    
+
     @Test
     public void postComments() {
         // Create a new user and save it
@@ -105,7 +105,7 @@ public class BasicTest extends UnitTest {
         assertEquals("I knew that !", secondComment.content);
         assertNotNull(secondComment.postedAt);
     }
-    
+
     @Test
     public void useTheCommentsRelation() {
         // Create a new user and save it
@@ -139,7 +139,7 @@ public class BasicTest extends UnitTest {
         assertEquals(0, Post.count());
         assertEquals(0, Comment.count());
     }
-    
+
     @Test
     public void fullTest() {
         Fixtures.loadModels("data.yml");
@@ -176,7 +176,7 @@ public class BasicTest extends UnitTest {
         assertEquals(3, frontPost.comments.size());
         assertEquals(4, Comment.count());
     }
-    
+
     @Test
     public void testTags() {
         // Create a new user and save it
@@ -185,24 +185,24 @@ public class BasicTest extends UnitTest {
         // Create a new post
         Post bobPost = new Post(bob, "My first post", "Hello world").save();
         Post anotherBobPost = new Post(bob, "My second post post", "Hello world").save();
-        
+
         // Well
         assertEquals(0, Post.findTaggedWith("Red").size());
-        
+
         // Tag it now
         bobPost.tagItWith("Red").tagItWith("Blue").save();
         anotherBobPost.tagItWith("Red").tagItWith("Green").save();
-        
+
         // Check
-        assertEquals(2, Post.findTaggedWith("Red").size());        
+        assertEquals(2, Post.findTaggedWith("Red").size());
         assertEquals(1, Post.findTaggedWith("Blue").size());
         assertEquals(1, Post.findTaggedWith("Green").size());
-        
-        assertEquals(1, Post.findTaggedWith("Red", "Blue").size());   
-        assertEquals(1, Post.findTaggedWith("Red", "Green").size());   
-        assertEquals(0, Post.findTaggedWith("Red", "Green", "Blue").size());  
-        assertEquals(0, Post.findTaggedWith("Green", "Blue").size());    
-        
+
+        assertEquals(1, Post.findTaggedWith("Red", "Blue").size());
+        assertEquals(1, Post.findTaggedWith("Red", "Green").size());
+        assertEquals(0, Post.findTaggedWith("Red", "Green", "Blue").size());
+        assertEquals(0, Post.findTaggedWith("Green", "Blue").size());
+
         Map<String, Long> cloud = Tag.getCloud();
         long blue = cloud.get("Blue");
         long green = cloud.get("Green");
@@ -211,5 +211,5 @@ public class BasicTest extends UnitTest {
         assertEquals(green, 1);
         assertEquals(red, 2);
     }
- 
+
 }

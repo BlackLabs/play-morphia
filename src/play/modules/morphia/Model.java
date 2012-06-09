@@ -3,6 +3,7 @@ package play.modules.morphia;
 import com.google.code.morphia.Datastore;
 import com.google.code.morphia.DatastoreImpl;
 import com.google.code.morphia.Key;
+import com.google.code.morphia.Morphia;
 import com.google.code.morphia.annotations.Embedded;
 import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
@@ -729,6 +730,67 @@ public class Model implements Serializable, play.db.Model {
         saveBlobs();
         if (isNew) {setSaved_();_h_Added();} else _h_Updated();
         return k;
+    }
+
+    public static <T extends Model> WriteResult insert(T entity) {
+        Morphia morphia = MorphiaPlugin.morphia();
+        DBObject o = morphia.toDBObject(entity);
+        return entity.col().insert(o);
+    }
+
+    public static <T extends Model> WriteResult insert(T entity, WriteConcern concern) {
+        Morphia morphia = MorphiaPlugin.morphia();
+        DBObject o = morphia.toDBObject(entity);
+        return entity.col().insert(o, concern);
+    }
+
+    public static <T extends Model> WriteResult insert(List<T> entities) {
+        if (entities.isEmpty()) return null;
+        T t = entities.get(0);
+        List<DBObject> l = new ArrayList<DBObject>(entities.size());
+        Morphia morphia = MorphiaPlugin.morphia();
+        for (T entity: entities) {
+            l.add(morphia.toDBObject(entity));
+        }
+        return t.ds().getCollection(t.getClass()).insert(l);
+    }
+
+    public static <T extends Model> WriteResult insert(List<T> entities, WriteConcern concern) {
+        if (entities.isEmpty()) return null;
+        T t = entities.get(0);
+        List<DBObject> l = new ArrayList<DBObject>(entities.size());
+        Morphia morphia = MorphiaPlugin.morphia();
+        for (T entity: entities) {
+            l.add(morphia.toDBObject(entity));
+        }
+        return t.col().insert(l, concern);
+    }
+
+    public static <T extends Model> WriteResult insert(T[] entities, WriteConcern concern) {
+        if (entities.length == 0) return null;
+        return insert(concern, entities);
+    }
+
+    public static <T extends Model> WriteResult insert(T... entities) {
+        if (entities.length == 0) return null;
+        T t = entities[0];
+        List<DBObject> l = new ArrayList<DBObject>(entities.length);
+        Morphia morphia = MorphiaPlugin.morphia();
+        for (T entity: entities) {
+            l.add(morphia.toDBObject(entity));
+        }
+        return t.col().insert(l);
+    }
+
+    public static <T extends Model> WriteResult insert(WriteConcern writeConcern, T[] entities) {
+        if (entities.length == 0) return null;
+        T t = entities[0];
+        List<DBObject> l = new ArrayList<DBObject>(entities.length);
+        Morphia morphia = MorphiaPlugin.morphia();
+        for (T entity: entities) {
+            l.add(morphia.toDBObject(entity));
+        }
+        return t.col().insert(l, writeConcern);
     }
 
     /**

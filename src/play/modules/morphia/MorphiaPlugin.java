@@ -20,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import com.google.code.morphia.query.CriteriaContainer;
-import com.google.code.morphia.query.CriteriaContainerImpl;
 import org.bson.types.ObjectId;
 
 import play.Logger;
@@ -66,7 +64,7 @@ import com.mongodb.gridfs.GridFS;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.7";
+    public static final String VERSION = "1.2.8";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -146,7 +144,12 @@ public class MorphiaPlugin extends PlayPlugin {
     }
 
     public static enum IdType {
-        Long, ObjectId
+        STRING, LONG, OBJECT_ID;
+        public static IdType parseStr(String s) {
+            if ("LONG".equalsIgnoreCase(s)) return LONG;
+            if ("STRING".equalsIgnoreCase(s)) return STRING;
+            return OBJECT_ID;
+        }
     }
 
     private static IdType idType_ = null;
@@ -430,18 +433,18 @@ public class MorphiaPlugin extends PlayPlugin {
             debug("reading id type...");
             String s = c.getProperty("morphia.id.type");
             try {
-                idType_ = IdType.valueOf(s);
+                idType_ = IdType.parseStr(s);
                 debug("ID Type set to : %1$s", idType_.name());
-                if (idType_ == IdType.Long && "1.2beta".equals(VERSION)) {
-                    warn("Caution: Using reference in your model entities might cause problem when you ID type set to Long. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
+                if (idType_ == IdType.LONG && "1.2beta".equals(VERSION)) {
+                    warn("Caution: Using reference in your model entities might cause problem when you ID type set to LONG. Check http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973");
                 }
             } catch (Exception e) {
-                String msg = msg_("Error configure morphia id type: %1$s. Id type set to default: ObjectId.", s);
+                String msg = msg_("Error configure morphia id type: %1$s. Id type set to default: OBJECT_ID.", s);
                 fatal(e, msg);
                 throw new ConfigurationException(msg);
             }
         } else {
-            idType_ = IdType.ObjectId;
+            idType_ = IdType.OBJECT_ID;
         }
     }
 
@@ -533,8 +536,8 @@ public class MorphiaPlugin extends PlayPlugin {
     }
 
     private void configureDs_() {
-        List<Class<?>> pending = new ArrayList<Class<?>>();
-        Map<Class<?>, Integer> retries = new HashMap<Class<?>, Integer>();
+//        List<Class<?>> pending = new ArrayList<Class<?>>();
+//        Map<Class<?>, Integer> retries = new HashMap<Class<?>, Integer>();
         List<ApplicationClass> cs = Play.classes.all();
         for (ApplicationClass c : cs) {
             Class<?> clz = c.javaClass;
@@ -543,30 +546,31 @@ public class MorphiaPlugin extends PlayPlugin {
                     debug("mapping class: %1$s", clz.getName());
                     morphia_.map(clz);
                 } catch (ConstraintViolationException e) {
-                    error(e, "error mapping class [%1$s]", clz);
-                    pending.add(clz);
-                    retries.put(clz, 1);
+                    throw new RuntimeException(e);
+//                    error(e, "error mapping class [%1$s]", clz);
+//                    pending.add(clz);
+//                    retries.put(clz, 1);
                 }
             }
         }
-
-        while (!pending.isEmpty()) {
-            for (Class<?> clz : pending) {
-                try {
-                    debug("mapping class: ", clz.getName());
-                    morphia_.map(clz);
-                    pending.remove(clz);
-                } catch (ConstraintViolationException e) {
-                    error(e, "error mapping class [%1$s]", clz);
-                    int retry = retries.get(clz);
-                    if (retry > 2) {
-                        throw new RuntimeException(
-                                "too many errories mapping Morphia Entity classes");
-                    }
-                    retries.put(clz, retries.get(clz) + 1);
-                }
-            }
-        }
+//
+//        while (!pending.isEmpty()) {
+//            for (Class<?> clz : pending) {
+//                try {
+//                    debug("mapping class: ", clz.getName());
+//                    morphia_.map(clz);
+//                    pending.remove(clz);
+//                } catch (ConstraintViolationException e) {
+//                    error(e, "error mapping class [%1$s]", clz);
+//                    int retry = retries.get(clz);
+//                    if (retry > 2) {
+//                        throw new RuntimeException(
+//                                "too many errories mapping Morphia Entity classes");
+//                    }
+//                    retries.put(clz, retries.get(clz) + 1);
+//                }
+//            }
+//        }
 
         ds().ensureIndexes();
 
