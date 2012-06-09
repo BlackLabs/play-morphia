@@ -1,27 +1,19 @@
 package play.modules.morphia;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
-
+import com.google.code.morphia.AbstractEntityInterceptor;
+import com.google.code.morphia.Datastore;
+import com.google.code.morphia.Morphia;
+import com.google.code.morphia.annotations.*;
+import com.google.code.morphia.logging.LogrFactory;
+import com.google.code.morphia.logging.MorphiaLoggerFactory;
+import com.google.code.morphia.mapping.Mapper;
+import com.google.code.morphia.mapping.validation.ConstraintViolationException;
+import com.google.code.morphia.query.Criteria;
+import com.google.code.morphia.query.Query;
+import com.mongodb.*;
+import com.mongodb.gridfs.GridFS;
+import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
-
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -36,27 +28,16 @@ import play.modules.morphia.utils.PlayLogrFactory;
 import play.modules.morphia.utils.SilentLogrFactory;
 import play.modules.morphia.utils.StringUtil;
 
-import com.google.code.morphia.AbstractEntityInterceptor;
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Morphia;
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Id;
-import com.google.code.morphia.annotations.Reference;
-import com.google.code.morphia.annotations.Transient;
-import com.google.code.morphia.logging.LogrFactory;
-import com.google.code.morphia.logging.MorphiaLoggerFactory;
-import com.google.code.morphia.mapping.Mapper;
-import com.google.code.morphia.mapping.validation.ConstraintViolationException;
-import com.google.code.morphia.query.Criteria;
-import com.google.code.morphia.query.Query;
-import com.mongodb.DB;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
-import com.mongodb.MongoException;
-import com.mongodb.ServerAddress;
-import com.mongodb.WriteConcern;
-import com.mongodb.gridfs.GridFS;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 /**
  * The plugin for the Morphia module.
@@ -283,7 +264,7 @@ public class MorphiaPlugin extends PlayPlugin {
      * Connect using conf - morphia.db.host=host1,host2... -
      * morphia.db.port=port1,port2...
      */
-    private final Mongo connect_(String host, String port) {
+    private final Mongo connect_(String host, String port, MongoOptions options) {
         String[] ha = host.split("[,\\s;]+");
         String[] pa = port.split("[,\\s;]+");
         int len = ha.length;
@@ -292,7 +273,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     "host and ports number does not match");
         if (1 == len) {
             try {
-                return new Mongo(ha[0], Integer.parseInt(pa[0]));
+                return new Mongo(new ServerAddress(ha[0], Integer.parseInt(pa[0])), options);
             } catch (Exception e) {
                 throw new ConfigurationException(String.format("Cannot connect to mongodb at %s:%s", host, port));
             }
@@ -308,13 +289,13 @@ public class MorphiaPlugin extends PlayPlugin {
         if (addrs.isEmpty()) {
             throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new Mongo(addrs);
+        return new Mongo(addrs, options);
     }
 
     /*
      * Connect using conf morphia.db.seeds=host1[:port1];host2[:port2]...
      */
-    private final Mongo connect_(String seeds) {
+    private final Mongo connect_(String seeds, MongoOptions options) {
         String[] sa = seeds.split("[;,\\s]+");
         List<ServerAddress> addrs = new ArrayList<ServerAddress>(sa.length);
         for (String s : sa) {
@@ -335,7 +316,18 @@ public class MorphiaPlugin extends PlayPlugin {
         if (addrs.isEmpty()) {
             throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new Mongo(addrs);
+        return new Mongo(addrs, options);
+    }
+
+    /*
+     * Connect using conf morphia.db.url=mongodb://fred:foobar@host:port/db
+     */
+    private final Mongo connect_(MongoURI mongoURI) {
+        try {
+            return new Mongo(mongoURI);
+        } catch (UnknownHostException e) {
+            throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
+        }
     }
 
     @Override
@@ -351,30 +343,81 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private void configureConnection_() {
         Properties c = Play.configuration;
+        MongoOptions options = readMongoOptions(c);
 
+        String url = c.getProperty(PREFIX + "url");
         String seeds = c.getProperty(PREFIX + "seeds");
-        if (!StringUtil.isEmpty(seeds))
-            mongo_ = connect_(seeds);
+        if (!StringUtil.isEmpty(url)) {
+            MongoURI mongoURI = new MongoURI(url);
+            mongo_ = connect_(mongoURI);
+        }
+        else if (!StringUtil.isEmpty(seeds)) {
+            mongo_ = connect_(seeds, options);
+        }
         else {
             String host = c.getProperty(PREFIX + "host", "localhost");
             String port = c.getProperty(PREFIX + "port", "27017");
-            mongo_ = connect_(host, port);
+            mongo_ = connect_(host, port, options);
         }
+    }
+
+    private static MongoOptions readMongoOptions(Properties c) {
+        MongoOptions options = new MongoOptions();
+        for (Field field : options.getClass().getFields()) {
+            String property = c.getProperty("mongo." + field.getName());
+            if (StringUtils.isEmpty(property))
+                continue;
+
+            Class<?> fieldType = field.getType();
+            Object value = null;
+            try {
+                if (fieldType == int.class)
+                    value = Integer.parseInt(property);
+                else if (fieldType == long.class)
+                    value = Long.parseLong(property);
+                else if (fieldType == String.class)
+                    value = property;
+                else if (fieldType == Double.class)
+                    value = Double.parseDouble(property);
+                else if (fieldType == boolean.class)
+                    value = Boolean.parseBoolean(property);
+                field.set(options, value);
+            } catch (Exception e) {
+                error(e, "error setting mongo option " + field.getName());
+            }
+        }
+        return options;
     }
 
     @SuppressWarnings("unchecked")
     private void initMorphia_() {
         Properties c = Play.configuration;
 
+        String url = c.getProperty(PREFIX + "url");
         String dbName = c.getProperty(PREFIX + "name");
+        String username = c.getProperty(PREFIX + "username");
+        String password = c.getProperty(PREFIX + "password");
+
+        if (!StringUtil.isEmpty(url)) {
+            MongoURI mongoURI = new MongoURI(url);
+            dbName = mongoURI.getDatabase();
+            // overwrite these if set via url
+            if (mongoURI.getUsername() != null) {
+                username = mongoURI.getUsername();
+            }
+            if (mongoURI.getPassword() != null) {
+                password = new String(mongoURI.getPassword());
+            }
+        }
+
         if (null == dbName) {
             warn("mongodb name not configured! using [test] db");
             dbName = "test";
         }
+
         DB db = mongo_.getDB(dbName);
-        if (c.containsKey(PREFIX + "username") && c.containsKey(PREFIX + "password")) {
-            String username = c.getProperty(PREFIX + "username");
-            String password = c.getProperty(PREFIX + "password");
+
+        if (!StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
             if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
