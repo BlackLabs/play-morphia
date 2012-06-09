@@ -371,7 +371,7 @@ public class MorphiaPlugin extends PlayPlugin {
             mongo_ = connect_(mongoURI);
         }
         else if (!StringUtil.isEmpty(seeds)) {
-            mongo_ = connect_(seeds);
+            mongo_ = connect_(seeds, options);
         }
         else {
             String host = c.getProperty(PREFIX + "host", "localhost");
