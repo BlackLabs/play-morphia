@@ -9,6 +9,7 @@ PlayMorphia is a Object-MongoDB mapping layer to help Play application developer
 # "Support arbitrary ID type":cust_id
 # "Creating index with annotations":model#index
 # "Super powerful and easy query interface":query
+# "Support atomic update operations":update
 # "Complete aggregation and group aggregation support":statistics
 # "Sophisticated Model entity lifecycle event handling framework":lifecycle
 # Play!Framework integration
@@ -16,6 +17,7 @@ PlayMorphia is a Object-MongoDB mapping layer to help Play application developer
 ## CRUD support. PlayMorphia model support most CRUD operations transparently
 ## Data binding and validation. You can continue enjoy Play's automatic data binding mechansim when you are working with PlayMorphia
 ## Fixtures. You can use Play's Fixture to load yaml data into your MongoDB. However you need to use MorphiaFixture to delete data
+## @play.data.validation.Unique@ support (start from v1.2.7). Now you can annotate your field with <code>@Unique</code> and Play's validation framework will verify your data is unique in this field.
 
 h2. <a name="resource">See Also</a>
 

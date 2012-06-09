@@ -35,5 +35,16 @@ public class QueryTest extends UnitTest {
         a1 = l0.get(0);
         a2 = l0.get(1);
         assertTrue(a1.age >= a2.age);
-}
+    }
+    
+    @Test
+    public void testFindNull() {
+        Account a1 = new Account("a", "a@a.com", "AU", "IT", 50, 80).save();
+        Account a2 = new Account("b", "b@b.com", "AU", null, 46, 77).save();
+        
+        List<Account> l0 = Account.q().findBy("department", null).asList();
+        assertTrue(l0.size() == 1);
+        
+        assertEquals(l0.get(0).login, "b");
+    }
 }

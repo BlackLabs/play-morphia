@@ -1,0 +1,25 @@
+h1. Atomic update operations
+
+Before v1.2.6, PlayMorphia user must resort to morphia interface to get atomic update operations done:
+
+bc. Datastore ds = Employee.ds();
+UpdateOperations op = ds.createUpdateOperations(Employee.class);
+UpdateOperations<Employee> op = ds.createUpdateOperations(Employee.class).inc("salary", 10000).inc("bonus", 99999);
+Query<Employee> q = (Query<Employee>)Employee.q().findBy("department", "IT").getMorphiaQuery();
+ds.update(q, op);
+
+Now with new v1.2.6, you do it this way:
+
+bc. Employee.o().inc("salary, bonus", 10000, 99999).update("department", "IT");
+
+h2. <a name="why_atomic">Why atomic update operations</a>
+
+TBD.
+
+h2. <a name="resource">See also</a>
+
+# "Understand morphia model":model
+# "Using morphia model":crud
+# "Using morphia query":query
+# "Morphia doc on updating":http://code.google.com/p/morphia/wiki/Updating
+# "Mongo doc on updating":http://www.mongodb.org/display/DOCS/Updating

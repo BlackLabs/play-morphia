@@ -184,11 +184,13 @@ public class Order extends Model {
     private ObjectId productId;
     
     public Customer getCustomer() {
-        return null == customerId ? null : Customer.findById(customerId);
+        if (null == customerId) return null;
+        else return Customer.findById(customerId);
     }
     
     public Product getProduct() {
-        return null == productId ? null : Product.findById(productId);
+        if (null == productId) return null;
+        else return Product.findById(productId);
     }
 }
 

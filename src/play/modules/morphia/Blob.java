@@ -15,6 +15,8 @@ import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
 
+import javax.activation.MimetypesFileTypeMap;
+
 public class Blob implements BinaryField {
 
     private GridFSDBFile file;
@@ -33,6 +35,10 @@ public class Blob implements BinaryField {
         } catch (IOException e) {
             Logger.debug("File not found: %s (%s)", inputFile.getAbsolutePath(), e.getMessage());
         }
+    }
+    
+    public Blob(File inputFile) {
+        this(inputFile, new MimetypesFileTypeMap().getContentType(inputFile));
     }
 
     public Blob(String id) {

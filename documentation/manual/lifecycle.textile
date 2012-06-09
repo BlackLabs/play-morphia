@@ -2,6 +2,8 @@ h1. Handle model lifecycle events
 
 p(note). The content of this chapter is only valid for PlayMorphia v1.2.4 or later.
 
+p(note). Atomic update operations (new in v1.2.6) does not support lifecycle events yet.
+
 A model could experience different lifecycle events, e.g. loading from MongoDB, saving to MongoDB and deleting from MongoDB. It would be interesting for application developer to listening to these events and weave in certain logic when a specific event triggered. Typical usage senarios includes updating modified timestamp before saving model object to MongoDB, or logging updating to accouting database if certain model entity is been modified.
 
 PlayMorphia provides a set of tools to enable application developer coding to the model lifecycle events. There are two set of lifecycle events supported by PlayMorphia:

@@ -66,7 +66,7 @@ public class MorphiaEnhancer extends Enhancer {
         // if (!MorphiaPlugin.configured()) return;
         // is anonymous class?
         if (applicationClass.name.contains("$anonfun$") || applicationClass.name.contains("$anon$")) return;
-        
+
         final CtClass ctClass = makeClass(applicationClass);
         final CtClass modelClass = classPool.getCtClass("play.modules.morphia.Model");
         // convert annotation (Column to Property) on fields for Embedded class
@@ -105,7 +105,7 @@ public class MorphiaEnhancer extends Enhancer {
 
         enhance_(ctClass, applicationClass, addId, autoTS);
     }
-    
+
     /**
      * Enhance classes marked with the MongoEntity annotation.
      *
@@ -184,7 +184,7 @@ public class MorphiaEnhancer extends Enhancer {
             val.setValue(IndexDirection.DESC.name());
             indexAnnotation.addMemberValue("value", val);
             attribute.addAnnotation(indexAnnotation);
-            
+
         	Logger.trace("create timestamp fields automatically");
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
         	createdField.getFieldInfo().addAttribute(attribute);
@@ -211,6 +211,14 @@ public class MorphiaEnhancer extends Enhancer {
             ctClass.addMethod(getModified);
         }
 
+        // updateOperations
+        CtMethod createUpdateOperations = CtMethod.make("public static play.modules.morphia.Model.MorphiaUpdateOperations createUpdateOperations() { return o(); }",ctClass);
+        ctClass.addMethod(createUpdateOperations);
+
+        // updateOperations
+        CtMethod o = CtMethod.make("public static play.modules.morphia.Model.MorphiaUpdateOperations o() { return new play.modules.morphia.Model.MorphiaUpdateOperations("+ className + "); }",ctClass);
+        ctClass.addMethod(o);
+
         // all - alias of find()
         CtMethod all = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery all() { return new play.modules.morphia.Model.MorphiaQuery("+ className + "); }",ctClass);
         ctClass.addMethod(all);
@@ -222,7 +230,7 @@ public class MorphiaEnhancer extends Enhancer {
         // createQuery - alias of all
         CtMethod createQuery = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery createQuery() { return all(); }",ctClass);
         ctClass.addMethod(createQuery);
-        
+
         // q - alias of createQuery
         CtMethod q = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q() { return all(); }",ctClass);
         ctClass.addMethod(q);
@@ -238,7 +246,7 @@ public class MorphiaEnhancer extends Enhancer {
         // find(String keys, Object... params)
         CtMethod find2 = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery find(String keys, java.lang.Object[] params) { return createQuery().findBy(keys, params); }",ctClass);
         ctClass.addMethod(find2);
-        
+
         // q -- alias: filter(String, Object...)
         CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object value) { return createQuery().filter(keys, value); }",ctClass);
         ctClass.addMethod(q2);
@@ -263,7 +271,7 @@ public class MorphiaEnhancer extends Enhancer {
             CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return (Model)mf.findById(id); }",ctClass);
             ctClass.addMethod(findById);
         }
-        
+
         // col
         CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds().getCollection(" + className + "); }", ctClass);
         ctClass.addMethod(col);
@@ -275,15 +283,15 @@ public class MorphiaEnhancer extends Enhancer {
         // count (String keys, Object... params)
         CtMethod count2 = CtMethod.make("public static long count(String keys, Object[] params) { return find(keys, params).count(); }", ctClass);
         ctClass.addMethod(count2);
-        
+
         // distinct
         CtMethod distinct = CtMethod.make(String.format("public static java.util.Set _distinct(String key) {return q().distinct(key);}", className), ctClass);
         ctClass.addMethod(distinct);
-        
+
         // cloud
         CtMethod cloud = CtMethod.make("public static java.util.Map _cloud(String key) {return q().cloud(key);}", ctClass);
         ctClass.addMethod(cloud);
-        
+
         // max
         CtMethod max = CtMethod.make("public static Long _max(String field) {return q().max(field);}", ctClass);
         ctClass.addMethod(max);
@@ -330,7 +338,7 @@ public class MorphiaEnhancer extends Enhancer {
 
         // enhance blob methods: save, delete, batchDelete, load and setters
         if (hasBlobField) enhanceBlobMethods(ctClass, blobs);
-        
+
         // add lifecycle handling code
         addLifeCycleMethods(ctClass);
 
@@ -338,7 +346,7 @@ public class MorphiaEnhancer extends Enhancer {
         applicationClass.enhancedByteCode = ctClass.toBytecode();
         ctClass.defrost();
     }
-    
+
     private void enhanceBlobMethods(CtClass ctClass, List<String> blobs) throws CannotCompileException, NotFoundException {
         // -- saveBlobs
         StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
@@ -348,18 +356,18 @@ public class MorphiaEnhancer extends Enhancer {
         sb.append("blobFieldsTracker.clear();}");
         CtMethod method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
-        
+
         String blobList = StringUtil.join(",", blobs, true);
         // -- deleteBlobs
         sb = new StringBuilder("protected void deleteBlobs() { String[] blobs = {").append(blobList).append("}; removeGridFSFiles(\"").append(ctClass.getSimpleName()).append("\", getId(), blobs);}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
-        
+
         // -- deleteBlobsInBatch
         sb = new StringBuilder("protected void deleteBlobsInBatch(play.modules.morphia.Model.MorphiaQuery q) { String[] blobs = {").append(blobList).append("}; removeGridFSFiles(q, blobs);}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
-        
+
         // -- loadBlobs
         sb = new StringBuilder("protected void loadBlobs() {");
         for (String blob: blobs) {
@@ -368,7 +376,7 @@ public class MorphiaEnhancer extends Enhancer {
         sb.append("blobFieldsTracker.clear();}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
-        
+
         // -- blob setters
         for (String blob: blobs) {
             String setter = "set" + StringUtil.upperFirstChar(blob);
@@ -379,7 +387,8 @@ public class MorphiaEnhancer extends Enhancer {
 
     /*
      * 1. Add @Transparent to all Blob field
-     * 2. Convert @play.modules.morphia.Model.Column to com.google.code.morphia.annotations.Property
+     * 2. Convert @play.modules.morphia.Model.Column to @com.google.code.morphia.annotations.Property
+     * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */
     private List<String> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
@@ -394,17 +403,23 @@ public class MorphiaEnhancer extends Enhancer {
                 createAnnotation(getAnnotations(cf), Transient.class);
                 blobs.add(cf.getName());
             }
-            
+
             if (Modifier.isStatic(cf.getModifiers())) continue;
             AnnotationsAttribute attr = getAnnotations(cf);
             Annotation[] aa = attr.getAnnotations();
             Annotation colA = null;
             Annotation propA = null;
+            Annotation uniquePlay = null;
+            Annotation uniqueMorhpia = null;
             for (Annotation a: aa) {
                 if (a.getTypeName().equals(Column.class.getName())) {
                     colA = a;
                 } else if (a.getTypeName().equals(Property.class.getName())) {
                     propA = a;
+                } else if (a.getTypeName().equals(play.modules.morphia.validation.Unique.class.getName())) {
+                    uniqueMorhpia = a;
+                } else if (a.getTypeName().equals(play.data.validation.Unique.class.getName())) {
+                    uniquePlay = a;
                 }
             }
             if (null == propA && null != colA) {
@@ -416,10 +431,29 @@ public class MorphiaEnhancer extends Enhancer {
                 if (null != concreteClass) propA.addMemberValue("concreteClass", concreteClass);
                 attr.addAnnotation(propA);
             }
+            if (null == uniqueMorhpia && null != uniquePlay) {
+                MemberValue value = uniquePlay.getMemberValue("value");
+                MemberValue message = uniquePlay.getMemberValue("message");
+                uniqueMorhpia = new Annotation(play.modules.morphia.validation.Unique.class.getName(), ctClass.getClassFile().getConstPool());
+                if (null != value) uniqueMorhpia.addMemberValue("value", value);
+                if (null != message) uniqueMorhpia.addMemberValue("message", message);
+                attr.addAnnotation(uniqueMorhpia);
+            }
+            if (null != uniquePlay) {
+                Annotation[] anns = attr.getAnnotations();
+                List<Annotation> newAnns = new ArrayList<Annotation>(anns.length - 1);
+                for (Annotation ann: anns) {
+                    if (!ann.getTypeName().equals(play.data.validation.Unique.class.getName())) {
+                        newAnns.add(ann);
+                    }
+                }
+                attr.setAnnotations(newAnns.toArray(new Annotation[]{}));
+            }
+            cf.getFieldInfo().addAttribute(attr);
         }
         return blobs;
     }
-    
+
     private void addLifeCycleMethods(CtClass ctClass) throws Exception {
         /* loop through all non-private methods including inherited one */
         for (CtMethod cm: ctClass.getMethods()) {
@@ -434,13 +468,13 @@ public class MorphiaEnhancer extends Enhancer {
             }
         }
     }
-    
+
     @SuppressWarnings("rawtypes")
     private void enhanceLifeCycleMethods(CtClass ctClass, CtMethod ctMethod) throws Exception {
         if (ctMethod.getParameterTypes().length > 0) return; // lifecycle method shall not have parameter
         if (ctMethod.getAnnotations().length == 0) return; // not annotated
         if (!"void".equals(ctMethod.getReturnType().getName())) return; // lifecycle method shall not return any object
-        
+
         Class[] ca = {OnLoad.class, Loaded.class, OnAdd.class, OnUpdate.class, Added.class, Updated.class, OnDelete.class, Deleted.class, OnBatchDelete.class, BatchDeleted.class};
         AnnotationsAttribute aa = getAnnotations(ctMethod);
         for (Annotation a: aa.getAnnotations()) {
@@ -456,21 +490,21 @@ public class MorphiaEnhancer extends Enhancer {
                         m0 = CtMethod.make(String.format("protected void %s(){}", mn, mn), ctClass);
                         ctClass.addMethod(m0);
                     }
-                    
+
                     String callback = ctMethod.getName();
                     Logger.trace("Adding callback[%s] to lifecycle event handler[%s]", callback, mn);
                     m0.insertAfter(String.format("%s();", callback));
                 }
             }
         }
-        
+
     }
-    
+
     @SuppressWarnings("rawtypes")
     private void enhanceLifeCycleBatchMethods(CtClass ctClass, CtMethod ctMethod) throws Exception {
         if (ctMethod.getAnnotations().length == 0) return; // not annotated
         if (!"void".equals(ctMethod.getReturnType().getName())) return; // lifecycle method shall not return any object
-        CtClass[] params = ctMethod.getParameterTypes(); 
+        CtClass[] params = ctMethod.getParameterTypes();
         if (params.length == 1) {
             CtClass p0 = params[0];
             if (!MorphiaQuery.class.getName().equals(p0.getName())) return;
@@ -494,7 +528,7 @@ public class MorphiaEnhancer extends Enhancer {
                         m0 = CtMethod.make(String.format("protected void %s(play.modules.morphia.Model.MorphiaQuery q){}", mn), ctClass);
                         ctClass.addMethod(m0);
                     }
-                    
+
                     String callback = ctMethod.getName();
                     Logger.trace("Adding callback[%s] to lifecycle event handler[%s]", callback, mn);
                     m0.insertAfter(String.format("%s($$);", callback));

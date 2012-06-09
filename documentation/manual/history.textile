@@ -3,9 +3,34 @@ h1. PlayMorphia version history
 h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
-* Provide easy interface for update and batch update
 
-h2. <a name="1.2.4c">Updates in 1.2.4d</a>
+h2. <a name="1.2.7">Updates in 1.2.7</a>
+
+p(Note). v1.2.7 works with PlayFramework 1.2.4+. If you are using PlayFramework 1.2.3 or below, please use PlayMorphia v1.2.6a
+
+* Support PlayFramework 1.2.4+
+* Support "unique check":https://github.com/playframework/play/blob/1.2.x/documentation/manual/validation-builtin.textile#unique
+
+h2. <a name="1.2.6a">Updates in 1.2.6a</a>
+
+* Bug fix: https://github.com/greenlaw110/play-morphia/issues/75
+
+h2. <a name="1.2.6">Updates in 1.2.6</a>
+
+* Support atomic update operations
+* Bug fix: https://github.com/greenlaw110/play-morphia/issues/71
+
+h2. <a name="1.2.5b">Updates in 1.2.5b</a>
+
+* **break change** Calling MorphiaPlugin.MorphiaModelLoader.fetch(), the @keywords@ parameter will be splited by non-words characters (@\W@), and compose @And@ condition first, then the @And@ criteria container will be composed to final criteria with @Or@ condition among the searched fields.
+
+h2. <a name="1.2.5a">Updates in 1.2.5a<a/>
+
+* Synchronize to class when get long ID
+* trim value when processing where statement in Factory.fetch
+* Build system Mavenized
+
+h2. <a name="1.2.4d">Updates in 1.2.4d</a>
 
 * Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
 
@@ -20,7 +45,7 @@ h2. <a name="1.2.4b">Updates in 1.2.4b</a>
 * Fix bug: <a href="https://github.com/greenlaw110/play-morphia/pull/50">#50: Support enum type in MorphiaPlugin.MorphiaModelLoader.buildProperty</a>
 * Fix bug: <a href="https://github.com/greenlaw110/play-morphia/issues/51">#51: NullPointerException when morphia.id.type configuration not set</a>
 
-p(note). Thank "Vincent Buzzano":https://github.com/vbuzzano for contributing to bug fix of #48 and #50 
+p(note). Thank "Vincent Buzzano":https://github.com/vbuzzano for contributing to bug fix of #48 and #50
 
 h2. <a name="1.2.4a">Updates in 1.2.4a</a>
 
@@ -120,7 +145,7 @@ h2. <a name="1.2beta">Updates in 1.2beta</a>
 
 Note using Long as IdType (configured with "morphia.id.type") and you have @Reference annotation in your model entities, then you will be in trouble. Check <a href="http://groups.google.com/group/morphia/browse_thread/thread/bdd51121c2845973">this</a> thread for detail. Yabe sample has been updated and now use ObjectId as ID type for the same reason
 
-Known Issues: 
+Known Issues:
 1. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/5">StackOverflowError with unbind</a>
 2. <a href="https://github.com/greenlaw110/play-morphia/issues/issue/6">Play reload cause MappingException</a>
 
@@ -135,12 +160,12 @@ h2. <a name="1.1c">Updates in 1.1c</a>
 
 h2. <a name="1.1b">Updates in 1.1b</a>
 
-* Yabe unit test passed 
-* Add isNew() method to Model 
-* Model.save() now return Model object which is comply to JPAModel; Use Model.save2() to return Key<Model> 
+* Yabe unit test passed
+* Add isNew() method to Model
+* Model.save() now return Model object which is comply to JPAModel; Use Model.save2() to return Key<Model>
 
 h2. <a name="1.1a">Updates in 1.1a</a>
 
-* Fix problems with User defined @Id field 
-* Add information to document on how to create user defined @Id field entity 
+* Fix problems with User defined @Id field
+* Add information to document on how to create user defined @Id field entity
 
