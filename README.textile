@@ -145,10 +145,17 @@ com.google.code.morphia.AdvancedDatastore ds = (AdvancedDatastore)MorphiaPlugin.
 
 h3. The MongoDB Java Driver interface
 
-This is listed here just for curious:
+This is listed here in case you're curious:
 
 bc. // get Mongo object
 com.mongodb.Mongo mongo = MorphiaPlugin.ds().getMongo();
+
+You can also set Mongo driver options in @application.conf@ like this:
+
+bc. ## Mongo driver configuration
+mongo.threadsAllowedToBlockForConnectionMultiplier=10
+mongo.connectionsPerHost=20
+mongo.slaveOk=true
 
 p(note). **Give it a try**
 
