@@ -10,6 +10,20 @@ bc. User user = new User();
 ...
 user.save()
 
+h3. <a name="batch-insert">Batch Insert</a>
+
+PlayMorphia-1.2.8 add support to batch insert. Suppose you have a list of model constructed, before v1.2.8 you do it using the following code:
+
+bc. List<MyModel> myModels = ...;
+for (MyModel model: myModels) model.save();
+
+Now you do it as follows:
+
+bc. List<MyModel> myModels = ...;
+MyModel.insert(myModels);
+
+Note this is not a simple syntax sugar but instead it will call to @DBCollection.insert(List<DBObject>)@ interface.
+
 h2. <a name="read">Read model from MongoDB</a>
 
 To read a model from MongoDB you will need the @ID@ object. The following sample code shows how to read @User@ model from MongoDB in a controller:

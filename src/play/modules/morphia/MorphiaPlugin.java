@@ -127,10 +127,26 @@ public class MorphiaPlugin extends PlayPlugin {
     public static enum IdType {
         STRING, LONG, OBJECT_ID;
         public static IdType parseStr(String s) {
-            if ("LONG".equalsIgnoreCase(s)) return LONG;
-            if ("STRING".equalsIgnoreCase(s)) return STRING;
+            if ("Long".equalsIgnoreCase(s)) return LONG;
+            if ("String".equalsIgnoreCase(s)) return STRING;
+
             return OBJECT_ID;
         }
+    }
+
+    public static enum StringIdGenerator {
+        OBJECT_ID() {
+            @Override
+            public String generate() {
+                return new ObjectId().toString();
+            }
+        }, UUID() {
+            @Override
+            public String generate() {
+                return java.util.UUID.randomUUID().toString();
+            }
+        };
+        public abstract String generate();
     }
 
     private static IdType idType_ = null;
@@ -140,6 +156,15 @@ public class MorphiaPlugin extends PlayPlugin {
             initIdType_();
         }
         return idType_;
+    }
+
+    private static StringIdGenerator stringIdGenerator_ = null;
+
+    public static String generateStringId() {
+        if (null == stringIdGenerator_) {
+            initStringIdGenerator_();
+        }
+        return stringIdGenerator_.generate();
     }
 
     public static Datastore ds() {
@@ -350,11 +375,9 @@ public class MorphiaPlugin extends PlayPlugin {
         if (!StringUtil.isEmpty(url)) {
             MongoURI mongoURI = new MongoURI(url);
             mongo_ = connect_(mongoURI);
-        }
-        else if (!StringUtil.isEmpty(seeds)) {
+        } else if (!StringUtil.isEmpty(seeds)) {
             mongo_ = connect_(seeds, options);
-        }
-        else {
+        } else {
             String host = c.getProperty(PREFIX + "host", "localhost");
             String port = c.getProperty(PREFIX + "port", "27017");
             mongo_ = connect_(host, port, options);
@@ -467,6 +490,19 @@ public class MorphiaPlugin extends PlayPlugin {
                 }
             }
         });
+    }
+
+    private static void initStringIdGenerator_() {
+        if (null != stringIdGenerator_) {
+            return;
+        }
+        Properties c = Play.configuration;
+        String s = c.getProperty("morphia.id.stringIdGenerator", StringIdGenerator.OBJECT_ID.name());
+        if (s.equalsIgnoreCase(StringIdGenerator.UUID.name())) {
+            stringIdGenerator_ = StringIdGenerator.UUID;
+        } else {
+            stringIdGenerator_ = StringIdGenerator.OBJECT_ID;
+        }
     }
 
     private static void initIdType_() {

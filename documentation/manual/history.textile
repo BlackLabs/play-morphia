@@ -4,6 +4,15 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
+h2. <a name="1.2.8">Updates in 1.2.8</a>
+
+* "Support MongoDB option configuration":https://github.com/greenlaw110/play-morphia/pull/83
+* "Support configure MongoDB connection using url":https://github.com/greenlaw110/play-morphia/pull/79
+* "Support batch insert":crud#batch-insert
+* "Support @String@ type system generated ID field":model#id
+* Bug fixes:
+** "Loading of fixtures no longer supports references when running on PlayFramework 1.2.4+":https://github.com/greenlaw110/play-morphia/issues/55
+
 h2. <a name="1.2.7">Updates in 1.2.7</a>
 
 p(Note). v1.2.7 works with PlayFramework 1.2.4+. If you are using PlayFramework 1.2.3 or below, please use PlayMorphia v1.2.6a

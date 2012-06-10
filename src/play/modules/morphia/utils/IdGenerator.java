@@ -35,7 +35,7 @@ public class IdGenerator {
     }
 
     public static <T extends Model> String generateStringId(Class<T> clazz) {
-        return new ObjectId().toString();
+        return MorphiaPlugin.generateStringId();
     }
 
     public static <T extends Model> Long generateLongId(T entity){

@@ -13,12 +13,12 @@ import play.modules.morphia.Model;
 import com.google.code.morphia.annotations.Entity;
 @Entity
 public class User extends Model {
- 
+
     public String email;
     public String password;
     public String fullname;
     public boolean isAdmin;
-    
+
     public User(String email, String password, String fullname) {
         this.email = email;
         this.password = password;
@@ -37,11 +37,11 @@ Now let's say how to use the User class. Again we will compare the PlayMorphia v
 bc.    @Test public void createAndRetrieveUser() {
     // Create a new user and save it
     new User("bob@gmail.com", "secret", "Bob").save();
-    
+
     // Retrieve the user with bob username
     User bob = User.find("byEmail", "bob@gmail.com").first();
-    
-    // Test 
+
+    // Test
     assertNotNull(bob);
     assertEquals("Bob", bob.fullname);
 }
@@ -50,17 +50,27 @@ People might noticed that there is no difference in the method between the PlayM
 
 h3. <a name="id">ID field</a>
 
+p(note). Start from PlayMorphia 1.2.8, it supports @String@ type system generated ID field.
+
 All Morphia model class must have an ID field defined. This is done by giving an <a href="http://code.google.com/p/morphia/wiki/AllAnnotations#Id">@com.google.code.morphia.annotations.Id@</a> annotation to the ID property of the model. Once you have done with that your ID property in Java class will be mapped to <a href="http://www.mongodb.org/display/DOCS/Object+IDs">"_id"</a> key of the document in MongoDB.
 
-Sharp eyed might spot that there is no <code>@Id</code> field in the <a href="#sample-1">sample code</a>. True, because we will add the ID field automatically using <a href="#enhance">code enhancing technology</a> when the application is starting up. By default an ID field name "_id" will be added with type <code>org.bson.types.ObjectId</code>. Application developer are allowed to change (not even possible in Play's JPA model!) the ID field type to <code>java.lang.Long</code> by adding the following line into your <code>conf/applicaiton.conf</code>:
+Sharp eyed might spot that there is no @Id@ field in the <a href="#sample-1">sample code</a>. True, because we will add the ID field automatically using <a href="#enhance">code enhancing technology</a> when the application is starting up. By default an ID field name "_id" will be added with type @org.bson.types.ObjectId@. Application developer are allowed to change (not even possible in Play's JPA model!) the ID field type to @java.lang.String@ or @java.lang.Long@ by adding the following line into your <code>conf/application.conf</code>:
 
-bc. morphia.id.type=Long
+bc. morphia.id.type=String
 
-Whichever ID type is used, PlayMorphia will always generate ID value automatically.
+or
+
+bc.morphia.id.type=Long
+
+Whichever ID type is used, PlayMorphia will always generate ID value automatically. Note if you shall NOT choose @Long@ as ID type as it will cause trouble when running in a clustered environment.
+
+When you choose @String@ as ID type, by default PlayMorphia will use @org.bson.types.ObjectId@ to generate unique ID. However you can configure the system to use @UUID@ to generate the ID value by adding the following configuration item in your @conf/application.conf@ file:
+
+bc. morphia.id.stringIdGenerator=UUID
 
 p(note). *Note* once you have set your app to use one type of ID you should stick to that type. If you change the type you will encounter problem when load existing data from database.
 
-See also "How to use customize ID field in the model class":cust_id  
+See also "How to use customize ID field in the model class":cust_id
 
 h3. <a name="rules">Rule of thumb</a>
 
@@ -98,7 +108,7 @@ public class Address {
     public String city;
     public String state;
     ...
-} 
+}
 // define the embedding class
 @Entity
 public class Customer extends Model {
@@ -153,7 +163,7 @@ bc. @Entity
 public class Customer extends Model {
     public String fistname;
     public String lastname;
-    ... 
+    ...
 }
 @Entity
 public class Product {
@@ -182,12 +192,12 @@ bc. @Entity
 public class Order extends Model {
     private ObjectId customerId;
     private ObjectId productId;
-    
+
     public Customer getCustomer() {
         if (null == customerId) return null;
         else return Customer.findById(customerId);
     }
-    
+
     public Product getProduct() {
         if (null == productId) return null;
         else return Product.findById(productId);
@@ -208,8 +218,8 @@ bc. {
 **@Manual link version**
 
 bc. {
-    customerId: ObjectId(...), 
-    productId: ObjectId(...), 
+    customerId: ObjectId(...),
+    productId: ObjectId(...),
 }
 
 p(note). Click "here":http://valyagolev.net/article/mongo_dbref/ to see a good article about MongoDB DBRef
@@ -231,7 +241,7 @@ public class User extends Model {
     }
 }
 
-So it's all you need in your model class to declare your blob data with type @play.modules.morphia.Blob@, and implement a simple set method to convert File to Blob. When you call @save()@ method, byte enhanced code will automatically save the blog into MongoDB's <a href="http://www.mongodb.org/display/DOCS/GridFS+Specification">GridFS</a> with property ID. 
+So it's all you need in your model class to declare your blob data with type @play.modules.morphia.Blob@, and implement a simple set method to convert File to Blob. When you call @save()@ method, byte enhanced code will automatically save the blog into MongoDB's <a href="http://www.mongodb.org/display/DOCS/GridFS+Specification">GridFS</a> with property ID.
 
 Using model with blob data is also very easy:
 
@@ -268,7 +278,7 @@ long created = myEntity._getCreated();
 // get modified timestamp
 long modified = myEntity._getModified();
 
-p(note). Calling @_getCreated()@ and @_getModified()@ on entity which has no <code>@AutoTimestamp</code> annotation will trigger <code>java.lang.UnsupportedOperationException</code> 
+p(note). Calling @_getCreated()@ and @_getModified()@ on entity which has no <code>@AutoTimestamp</code> annotation will trigger <code>java.lang.UnsupportedOperationException</code>
 
 h2. <a name="index">Create index on Model class</a>
 
@@ -313,5 +323,5 @@ You can refer to the following resource for more about MongoDB modeling:
 # Though not in Java, "MongoDB Data Modeling and Rails":http://www.mongodb.org/display/DOCS/MongoDB+Data+Modeling+and+Rails is an *excellent resource* to understand MongoDB's approach of modeling your data
 # %(next)"Using Model: CRUD":crud%
 # "Using Model: Query":query
-# "How to use customize ID field in the model class":cust_id  
+# "How to use customize ID field in the model class":cust_id
 # Check out "Advanced Model Topics":advance#model to see more about PlayMorphia model
