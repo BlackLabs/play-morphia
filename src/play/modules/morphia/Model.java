@@ -913,7 +913,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static String getBlobFileName(String className, Object id, String fieldName) {
-        return String.format("%s_%s_%s", className, StringUtils.capitalize(fieldName), id);
+        return String.format("%s_%s", StringUtils.capitalize(fieldName), id);
     }
 
     public static void removeGridFSFiles(String className, Object id, String...fieldNames) {

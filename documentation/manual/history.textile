@@ -12,6 +12,7 @@ h2. <a name="1.2.8">Updates in 1.2.8</a>
 * "Support @String@ type system generated ID field":model#id
 * Bug fixes:
 ** "Loading of fixtures no longer supports references when running on PlayFramework 1.2.4+":https://github.com/greenlaw110/play-morphia/issues/55
+** "1.2.6 causes "bad type, not parametrized" exception with mongo 2.7.2 driver":https://github.com/greenlaw110/play-morphia/issues/74
 
 h2. <a name="1.2.7">Updates in 1.2.7</a>
 

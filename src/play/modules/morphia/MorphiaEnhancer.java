@@ -1,8 +1,6 @@
 package play.modules.morphia;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -82,9 +80,22 @@ public class MorphiaEnhancer extends Enhancer {
             throw new Exception(String.format("Error enhancing [%s]: Embedded entity shall NOT extend play.modules.morphia.Model class!", ctClass.getName()));
         }
 
-        if (!hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, ByPass.class.getName())) return;
+//        if (!hasAnnotation(ctClass, Entity.class.getName()) || hasAnnotation(ctClass, ByPass.class.getName())) {
+//            // process blob fields in abstract class: issue #74
+//            for (CtField cf: Arrays.asList(ctClass.getDeclaredFields())) {
+//                CtClass ctReturnType = cf.getType();
+//                if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") &&
+//                        !hasAnnotation(cf, Transient.class.getName())) {
+//                    throw new Exception("Cannot add Blob fields to model class without @Entity annotation");
+//                }
+//            }
+//                // Done.
+//            applicationClass.enhancedByteCode = ctClass.toBytecode();
+//            ctClass.defrost();
+//            return;
+//        }
 
-        boolean addId = true;
+        boolean addId = hasAnnotation(ctClass, Entity.class.getName());
     	boolean autoTS = hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName());
     	if (hasAnnotation(ctClass, NoId.class.getName())) {
             addId = false;
@@ -333,7 +344,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(deleteAll);
 
         // add @Transient to all blobs automatically
-        List<String> blobs = processFields(ctClass);
+        Set<String> blobs = processFields(ctClass);
         boolean hasBlobField = blobs.size() > 0;
 
         // enhance blob methods: save, delete, batchDelete, load and setters
@@ -347,7 +358,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.defrost();
     }
 
-    private void enhanceBlobMethods(CtClass ctClass, List<String> blobs) throws CannotCompileException, NotFoundException {
+    private void enhanceBlobMethods(CtClass ctClass, Set<String> blobs) throws CannotCompileException, NotFoundException {
         // -- saveBlobs
         StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
         for (String blob: blobs) {
@@ -391,15 +402,14 @@ public class MorphiaEnhancer extends Enhancer {
      * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */
-    private List<String> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
+    private Set<String> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
         List<CtField> fields  = new ArrayList<CtField>();
         fields.addAll(Arrays.asList(ctClass.getDeclaredFields()));
         fields.addAll(Arrays.asList(ctClass.getFields()));
-        List<String> blobs = new ArrayList<String>();
+        Set<String> blobs = new HashSet<String>();
         for (CtField cf: fields) {
             CtClass ctReturnType = cf.getType();
-            if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") &&
-                    !hasAnnotation(cf, Transient.class.getName())) {
+            if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && !hasAnnotation(cf, Transient.class.getName())) {
                 createAnnotation(getAnnotations(cf), Transient.class);
                 blobs.add(cf.getName());
             }
