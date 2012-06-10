@@ -6,8 +6,8 @@ h2. <a name="roadmap">TODO list</a>
 
 h2. <a name="1.2.8">Updates in 1.2.8</a>
 
-* "Support MongoDB option configuration":https://github.com/greenlaw110/play-morphia/pull/83
-* "Support configure MongoDB connection using url":https://github.com/greenlaw110/play-morphia/pull/79
+* "Support MongoDB driver option configuration":config#driver-options
+* "Support configure MongoDB connection using url":config#connection
 * "Support batch insert":crud#batch-insert
 * "Support @String@ type system generated ID field":model#id
 * Bug fixes:

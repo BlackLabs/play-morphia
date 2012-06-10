@@ -387,7 +387,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private static MongoOptions readMongoOptions(Properties c) {
         MongoOptions options = new MongoOptions();
         for (Field field : options.getClass().getFields()) {
-            String property = c.getProperty("mongo." + field.getName());
+            String property = c.getProperty("morphia.driver." + field.getName());
             if (StringUtils.isEmpty(property))
                 continue;
 

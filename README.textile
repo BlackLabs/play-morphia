@@ -1,6 +1,6 @@
 h1. PlayMorphia overview
 
-The PlayMorphia module a powerful and yet easy to use framework that provides "MongoDB":http://www.mongodb.org/ access to your Play!framework application. This module is built on top of the famous "Morphia project":http://code.google.com/p/morphia/. 
+The PlayMorphia module a powerful and yet easy to use framework that provides "MongoDB":http://www.mongodb.org/ access to your Play!framework application. This module is built on top of the famous "Morphia project":http://code.google.com/p/morphia/.
 
 Stick to the philosophy of Play!Framework, PlayMorphia provides a data layer infrastructure to help developer focusing on the business logic instead of technical details. PlayMorphia is by far the most welcome MongoDB access module in the community
 
@@ -10,7 +10,7 @@ Thanks to the super powerful code enhancement mechanism of Play!framework, we co
 
 You define a model class as:
 
-bc. @Entity 
+bc. @Entity
 public class User extends Model {
     public String fName;
     public String lName;
@@ -18,7 +18,7 @@ public class User extends Model {
     public String department;
     public int age;
     public int score;
-    
+
     public User(String firstName, String lastName, region, department) {
         this.fName = firstName;
         this.lName = lastName;
@@ -82,14 +82,14 @@ int maxAge = User._max("age");
 int totalScore = User._sum("score");
 int averageScore = User._average("score");
 ...
-// group aggregation interface is still so easy to use 
+// group aggregation interface is still so easy to use
 AggregationResult minValueDistribution = User.groupMin("age", "region department");
 int minAge_AU_IT = (int)minValueDistribution.get("region department", "AU", "IT");
 ...
 
 h2. Entity Lifecycle callbacks
 
-Sometimes it's interesting to listen to the lifecycle events of an entity and proceed with relevant logics. For example, you want to log an entry input, or you want to send an notification email on entry removed. PlayMorphia provides a set of lifecycle annotations to mark the methods to be called when certain event triggered: 
+Sometimes it's interesting to listen to the lifecycle events of an entity and proceed with relevant logics. For example, you want to log an entry input, or you want to send an notification email on entry removed. PlayMorphia provides a set of lifecycle annotations to mark the methods to be called when certain event triggered:
 
 bc. @Entity public class User {
     public String fName;
@@ -123,7 +123,7 @@ bc. @Entity public class User {
     }
     @BatchDeleted static void afterBatchDelete(MorphiaQuery q) {
         Logger.info("Records specified by the query has been deleted";
-        // Note q.count() will always return 0 in this method as the 
+        // Note q.count() will always return 0 in this method as the
         // records specified by the query has already been removed
     }
 }
@@ -150,12 +150,12 @@ This is listed here just for curious:
 bc. // get Mongo object
 com.mongodb.Mongo mongo = MorphiaPlugin.ds().getMongo();
 
-You can also set Mongo driver options in @application.conf@ like this:
+You can also set Mongo driver options in @conf/application.conf@ like this:
 
 bc. ## Mongo driver configuration
-mongo.threadsAllowedToBlockForConnectionMultiplier=10
-mongo.connectionsPerHost=20
-mongo.slaveOk=true
+morphia.driver.threadsAllowedToBlockForConnectionMultiplier=10
+morphia.driver.connectionsPerHost=20
+morphia.driver.slaveOk=true
 
 p(note). **Give it a try**
 

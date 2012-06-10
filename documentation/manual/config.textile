@@ -11,6 +11,15 @@ h2. <a name="connection">MongoDB Connection</a>
 |@morphia.db.seeds@|define mongodb server to be connected. Note, this item takes precedence over @morphia.db.host@ and @morphia.db.port@. E.g, @server1:port1,server2:port2...@|None|
 |@morphia.db.url@|define connection using url style: @mongodb://username:password@host:port/db@. Note this item takes precedence of @morphia.db.seeds@ configuration|None|
 
+h3. <a name="driver-options">MongoDB Driver Options</a>
+
+You can also set MongoDB driver options in @conf/application.conf@ like this:
+
+bc. ## Mongo driver configuration
+morphia.driver.threadsAllowedToBlockForConnectionMultiplier=10
+morphia.driver.connectionsPerHost=20
+morphia.driver.slaveOk=true
+
 h2. <a name="secure">Secure MongoDB access</a>
 
 |_. ID |_. Description |_. default value |
