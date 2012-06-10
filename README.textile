@@ -150,6 +150,13 @@ This is listed here just for curious:
 bc. // get Mongo object
 com.mongodb.Mongo mongo = MorphiaPlugin.ds().getMongo();
 
+You can also set Mongo driver options in @application.conf@ like this:
+
+bc. ## Mongo driver configuration
+mongo.threadsAllowedToBlockForConnectionMultiplier=10
+mongo.connectionsPerHost=20
+mongo.slaveOk=true
+
 p(note). **Give it a try**
 
 "Install the PlayMorphia plugin":http://www.playframework.org/modules/morphia and start developing your application with MongoDB!
