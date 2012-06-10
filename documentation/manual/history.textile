@@ -4,12 +4,12 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
-h2. <a name="1.2.8">Updates in 1.2.8</a>
+h2. <a name="1.2.8-RC1">Updates in 1.2.8-RC1</a>
 
 * "Support MongoDB driver option configuration":config#driver-options
 * "Support configure MongoDB connection using url":config#connection
 * "Support batch insert":crud#batch-insert
-* "Support @String@ type system generated ID field":model#id
+* <a href="model#id">Support <code>String</code> type system generated ID field</a>
 * Bug fixes:
 ** "Loading of fixtures no longer supports references when running on PlayFramework 1.2.4+":https://github.com/greenlaw110/play-morphia/issues/55
 ** "1.2.6 causes "bad type, not parametrized" exception with mongo 2.7.2 driver":https://github.com/greenlaw110/play-morphia/issues/74

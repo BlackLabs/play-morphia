@@ -60,9 +60,9 @@ bc. morphia.id.type=String
 
 or
 
-bc.morphia.id.type=Long
+bc. morphia.id.type=Long
 
-Whichever ID type is used, PlayMorphia will always generate ID value automatically. Note if you shall NOT choose @Long@ as ID type as it will cause trouble when running in a clustered environment.
+Whichever ID type is used, PlayMorphia will always generate ID value automatically. Note if you shall NOT choose @Long@ as ID type when running in a clustered environment as it will not guarantee the uniqueness in that environment.
 
 When you choose @String@ as ID type, by default PlayMorphia will use @org.bson.types.ObjectId@ to generate unique ID. However you can configure the system to use @UUID@ to generate the ID value by adding the following configuration item in your @conf/application.conf@ file:
 
@@ -78,7 +78,7 @@ In summary, to create an model class with PlayMorphia you should:
 
 # Make that class extend @play.modules.morphia.Model@ class
 # Annotate that class with <code>@com.google.code.morphia.annotations.Entity</code> annotation
-# Define the ID field *ONLY* IF IT'S TYPE IS *NOT* <a href="http://www.mongodb.org/display/DOCS/Object+IDs">@ObjectId@</a> OR <a href="http://download.oracle.com/javase/6/docs/api/java/lang/Long.html">@Long@</a>.
+# Define the ID field *ONLY* IF when you have specific reason, e.g. you are using facebook user id in your user model.
 # Add the property fields into the class. You are free to following Play's public property convention or Java's private plus manual getter/setter convention.
 # Add domain methods to the class.
 
@@ -264,14 +264,14 @@ p(note). Check out "GridFS or filesystem":faq#gridfs
 
 h2. <a name="timestamp">Automatic timestamp</a>
 
-It's not unusual that we need to log the time when an entity is created and modified. That's also why people contributes "Chronostamp":http://www.playframework.org/modules/chronostamp module. Chronostamp support JPA only. Fortunately PlayMorphia provides it's own support to create automatic timestamp, even more powerful. To enable automatic timestamp on your model class, add <code>@play.modules.morphia.Model.AutoTimestamp</code> to the class declaration
+It's not unusual that we need to log the time when an entity is created and modified. That's also why people contributes "Chronostamp":http://www.playframework.org/modules/chronostamp module. Chronostamp support JPA only. Fortunately PlayMorphia provides it's own support to create automatic timestamp, even more powerful. To enable automatic timestamp on your model class, add <code>@play.modules.morphia.Model.AutoTimestamp</code> to the class declaration. PlayMorphia automatically add timestamp fields to your model classes by default start from v1.2.8-RC1
 
-bc. import play.modules.morphia.Model.AutoTimestamp;
-@AutoTimestamp
-@Entity
-public class MyModel{...}
+p(note). Start v1.2.8-RC1, all model will be auto-timestamp enabled by default. There are two ways to disable auto-timestamp:
 
-Once you have marked you model class with <code>@AutoTimestamp</code>, PlayMorphia will add two Long type fields to the model class: <code>_created</code> and <code>_modified</code>. PlayMorphia will also make sure these 2 fields get updated when you save the model instance. Unlike Chronostamp where timestamp fields could be accessed only in the views, PlayMorphia enable you to access timestamp from any where in yoru applicaption by exporting two public interfaces in <code>play.modules.morphia.Model</code>:
+* Add <code>@play.modules.morphia.Model.NoAutoTimestamp</code> to the model class you don't want to add timestamp field. This works for a single model class
+* set @morphia.autoTimestamp@ to @false@ in @conf/application.conf@ file. This works for all model classes. When you turned autotimestamp globally you can still turn on auto timestamp for individual model classes by adding <code>@play.modules.morphia.Model.AutoTimestamp</code> annotation to their class declaration.
+
+Once auto timestamp feature is turned on to a model, PlayMorphia will add two Long type fields to the model class: <code>_created</code> and <code>_modified</code>. PlayMorphia will also make sure these 2 fields get updated when you save the model instance. Unlike Chronostamp where timestamp fields could be accessed only in the views, PlayMorphia enable you to access timestamp from any where in yoru applicaption by exporting two public interfaces in <code>play.modules.morphia.Model</code>:
 
 bc. // get created timestamp
 long created = myEntity._getCreated();

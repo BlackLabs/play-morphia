@@ -1,10 +1,12 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.7 release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.8-RC1 release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history.
 
-p(note). Break changes: v1.2.7 now works for Play-1.2.4+. If you are still using Play-1.2.3 or below, please use v1.2.6a instead.
+p(note). *Break changes*: Start from v1.2.8-RC1 "Auto timestamp feature enabled to all Model classes by default":model#timestamp. Add the following line to your @conf/application.conf@ file to maintain the compatibility to your existing project: @morphia.autoTimestamp=false@
+
+p(note). *Break changes*: v1.2.7 now works for Play-1.2.4+. If you are still using Play-1.2.3 or below, please use v1.2.6a instead.
 
 h2. <a name="started">Getting started</a>
 

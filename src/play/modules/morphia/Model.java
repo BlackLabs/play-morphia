@@ -1679,6 +1679,11 @@ public class Model implements Serializable, play.db.Model {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.TYPE })
+    public @interface NoAutoTimestamp {
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     public @interface Column {
         /** The name of the key to store the field in; Defaults to the field name. */

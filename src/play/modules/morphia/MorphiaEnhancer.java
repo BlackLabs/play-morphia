@@ -96,7 +96,10 @@ public class MorphiaEnhancer extends Enhancer {
 //        }
 
         boolean addId = hasAnnotation(ctClass, Entity.class.getName());
-    	boolean autoTS = hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName());
+    	boolean autoTS = MorphiaPlugin.autoTS_;
+    	if (hasAnnotation(ctClass, play.modules.morphia.Model.NoAutoTimestamp.class.getName())) autoTS = false;
+    	else if (hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName())) autoTS = true;
+
     	if (hasAnnotation(ctClass, NoId.class.getName())) {
             addId = false;
         } else {

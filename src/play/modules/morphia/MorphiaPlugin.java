@@ -114,6 +114,8 @@ public class MorphiaPlugin extends PlayPlugin {
 
     private static boolean loggerRegistered_ = false;
 
+    static boolean autoTS_ = true;
+
     public static boolean loggerRegistered() {
         return loggerRegistered_;
     }
@@ -525,6 +527,11 @@ public class MorphiaPlugin extends PlayPlugin {
         } else {
             idType_ = IdType.OBJECT_ID;
         }
+    }
+
+    private static void initAutoTS_() {
+        String s = Play.configuration.getProperty("morphia.autoTimestamp", "true");
+        autoTS_ = Boolean.parseBoolean(s);
     }
 
     @Override
