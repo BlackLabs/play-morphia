@@ -145,7 +145,7 @@ com.google.code.morphia.AdvancedDatastore ds = (AdvancedDatastore)MorphiaPlugin.
 
 h3. The MongoDB Java Driver interface
 
-This is listed here in case you're curious:
+This is listed here just for curious:
 
 bc. // get Mongo object
 com.mongodb.Mongo mongo = MorphiaPlugin.ds().getMongo();
