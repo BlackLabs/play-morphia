@@ -95,25 +95,36 @@ public class MorphiaEnhancer extends Enhancer {
 //            return;
 //        }
 
-        boolean addId = hasAnnotation(ctClass, Entity.class.getName());
-    	boolean autoTS = MorphiaPlugin.autoTS_;
-    	if (hasAnnotation(ctClass, play.modules.morphia.Model.NoAutoTimestamp.class.getName())) autoTS = false;
-    	else if (hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName())) autoTS = true;
+        boolean addId = hasAnnotation(ctClass, Entity.class.getName()); // do not add id fields to parent model without @Entity annotation
 
     	if (hasAnnotation(ctClass, NoId.class.getName())) {
             addId = false;
         } else {
             for (CtField cf: ctClass.getDeclaredFields()) {
-                if (hasAnnotation(cf, Id.class.getName())) {
+                if (hasAnnotation(cf, Id.class.getName()) || cf.getName().equals("_id")) {
                     addId = false;
                     break;
                 }
             }
             for (CtField cf: ctClass.getFields()) {
-                if (hasAnnotation(cf, Id.class.getName())) {
+                if (hasAnnotation(cf, Id.class.getName()) || cf.getName().equals("_id")) {
                     addId = false;
                     break;
                 }
+            }
+        }
+
+        boolean autoTS = MorphiaPlugin.autoTS_ && hasAnnotation(ctClass, Entity.class.getName());
+        if (hasAnnotation(ctClass, play.modules.morphia.Model.NoAutoTimestamp.class.getName())) autoTS = false;
+        else if (hasAnnotation(ctClass, play.modules.morphia.Model.AutoTimestamp.class.getName())) autoTS = true;
+        for (CtField cf: ctClass.getDeclaredFields()) {
+            if (cf.getName().equals("_created")) {
+                autoTS = false;
+            }
+        }
+        for (CtField cf: ctClass.getFields()) {
+            if (cf.getName().equals("_created")) {
+                autoTS = false;
             }
         }
 
@@ -152,7 +163,7 @@ public class MorphiaEnhancer extends Enhancer {
             Logger.trace("type name: %1$s", play.modules.morphia.utils.IdGenerator.getIdTypeName());
             String idType = play.modules.morphia.utils.IdGenerator.getIdTypeName();
             CtField idField = new CtField(classPool.get(idType), "_id", ctClass);
-            idField.setModifiers(Modifier.PRIVATE);
+            idField.setModifiers(Modifier.PUBLIC);
             AnnotationsAttribute aa = new AnnotationsAttribute(ctClass.getClassFile().getConstPool(),
                     AnnotationsAttribute.visibleTag);
             Annotation idAnn = new Annotation(Id.class.getName(), ctClass.getClassFile().getConstPool());
@@ -202,12 +213,12 @@ public class MorphiaEnhancer extends Enhancer {
         	Logger.trace("create timestamp fields automatically");
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
         	createdField.getFieldInfo().addAttribute(attribute);
-        	createdField.setModifiers(Modifier.PRIVATE);
+        	createdField.setModifiers(Modifier.PUBLIC);
         	ctClass.addField(createdField);
 
         	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
         	modifiedField.getFieldInfo().addAttribute(attribute);
-        	modifiedField.setModifiers(Modifier.PRIVATE);
+        	modifiedField.setModifiers(Modifier.PUBLIC);
         	ctClass.addField(modifiedField);
 
         	CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
@@ -412,7 +423,7 @@ public class MorphiaEnhancer extends Enhancer {
         Set<String> blobs = new HashSet<String>();
         for (CtField cf: fields) {
             CtClass ctReturnType = cf.getType();
-            if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && !hasAnnotation(cf, Transient.class.getName())) {
+            if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && cf.getDeclaringClass().getName().equals(ctClass.getName())) {
                 createAnnotation(getAnnotations(cf), Transient.class);
                 blobs.add(cf.getName());
             }

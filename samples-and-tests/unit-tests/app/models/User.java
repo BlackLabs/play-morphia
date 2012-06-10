@@ -12,7 +12,6 @@ public class User extends PhotoHolder {
     @Column("nm")
     public String name;
     public String tag = "testing";
-    public String foo = "bar";
 
     public User() {}
 
