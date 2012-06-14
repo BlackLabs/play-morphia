@@ -19,12 +19,15 @@ public class Account extends Model {
     @Email
     public String email;
 
+    @Column("r")
     public String region;
 
     public int age;
 
+    @Column("sc")
     public int score;
 
+    @Column("dep")
     public String department;
 
     public Account(String login, String email) {

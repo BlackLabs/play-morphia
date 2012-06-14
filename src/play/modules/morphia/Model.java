@@ -1427,18 +1427,20 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public Set<?> distinct(String key) {
-            return new HashSet(col().distinct(key, getQueryObject()));
+            key = MorphiaPlugin.mongoColName(c_, key);
+            return new HashSet(col().distinct(key.toString(), getQueryObject()));
         }
 
         public Map<String, Long> cloud(String field) {
+            field = MorphiaPlugin.mongoColName(c_, field);
             String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
             String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
             MapReduceCommand cmd = new MapReduceCommand(col(), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
             MapReduceOutput out = col().mapReduce(cmd);
             Map<String, Long> m = new HashMap<String, Long>();
-            for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext();) {
+            for (Iterator<DBObject> itr = out.results().iterator(); itr.hasNext(); ) {
                 DBObject dbo = itr.next();
-                m.put((String)dbo.get("_id"), ((Double)dbo.get("value")).longValue());
+                m.put((String) dbo.get("_id"), ((Double) dbo.get("value")).longValue());
             }
             return m;
         }
@@ -1457,28 +1459,29 @@ public class Model implements Serializable, play.db.Model {
                     groupKeys = groupKeys.substring(2);
                 String[] sa = groupKeys.split("(And|[\\s,;]+)");
                 for (String s : sa) {
-                    key.put(s, true);
+                    key.put(MorphiaPlugin.mongoColName(c_, s), true);
                 }
             }
             return (List<BasicDBObject>) ds().getCollection(c_).group(key,
                     q_.getQueryObject(), initial, reduce, finalize);
         }
 
-        private AggregationResult aggregate_(String field, DBObject initial,
+        private AggregationResult aggregate_(String field, String mappedField, DBObject initial,
                 Long initVal, String reduce, String finalize,
                 String... groupKeys) {
             if (null == initial)
                 initial = new BasicDBObject();
-            initial.put(field, initVal);
+            initial.put(mappedField, initVal);
             return new AggregationResult(group(StringUtil.join(",", groupKeys),
-                    initial, reduce, finalize), field);
+                    initial, reduce, finalize), field, c_);
         }
 
         public AggregationResult groupMax(String field, String... groupKeys) {
+            String mappedField = MorphiaPlugin.mongoColName(c_, field);
             String reduce = String
                     .format("function(obj, prev){if (obj.%s > prev.%s) prev.%s = obj.%s}",
-                            field, field, field, field);
-            return aggregate_(field, null, Long.MIN_VALUE + 1, reduce, null,
+                            mappedField, mappedField, mappedField, mappedField);
+            return aggregate_(field, mappedField, null, Long.MIN_VALUE + 1, reduce, null,
                     groupKeys);
         }
 
@@ -1487,10 +1490,11 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public AggregationResult groupMin(String field, String... groupKeys) {
+            String mappedField = MorphiaPlugin.mongoColName(c_, field);
             String reduce = String
                     .format("function(obj, prev){if (obj.%s < prev.%s) prev.%s = obj.%s}",
-                            field, field, field, field);
-            return aggregate_(field, null, Long.MAX_VALUE - 1, reduce, null,
+                            mappedField, mappedField, mappedField, mappedField);
+            return aggregate_(field, mappedField, null, Long.MAX_VALUE - 1, reduce, null,
                     groupKeys);
         }
 
@@ -1499,16 +1503,17 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public AggregationResult groupAverage(String field, String... groupKeys) {
+            String mappedField = MorphiaPlugin.mongoColName(c_, field);
             DBObject initial = new BasicDBObject();
             initial.put("__count", 0);
             initial.put("__sum", 0);
             String reduce = String.format(
                     "function(obj, prev){prev.__count++; prev.__sum+=obj.%s;}",
-                    field);
+                    mappedField);
             String finalize = String.format(
                     "function(prev) {prev.%s = prev.__sum / prev.__count;}",
-                    field);
-            return aggregate_(field, initial, 0L, reduce, finalize, groupKeys);
+                    mappedField);
+            return aggregate_(field, mappedField, initial, 0L, reduce, finalize, groupKeys);
         }
 
         public Long average(String field) {
@@ -1516,9 +1521,10 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public AggregationResult groupSum(String field, String... groupKeys) {
+            String mappedField = MorphiaPlugin.mongoColName(c_, field);
             String reduce = String.format(
-                    "function(obj, prev){prev.%s+=obj.%s;}", field, field);
-            return aggregate_(field, null, 0L, reduce, null, groupKeys);
+                    "function(obj, prev){prev.%s+=obj.%s;}", mappedField, mappedField);
+            return aggregate_(field, mappedField, null, 0L, reduce, null, groupKeys);
         }
 
         public Long sum(String field) {
@@ -1526,8 +1532,9 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public AggregationResult groupCount(String field, String... groupKeys) {
-            String reduce = String.format("function(obj, prev){prev.%s++;}", field);
-            return aggregate_(field, null, 0L, reduce, null, groupKeys);
+            String mappedField = MorphiaPlugin.mongoColName(c_, field);
+            String reduce = String.format("function(obj, prev){prev.%s++;}", mappedField);
+            return aggregate_(field, mappedField, null, 0L, reduce, null, groupKeys);
         }
 
         public <T extends Model> Iterable<T> fetchEmptyEntities() {

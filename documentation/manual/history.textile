@@ -6,13 +6,13 @@ h2. <a name="roadmap">TODO list</a>
 
 h2. <a name="1.2.8-RC1">Updates in 1.2.8-RC1</a>
 
-* "Support MongoDB driver option configuration":config#driver-options
-* "Support configure MongoDB connection using url":config#connection
+* "Support MongoDB driver option configuration":config#driver-options - thanks "mikevalenty":https://github.com/mikevalenty for the contribution
+* "Support configure MongoDB connection using url":config#connection - thanks "James Ward":https://github.com/jamesward for the contribution
 * "Support batch insert":crud#batch-insert
 * <a href="model#id">Support <code>String</code> type system generated ID field</a>
 * Bug fixes:
 ** "Loading of fixtures no longer supports references when running on PlayFramework 1.2.4+":https://github.com/greenlaw110/play-morphia/issues/55
-** "1.2.6 causes "bad type, not parametrized" exception with mongo 2.7.2 driver":https://github.com/greenlaw110/play-morphia/issues/74
+** <a href="https://github.com/greenlaw110/play-morphia/issues/74">1.2.6 causes "bad type, not parametrized" exception with mongo 2.7.2 driver</a>
 
 h2. <a name="1.2.7">Updates in 1.2.7</a>
 

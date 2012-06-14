@@ -534,6 +534,41 @@ public class MorphiaPlugin extends PlayPlugin {
         autoTS_ = Boolean.parseBoolean(s);
     }
 
+    // -- used to map field name to mongo db column name
+    public static Map<Class, Map<String, String>> colNameMap = new HashMap();
+    private void initColNameMap() {
+        long l = System.currentTimeMillis();
+        for (ApplicationClass ac: Play.classes.getAnnotatedClasses(Entity.class)) {
+            Class<?> c = ac.javaClass;
+            if (Modifier.isAbstract(c.getModifiers())) continue;
+            List<Field> fields = new ArrayList<Field>();
+            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+            fields.addAll(Arrays.asList(c.getFields()));
+            for (Field f : fields) {
+                if (Modifier.isStatic(f.getModifiers())) continue;
+                Property p = f.getAnnotation(Property.class);
+                if (null != p) {
+                    Map<String, String> m = colNameMap.get(c);
+                    if (null == m) {
+                        m = new HashMap<String, String>();
+                        colNameMap.put(c, m);
+                    }
+                    m.put(f.getName(), p.value());
+                }
+            }
+        }
+        if (Logger.isTraceEnabled()) {
+            trace("%sms to init column name map", System.currentTimeMillis() - l);
+        }
+    }
+
+    public static String mongoColName(Class c, String fieldName) {
+        Map<String, String> m = colNameMap.get(c);
+        if (null == m) return fieldName;
+        String s = m.get(fieldName);
+        return null == s ? fieldName : s;
+    }
+
     @Override
     public void onApplicationStart() {
         if (!appStarted_) {
@@ -543,6 +578,7 @@ public class MorphiaPlugin extends PlayPlugin {
         initMorphia_();
         configureDs_();
         registerEventHandlers_();
+        initColNameMap();
         info("initialized");
         appStarted_ = true;
     }

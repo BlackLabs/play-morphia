@@ -2,6 +2,7 @@ package play.modules.morphia;
 
 import java.util.*;
 
+import com.google.code.morphia.annotations.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -13,6 +14,7 @@ import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
+import javassist.bytecode.annotation.ArrayMemberValue;
 import javassist.bytecode.annotation.EnumMemberValue;
 import javassist.bytecode.annotation.MemberValue;
 import play.Logger;
@@ -34,12 +36,6 @@ import play.modules.morphia.Model.OnUpdate;
 import play.modules.morphia.Model.Updated;
 import play.modules.morphia.utils.StringUtil;
 
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Id;
-import com.google.code.morphia.annotations.PrePersist;
-import com.google.code.morphia.annotations.Property;
-import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.utils.IndexDirection;
 
 /**
@@ -421,6 +417,7 @@ public class MorphiaEnhancer extends Enhancer {
         fields.addAll(Arrays.asList(ctClass.getDeclaredFields()));
         fields.addAll(Arrays.asList(ctClass.getFields()));
         Set<String> blobs = new HashSet<String>();
+        List<MemberValue> converterList = new ArrayList<MemberValue>();
         for (CtField cf: fields) {
             CtClass ctReturnType = cf.getType();
             if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && cf.getDeclaringClass().getName().equals(ctClass.getName())) {
@@ -445,6 +442,23 @@ public class MorphiaEnhancer extends Enhancer {
                 } else if (a.getTypeName().equals(play.data.validation.Unique.class.getName())) {
                     uniquePlay = a;
                 }
+            }
+            while (true) {
+                // check if there are converters annotation added to the field type declaration
+                CtClass fieldClass = cf.getType();
+                String fieldClassName = fieldClass.getName();
+                if (fieldClass.isPrimitive() || fieldClass.isArray()) break;
+                if (fieldClass.isFrozen()) fieldClass.defrost();
+                AnnotationsAttribute attrC = getAnnotations(fieldClass);
+                Annotation a = attrC.getAnnotation(Converters.class.getName());
+                if (null != a) {
+                    MemberValue value = a.getMemberValue("value");
+                    if (null == value) continue;
+                    ArrayMemberValue av = (ArrayMemberValue)value;
+                    MemberValue[] va = av.getValue();
+                    converterList.addAll(Arrays.asList(va));
+                }
+                break;
             }
             if (null == propA && null != colA) {
                 MemberValue value = colA.getMemberValue("value");
@@ -475,6 +489,21 @@ public class MorphiaEnhancer extends Enhancer {
             }
             cf.getFieldInfo().addAttribute(attr);
         }
+        if (!converterList.isEmpty()) {
+            AnnotationsAttribute clsAttr = getAnnotations(ctClass);
+            Annotation converters = clsAttr.getAnnotation(Converters.class.getName());
+            if (null == converters) {
+                converters = new Annotation(Converters.class.getName(), ctClass.getClassFile().getConstPool());
+            } else {
+                converterList.addAll(Arrays.asList(((ArrayMemberValue)converters.getMemberValue("value")).getValue()));
+            }
+            ArrayMemberValue amv = new ArrayMemberValue(ctClass.getClassFile().getConstPool());
+            amv.setValue(converterList.toArray(new MemberValue[0]));
+            converters.addMemberValue("value", amv);
+            clsAttr.addAnnotation(converters);
+            ctClass.getClassFile().addAttribute(clsAttr);
+        }
+
         return blobs;
     }
 
