@@ -1,6 +1,7 @@
 # History
-# 1.2.8-20120615 - Support intelligent @Converters annotation processing
-# 1.2.8-RC1 - batch insert; support String type ID, mongodb driver options; configure connection using url style
+# 1.2.9     - generic getId() method
+#           - Support intelligent @Converters annotation processing
+# 1.2.8     - batch insert; support String type ID, mongodb driver options; configure connection using url style
 # 1.2.7-20120530 Fix issue: Doesn't compile when Rythm presented
 # 1.2.7-20120528 Fix issue: #55 Play 1.2.4 - Loading of fixtures no longer supports references?
 # 1.2.7  - support playframework 1.2.4+
@@ -12,7 +13,7 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.8-20120615
+self: play -> morphia 1.2.9
 
 require:
     - play 1.2

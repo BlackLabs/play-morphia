@@ -4,14 +4,15 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
-h2. <a name="1.2.8-RC2">Updates in 1.2.8-RC2</a>
+h2. <a name="1.2.9">Updates in 1.2.9</a>
 
 * Enhancements:
 ** Allow @com.google.code.morphia.annotations.Converters annotation be put on field type class declaration
+** Generic @getId()@ method interface
 * Bug fixes:
 ** "cannot use class field name as parameter in Model._distinct()":https://github.com/greenlaw110/play-morphia/issues/85
 
-h2. <a name="1.2.8-RC1">Updates in 1.2.8-RC1</a>
+h2. <a name="1.2.8">Updates in 1.2.8</a>
 
 * "Support MongoDB driver option configuration":config#driver-options - thanks "mikevalenty":https://github.com/mikevalenty for the contribution
 * "Support configure MongoDB connection using url":config#connection - thanks "James Ward":https://github.com/jamesward for the contribution
