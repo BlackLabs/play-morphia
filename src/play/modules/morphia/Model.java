@@ -292,7 +292,7 @@ public class Model implements Serializable, play.db.Model {
      *
      * @return
      */
-    public <T> T getId() {
+    public Object getId() {
         return null;
     }
 
