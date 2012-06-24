@@ -423,9 +423,16 @@ public class MorphiaEnhancer extends Enhancer {
             if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && cf.getDeclaringClass().getName().equals(ctClass.getName())) {
                 createAnnotation(getAnnotations(cf), Transient.class);
                 blobs.add(cf.getName());
+                continue;
+            }
+
+            if (Modifier.isTransient(cf.getModifiers())) {
+                createAnnotation(getAnnotations(cf), Transient.class);
+                continue;
             }
 
             if (Modifier.isStatic(cf.getModifiers())) continue;
+
             AnnotationsAttribute attr = getAnnotations(cf);
             Annotation[] aa = attr.getAnnotations();
             Annotation colA = null;

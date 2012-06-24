@@ -30,6 +30,8 @@ public class Account extends Model {
     @Column("dep")
     public String department;
 
+    public transient String foo;
+
     public Account(String login, String email) {
         this(login, email, "AU");
     }

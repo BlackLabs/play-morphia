@@ -48,6 +48,16 @@ public class AccountTest extends UnitTest {
     }
 
     @Test
+    public void testTransientField() {
+        Account acc = new Account("xxx", "a@a.com");
+        acc.foo = "bar";
+        acc.save();
+        acc = Account.find("login", "xxx").get();
+        assertNotNull(acc);
+        assertNull(acc.foo);
+    }
+
+    @Test
     public void testFindByNullId() {
         Account acc = new Account("loginxyz", "a@a.a");
         acc.save();

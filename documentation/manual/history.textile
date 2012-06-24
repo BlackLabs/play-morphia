@@ -7,8 +7,9 @@ h2. <a name="roadmap">TODO list</a>
 h2. <a name="1.2.9">Updates in 1.2.9</a>
 
 * Enhancements:
-** Allow @com.google.code.morphia.annotations.Converters annotation be put on field type class declaration
+** Allow <code>@com.google.code.morphia.annotations.Converters</code> annotation be put on field type class declaration
 ** Generic @getId()@ method interface
+** "Handle transient field":https://github.com/greenlaw110/play-morphia/issues/87
 * Bug fixes:
 ** "cannot use class field name as parameter in Model._distinct()":https://github.com/greenlaw110/play-morphia/issues/85
 
