@@ -20,4 +20,4 @@
             throw new play.exceptions.TagInternalException('Cannot apply ' + _arg + ' fixture because of ' + e.getClass().getName() + ', ' + e.getMessage())
         }
     }
-%}
+}%
