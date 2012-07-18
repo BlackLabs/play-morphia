@@ -4,6 +4,13 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
+<div style="text-decoration:line-through"><h2> <a name="1.2.9a">Updates in 1.2.9a</a></h2>
+
+Disable generic getId() as an urgent fix to "Strange enhancement exception caused by generic getId() method of morphia model":https://github.com/greenlaw110/play-morphia/issues/88
+</div>
+
+p(note). Version 1.2.9a is recalled because issue #88 is not valid
+
 h2. <a name="1.2.9">Updates in 1.2.9</a>
 
 * Enhancements:

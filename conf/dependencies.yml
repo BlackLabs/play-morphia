@@ -14,6 +14,5 @@
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
 self: play -> morphia 1.2.9
-
 require:
     - play 1.2
