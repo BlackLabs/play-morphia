@@ -178,7 +178,9 @@ public class Order {
     public Product product;
 }
 
-By default Morphia to load referenced (Customer and Product in the sample) object when the referencing object (Order in the sample) loaded. However you could make Morphia to lazy load the referenced object by using <code>@Reference(lazy = true)</code>.
+By default Morphia to load referenced (Customer and Product in the sample) object when the referencing object (Order in the sample) loaded. -However you could make Morphia to lazy load the referenced object by using <code>@Reference(lazy = true)</code>-.
+
+p(note). According to "issue #91":https://github.com/greenlaw110/play-morphia/issues/91, <code>@Referece(lazy = true)</code> doesn't work as expected.
 
 By default Morphia will throw out @com.google.code.morphia.mapping.MappingException@ if the referenced object could not be load due to missing data in MongoDB. This is annoying sometimes, you can let Morphia to silently ignore the missing data by using <code>@Reference(ignoreMissing = true)</code>
 

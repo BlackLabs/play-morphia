@@ -749,7 +749,9 @@ public class Model implements Serializable, play.db.Model {
         T t = entities.get(0);
         List<DBObject> l = new ArrayList<DBObject>(entities.size());
         Morphia morphia = MorphiaPlugin.morphia();
+        boolean populateId = !MorphiaPlugin.getIdType().isObjectId();
         for (T entity: entities) {
+            if (populateId) entity.setId(IdGenerator.generateId(entity));
             l.add(morphia.toDBObject(entity));
         }
         return t.ds().getCollection(t.getClass()).insert(l);

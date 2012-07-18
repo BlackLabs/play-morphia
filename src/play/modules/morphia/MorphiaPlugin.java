@@ -134,6 +134,9 @@ public class MorphiaPlugin extends PlayPlugin {
 
             return OBJECT_ID;
         }
+        public boolean isObjectId() {
+            return this == OBJECT_ID;
+        }
     }
 
     public static enum StringIdGenerator {
