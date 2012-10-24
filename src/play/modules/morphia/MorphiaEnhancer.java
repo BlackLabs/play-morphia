@@ -256,6 +256,10 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod q = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q() { return all(); }",ctClass);
         ctClass.addMethod(q);
 
+        // model update operation
+        CtMethod mo = CtMethod.make("public Model _update(String fieldExpr, Object[] values) {o().set(fieldExpr, values).update(q().filter(\"_id\", getId()));return this;}", ctClass);
+        ctClass.addMethod(mo);
+
         // disableValidation
         CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
         ctClass.addMethod(disableValidation);

@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.9";
+    public static final String VERSION = "1.2.10";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -557,6 +557,16 @@ public class MorphiaPlugin extends PlayPlugin {
                         colNameMap.put(c, m);
                     }
                     m.put(f.getName(), p.value());
+                } else {
+                    Model.Column col = f.getAnnotation(Model.Column.class);
+                    if (null != col) {
+                        Map<String, String> m = colNameMap.get(c);
+                        if (null == m) {
+                            m = new HashMap<String, String>();
+                            colNameMap.put(c, m);
+                        }
+                        m.put(f.getName(), col.value());
+                    }
                 }
             }
         }
@@ -582,6 +592,7 @@ public class MorphiaPlugin extends PlayPlugin {
         configureDs_();
         registerEventHandlers_();
         initColNameMap();
+        initAutoTS_();
         info("initialized");
         appStarted_ = true;
     }

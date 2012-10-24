@@ -22,6 +22,17 @@ public class UpdateOperationsTest extends UnitTest {
     }
 
     @Test
+    public void testUpdateModel() {
+        Account acc = Account.q().filter("login", "abc").get();
+        assertNotNull(acc);
+        assertEquals(acc.age, 29);
+        acc._update("age", 40);
+
+        acc = Account.q().filter("login", "abc").get();
+        assertEquals(acc.age, 40);
+    }
+
+    @Test
     public void testUpdateFirst() {
         Account acc0 = Account.o().inc("age").updateFirst("region", "au");
         assertEquals(30, acc0.age);
@@ -57,7 +68,7 @@ public class UpdateOperationsTest extends UnitTest {
         assertEquals(100, acc.age);
         assertEquals("cn", acc.region);
     }
-    
+
     @Test
     public void testIncDec() {
         Account.o().inc("age score", 100).updateAll();
@@ -65,6 +76,6 @@ public class UpdateOperationsTest extends UnitTest {
         assertEquals(129, acc.age);
         assertEquals(177, acc.score);
     }
-    
+
 
 }

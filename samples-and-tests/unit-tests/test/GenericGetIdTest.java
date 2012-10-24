@@ -19,12 +19,6 @@ public class GenericGetIdTest extends UnitTest {
         Account before = new Account("loginxyz", "a@a.a");
         before.save();
         String id = before.getId();
-        try {
-            int i = before.getId();
-            assertFalse("should throw out exception.", true);
-        } catch (ClassCastException e) {
-            // success
-        }
     }
 
 }

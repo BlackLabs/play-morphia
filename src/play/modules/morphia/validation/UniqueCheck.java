@@ -80,7 +80,8 @@ public class UniqueCheck extends AbstractAnnotationCheck<Unique> {
             q.filter(propertyNames[i], values[i]);
         }
         if (isUpdate) {
-            q.filter(keyProperty, keyValue);
+            //q.filter(keyProperty, keyValue);
+            q.field(keyProperty).notEqual(keyValue);
         }
         return q.count() == 0L;
     }

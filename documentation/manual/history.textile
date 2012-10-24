@@ -4,6 +4,15 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
+h2. <a name="1.2.10">Updates in 1.2.10</a>
+
+* The new <a href="update"><code>_update</code> interface on model class</a>
+* Documentation update:
+** Update document for @NoAutoTimestamp@ annotation
+* Bug fixes:
+** "Application.conf morphia.autoTimestamp doesn't work at all":https://github.com/greenlaw110/play-morphia/issues/97
+** "@Unique validation not work correctly when updating record":https://github.com/greenlaw110/play-morphia/issues/96
+
 h2. <a name="1.2.9b">Updates in 1.2.9b</a>
 
 * Bug fixes:

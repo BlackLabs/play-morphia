@@ -12,6 +12,19 @@ Now with new v1.2.6, you do it this way:
 
 bc. Employee.o().inc("salary, bonus", 10000, 99999).update("department", "IT");
 
+Start from v1.2.10, one can do update operation on a specific entity model:
+
+bc. Account myAccount = Account.find("username", username);
+myAccount._update("email", "superaccount@supercompany.com");
+
+Before v1.2.10, you have to do the following for the same operation:
+
+bc. Account myAccount = Account.find("username", username);
+myAccount.email = "superaccount@supercompany.com";
+myAccount.save();
+
+Compare with the new <code>_update</code> operation, the old one is much more heavy because it needs to serialize the entire model when saving the updates.
+
 h2. <a name="why_atomic">Why atomic update operations</a>
 
 TBD.

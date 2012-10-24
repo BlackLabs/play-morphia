@@ -266,7 +266,7 @@ p(note). Check out "GridFS or filesystem":faq#gridfs
 
 h2. <a name="timestamp">Automatic timestamp</a>
 
-It's not unusual that we need to log the time when an entity is created and modified. That's also why people contributes "Chronostamp":http://www.playframework.org/modules/chronostamp module. Chronostamp support JPA only. Fortunately PlayMorphia provides it's own support to create automatic timestamp, even more powerful. To enable automatic timestamp on your model class, add <code>@play.modules.morphia.Model.AutoTimestamp</code> to the class declaration. PlayMorphia automatically add timestamp fields to your model classes by default start from v1.2.8-RC1
+It's not unusual that we need to log the time when an entity is created and modified. That's also why people contributes "Chronostamp":http://www.playframework.org/modules/chronostamp module. Chronostamp support JPA only. Fortunately PlayMorphia provides it's own support to create automatic timestamp, even more powerful. -To enable automatic timestamp on your model class, add <code>@play.modules.morphia.Model.AutoTimestamp</code> to the class declaration.- PlayMorphia automatically add timestamp fields to your model classes by default start from v1.2.8-RC1, to disable it, add <code>@play.modules.morphia.Model.NoAutoTimestamp</code> to the class declaration
 
 p(note). Start v1.2.8-RC1, all model will be auto-timestamp enabled by default. There are two ways to disable auto-timestamp:
 

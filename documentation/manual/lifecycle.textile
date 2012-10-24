@@ -51,7 +51,7 @@ bc. @Entity public class User extends Model {
     }
 }
 
-p(note). The above samples are listed here for demo purpose, you don't need to do the same thing in your application. To add timestamp to your mode, just annotate your model class with <code>AutoTimestamp</code>. See "here":model#timestamp for detail.
+p(note). The above samples are listed here for demo purpose, you don't need to do the same thing in your application. To add timestamp to your mode, -just annotate your model class with <code>AutoTimestamp</code>-. You don't need to do anything to get timestamp support since v1.2.8. See "here":model#timestamp for detail.
 
 h2. <a name="sep">Define a separate event handler class to handle model(s) lifecycle events</a>
 
@@ -110,7 +110,7 @@ public class MyEntityEventHandler extends MorphiaEventHandlerAdaptor {
 
 The above code marked @MyEntityEventHandler@ with <code>@Watch</code> annotation, which tell PlayMorphia to register @MyEntityEventHandler@ to watch the lifecyle event of all models. You can add argument to the <code>@Watch</code> annotation to make it watch given models only:
 
-bc. @Watch({User.class, Account.class}) 
+bc. @Watch({User.class, Account.class})
 public class UserAccountEventListener implements IMorphiaEventHandler {
     ...
     public void added(Model context) {

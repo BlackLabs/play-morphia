@@ -404,6 +404,11 @@ public class Model implements Serializable, play.db.Model {
         return (T) this;
     }
 
+    public <T extends Model> T _update(String fieldExpr, Object ... values) {
+        throw new UnsupportedOperationException(
+                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
     /**
      * Refresh the entity state.
      */
@@ -1196,6 +1201,10 @@ public class Model implements Serializable, play.db.Model {
         public <T> UpdateResults<T> update(String query, Object... params) {
             MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
             return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
+        }
+
+        public <T> UpdateResults<T> update(Model entity) {
+            return update("_id", entity.getId());
         }
 
         private <T> UpdateResults<T> update(Query<T> q) {
