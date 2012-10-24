@@ -10,6 +10,7 @@ h2. <a name="1.2.10">Updates in 1.2.10</a>
 * Documentation update:
 ** Update document for @NoAutoTimestamp@ annotation
 * Bug fixes:
+** "Model.groupAverage doesn't respect Model.Column annotation":https://github.com/greenlaw110/play-morphia/issues/98
 ** "Application.conf morphia.autoTimestamp doesn't work at all":https://github.com/greenlaw110/play-morphia/issues/97
 ** "@Unique validation not work correctly when updating record":https://github.com/greenlaw110/play-morphia/issues/96
 
