@@ -10,6 +10,7 @@ import com.google.code.morphia.Datastore;
 import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.UpdateOperations;
 import com.google.code.morphia.utils.LongIdEntity.StoredId;
+import play.modules.morphia.Seq;
 
 
 public class IdGenerator {
@@ -43,17 +44,7 @@ public class IdGenerator {
     }
 
     public static <T extends Model> Long generateLongId(Class<T> clazz){
-        synchronized (clazz) {
-            String collName = ds().getCollection(clazz).getName();
-            Query<StoredId> q = ds().find(StoredId.class, "_id", collName);
-            UpdateOperations<StoredId> uOps = ds().createUpdateOperations(StoredId.class).inc("value");
-            StoredId newId = ds().findAndModify(q, uOps);
-            if (newId == null) {
-                newId = new StoredId(collName);
-                ds().save(newId);
-            }
-            return newId.getValue();
-        }
+        return Seq.nextValue(clazz);
     }
 
     public static <T extends Model> ObjectId generateObjectIdId(T entity) {

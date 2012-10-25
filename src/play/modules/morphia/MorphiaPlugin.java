@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * @author greenlaw110@gmail.com
  */
 public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.10";
+    public static final String VERSION = "1.2.11";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -537,13 +537,23 @@ public class MorphiaPlugin extends PlayPlugin {
         autoTS_ = Boolean.parseBoolean(s);
     }
 
+    private static void initSeq_() {
+        Seq.initSelf();
+    }
+
     // -- used to map field name to mongo db column name
     public static Map<Class, Map<String, String>> colNameMap = new HashMap();
     private void initColNameMap() {
         long l = System.currentTimeMillis();
+        boolean initSeq = idType_ == IdType.LONG;
         for (ApplicationClass ac: Play.classes.getAnnotatedClasses(Entity.class)) {
             Class<?> c = ac.javaClass;
             if (Modifier.isAbstract(c.getModifiers())) continue;
+
+            if (initSeq) {
+                Seq.init(c);
+            }
+
             List<Field> fields = new ArrayList<Field>();
             fields.addAll(Arrays.asList(c.getDeclaredFields()));
             fields.addAll(Arrays.asList(c.getFields()));
@@ -593,6 +603,9 @@ public class MorphiaPlugin extends PlayPlugin {
         registerEventHandlers_();
         initColNameMap();
         initAutoTS_();
+        if (idType_ == IdType.LONG) {
+            initSeq_();
+        }
         info("initialized");
         appStarted_ = true;
     }

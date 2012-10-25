@@ -4,6 +4,7 @@ h2. <a name="model">Advanced PlayMorphia Models</a>
 
 # "Inside PlayMorphia Model":inside_model
 # "Create customized ID field":cust_id
+# "Auto incremental ID":sequence
 # "Model inheritance":inherit
 # "Specify collection and column names":rename
 

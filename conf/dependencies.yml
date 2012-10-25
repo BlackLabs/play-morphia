@@ -1,4 +1,5 @@
 # History
+# 1.2.11    - Seq: sequence generator
 # 1.2.10    - _update method on Model
 # 1.2.9     - generic getId() method
 #           - Support intelligent @Converters annotation processing
@@ -14,6 +15,6 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.10
+self: play -> morphia 1.2.11
 require:
     - play 1.2

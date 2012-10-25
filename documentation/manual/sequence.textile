@@ -1,0 +1,18 @@
+h1. Sequence: generate auto increment ID
+
+Start from v1.2.11, PlayMorphia provides a @Seq@ class to generate auto increment ID with easy to use interface:
+
+bc. long myId = Seq.nextValue(); // generate auto increment value on a global namespace
+...
+myId = Seq.nextValue("foo"); // generate auto incremental value on "foo"
+...
+myId = Seq.nextValue(Bar.class); // generate auto incremental value on Bar class
+...
+Seq seq = Seq.next();
+// print sequence value prefixed with "ABC" and with 6 digits, padding with leading 0s
+System.out.println(seq.getAsString("ABC", 6));
+
+Links:
+# "PlayMorphia Model":model
+# "Advanced topics":advance
+# "Home":home
