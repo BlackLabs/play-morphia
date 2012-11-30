@@ -1,15 +1,8 @@
 package play.modules.morphia;
 
-import java.util.*;
-
 import com.google.code.morphia.annotations.*;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtField;
-import javassist.CtMethod;
-import javassist.Modifier;
-import javassist.NotFoundException;
+import com.google.code.morphia.utils.IndexDirection;
+import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
@@ -20,23 +13,10 @@ import javassist.bytecode.annotation.MemberValue;
 import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
-import play.modules.morphia.Model.Added;
-import play.modules.morphia.Model.BatchDeleted;
-import play.modules.morphia.Model.ByPass;
-import play.modules.morphia.Model.Column;
-import play.modules.morphia.Model.Deleted;
-import play.modules.morphia.Model.Loaded;
-import play.modules.morphia.Model.MorphiaQuery;
-import play.modules.morphia.Model.NoId;
-import play.modules.morphia.Model.OnAdd;
-import play.modules.morphia.Model.OnBatchDelete;
-import play.modules.morphia.Model.OnDelete;
-import play.modules.morphia.Model.OnLoad;
-import play.modules.morphia.Model.OnUpdate;
-import play.modules.morphia.Model.Updated;
+import play.modules.morphia.Model.*;
 import play.modules.morphia.utils.StringUtil;
 
-import com.google.code.morphia.utils.IndexDirection;
+import java.util.*;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
@@ -93,17 +73,27 @@ public class MorphiaEnhancer extends Enhancer {
 
         boolean addId = hasAnnotation(ctClass, Entity.class.getName()); // do not add id fields to parent model without @Entity annotation
 
+        boolean useFactory = false;
+
     	if (hasAnnotation(ctClass, NoId.class.getName())) {
             addId = false;
         } else {
             for (CtField cf: ctClass.getDeclaredFields()) {
-                if (hasAnnotation(cf, Id.class.getName()) || cf.getName().equals("_id")) {
+                boolean hasUserDefinedId = hasAnnotation(cf, Id.class.getName());
+                String fName = cf.getName();
+                boolean is_id = "_id".equals(fName);
+                if (hasUserDefinedId && !is_id) useFactory = true;
+                if (hasUserDefinedId || is_id) {
                     addId = false;
                     break;
                 }
             }
             for (CtField cf: ctClass.getFields()) {
-                if (hasAnnotation(cf, Id.class.getName()) || cf.getName().equals("_id")) {
+                boolean hasUserDefinedId = hasAnnotation(cf, Id.class.getName());
+                String fName = cf.getName();
+                boolean is_id = "_id".equals(fName);
+                if (hasUserDefinedId && !is_id) useFactory = true;
+                if (hasUserDefinedId || is_id) {
                     addId = false;
                     break;
                 }
@@ -124,7 +114,7 @@ public class MorphiaEnhancer extends Enhancer {
             }
         }
 
-        enhance_(ctClass, applicationClass, addId, autoTS);
+        enhance_(ctClass, applicationClass, addId, useFactory, autoTS);
     }
 
     /**
@@ -133,7 +123,7 @@ public class MorphiaEnhancer extends Enhancer {
      * @param ctClass
      * @throws Exception
      */
-    private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean autoTS) throws Exception {
+    private void enhance_(CtClass ctClass, ApplicationClass applicationClass, boolean addId, boolean useFactory, boolean autoTS) throws Exception {
         String entityName = ctClass.getName();
         play.modules.morphia.MorphiaPlugin.debug("enhancing %s ...", entityName);
 
@@ -150,7 +140,6 @@ public class MorphiaEnhancer extends Enhancer {
         // getModelFactory
         CtMethod getModelFactory = CtMethod.make("public static play.db.Model.Factory getModelFactory() { return mf; }",ctClass);
         ctClass.addMethod(getModelFactory);
-
 
         // id field
         if (addId) {
@@ -256,10 +245,6 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod q = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q() { return all(); }",ctClass);
         ctClass.addMethod(q);
 
-        // model update operation
-        CtMethod mo = CtMethod.make("public Model _update(String fieldExpr, Object[] values) {o().set(fieldExpr, values).update(q().filter(\"_id\", getId()));return this;}", ctClass);
-        ctClass.addMethod(mo);
-
         // disableValidation
         CtMethod disableValidation = CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery disableValidation() { return all().disableValidation(); }",ctClass);
         ctClass.addMethod(disableValidation);
@@ -273,7 +258,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(find2);
 
         // q -- alias: filter(String, Object...)
-        CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object value) { return createQuery().filter(keys, value); }",ctClass);
+        CtMethod q2 =  CtMethod.make("public static play.modules.morphia.Model.MorphiaQuery q(String keys, java.lang.Object value) { return q().filter(keys, value); }",ctClass);
         ctClass.addMethod(q2);
 
         // findAll
@@ -288,14 +273,19 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod get = CtMethod.make("public static Model get() { return find().get(); }",ctClass);
         ctClass.addMethod(get);
 
+        // cache methods
+        boolean useCache = ctClass.hasAnnotation(CacheEntity.class);
+        CacheEntity cacheEntity = useCache ? (CacheEntity)ctClass.getAnnotation(CacheEntity.class) : null;
+        String expiration = null == cacheEntity ? "" : cacheEntity.value();
+        CtMethod _cacheEnabled = CtMethod.make("protected boolean _cacheEnabled() { return " + useCache + "; }", ctClass);
+        ctClass.addMethod(_cacheEnabled);
+        CtMethod _cacheExpiration = CtMethod.make("protected String _cacheExpiration() { return \"" + expiration + "\";}" , ctClass);
+        ctClass.addMethod(_cacheExpiration);
+
         // findById
-        if (addId) {
-            CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return filter(\"_id\", play.modules.morphia.utils.IdGenerator.processId(id))._get(); }",ctClass);
-            ctClass.addMethod(findById);
-        } else {
-            CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) { return (Model)mf.findById(id); }",ctClass);
-            ctClass.addMethod(findById);
-        }
+        CtMethod findById = CtMethod.make("public static Model findById(java.lang.Object id) {return findById(" + className + ", id, " + useFactory + ", " + useCache + ", \"" + expiration + "\");}", ctClass);
+        ctClass.addMethod(findById);
+
 
         // col
         CtMethod col = CtMethod.make("public static com.mongodb.DBCollection col() { return ds().getCollection(" + className + "); }", ctClass);

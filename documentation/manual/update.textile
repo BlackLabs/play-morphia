@@ -25,6 +25,22 @@ myAccount.save();
 
 Compare with the new <code>_update</code> operation, the old one is much more heavy because it needs to serialize the entire model when saving the updates.
 
+Start from v1.2.12, you can use @_unset@ to set a field to @null@:
+
+bc. myAccount._unset("name,email");
+
+And use @_set@ to set non-null field values:
+
+bc. myAccount._set("name,email", "morphia", "morphia@play.net");
+
+Start from v1.2.12, @_update@ could be used to set mixed null and non-null values:
+
+bc. myAccount._update("name,email", "morphia", null);
+
+However for better performance you want to do it this way:
+
+bc. myAccount.startBatchUpdates()._set("name", "morphia")._unset("email").commit();
+
 h2. <a name="why_atomic">Why atomic update operations</a>
 
 TBD.

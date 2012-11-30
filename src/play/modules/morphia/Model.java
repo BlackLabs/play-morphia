@@ -20,10 +20,7 @@ import play.data.binding.BeanWrapper;
 import play.data.binding.Binder;
 import play.data.binding.ParamNode;
 import play.data.validation.Validation;
-import play.db.jpa.JPA;
-import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
-import play.modules.morphia.MorphiaPlugin.MorphiaModelLoader;
 import play.modules.morphia.utils.IdGenerator;
 import play.modules.morphia.utils.StringUtil;
 import play.mvc.Scope.Params;
@@ -301,6 +298,10 @@ public class Model implements Serializable, play.db.Model {
         return (T) getId();
     }
 
+    public String getIdAsStr() {
+        return String.valueOf(getId());
+    }
+
     public final void setId(Object id) {
         if (null != getId()) {
             throw new IllegalStateException(
@@ -404,9 +405,85 @@ public class Model implements Serializable, play.db.Model {
         return (T) this;
     }
 
+    public static class MorphiaBatchUpdates<T extends Model> {
+        private MorphiaUpdateOperations o;
+        private Model m;
+        private <T extends Model> MorphiaBatchUpdates(T model) {
+            o = new MorphiaUpdateOperations(model.getClass());
+            m = model;
+        }
+        public MorphiaBatchUpdates _set(String fieldExpr, Object ... values) {
+            o.set(fieldExpr, values);
+            return this;
+        }
+        public MorphiaBatchUpdates _unset(String fieldExpr) {
+            o.unset(fieldExpr);
+            return this;
+        }
+        public <T extends Model> T commit() {
+            o.update(new MorphiaQuery(m.getClass()).filter("_id", m.getId()));
+            return (T)m;
+        }
+    }
+
+    public MorphiaBatchUpdates startBatchUpates() {
+        return new MorphiaBatchUpdates(this);
+    }
+
     public <T extends Model> T _update(String fieldExpr, Object ... values) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        if (values.length == 0) throw new IllegalArgumentException("At least one value required");
+        _h_OnUpdate();
+        try {
+            boolean oneVal = values.length == 1;
+            if (oneVal) {
+                Object v = values[0];
+                if (null == v) return _unset(fieldExpr);
+                else return _set(fieldExpr, v);
+            }
+            String[] sa = fieldExpr.split("(And|[,;\\s]+)");
+            if (sa.length != values.length) {
+                throw new IllegalArgumentException("number of fields doesn't match number of values");
+            }
+            List<Object> notNullList = new ArrayList<Object>();
+            StringBuilder nullFields = new StringBuilder();
+            StringBuilder notNullFields = new StringBuilder();
+            for (int i = 0; i < values.length; ++i) {
+                Object o = values[i];
+                String f = sa[i];
+                if (null != o) {
+                    notNullList.add(o);
+                    if (notNullFields.length() == 0) {
+                        notNullFields.append(f);
+                    } else {
+                        notNullFields.append(",").append(f);
+                    }
+                } else {
+                    if (nullFields.length() == 0) {
+                        nullFields.append(f);
+                    } else {
+                        nullFields.append(",").append(f);
+                    }
+                }
+            }
+            String nf = nullFields.toString();
+            String nnf = notNullFields.toString();
+            if (nf.equals("")) return _set(fieldExpr, values);
+            if (nnf.equals("")) return _unset(fieldExpr);
+            new MorphiaBatchUpdates<T>(this)._set(nnf, notNullList.toArray())._unset(nf).commit();
+            return (T) this;
+        } finally {
+            _h_Updated(refresh());
+        }
+    }
+
+    public <T extends Model> T _set(String fieldExpr, Object ... values) {
+        new MorphiaBatchUpdates<T>(this)._set(fieldExpr, values).commit();
+        return (T)this;
+    }
+
+    public <T extends Model> T _unset(String fieldExpr) {
+        new MorphiaBatchUpdates<T>(this)._unset(fieldExpr).commit();
+        return (T)this;
     }
 
     /**
@@ -420,6 +497,14 @@ public class Model implements Serializable, play.db.Model {
     public static <T extends Model> MorphiaQuery all() {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    public static <T extends Model> MorphiaQuery all(Class<T> cls) {
+        return q(cls);
+    }
+
+    public static <T extends Model> MorphiaQuery all(Class<T> cls, DBCollection coll, Datastore ds) {
+        return q(cls, coll, ds);
     }
 
     public static Model create(String name, Params params) {
@@ -437,9 +522,25 @@ public class Model implements Serializable, play.db.Model {
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
+    public static <T extends Model> MorphiaQuery q(Class<T> cls) {
+        return new MorphiaQuery(cls);
+    }
+
+    public static <T extends Model> MorphiaQuery q(Class<T> cls, DBCollection coll, Datastore ds) {
+        return new MorphiaQuery(cls, coll, ds);
+    }
+
     public static <T extends Model> MorphiaQuery createQuery() {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    }
+
+    public static <T extends Model> MorphiaQuery createQuery(Class<T> cls) {
+        return q(cls);
+    }
+
+    public static <T extends Model> MorphiaQuery createQuery(Class<T> cls, DBCollection coll, Datastore ds) {
+        return q(cls, coll, ds);
     }
 
     public static <T extends Model> MorphiaQuery disableValidation() {
@@ -544,6 +645,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     private void _h_Deleted() {
+        _removeFromCache();
         h_Deleted();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.DELETED, this);
         postEvent_(MorphiaEvent.DELETED, this);
@@ -628,6 +730,38 @@ public class Model implements Serializable, play.db.Model {
     public static <T extends Model> T findById(Object id) {
         throw new UnsupportedOperationException(
                 "Embedded entity does not support this method");
+    }
+
+    protected String _cacheKey() {
+        return cacheKey(getClass(), getId());
+    }
+
+    protected static <T extends Model> String cacheKey(Class<T> cls, Object id) {
+        return id + cls.getName();
+    }
+
+    protected static <T extends Model> T findById(Class<T> cls, Object id, boolean useFactory, boolean useCache, String expiration) {
+        T e = null;
+        String k = null;
+        if (useCache) {
+            k = cacheKey(cls, id);
+            e = play.cache.Cache.get(k, cls);
+        }
+        if (null == e) {
+            if (useFactory) {
+                e = (T)MorphiaPlugin.MorphiaModelLoader.getFactory(cls).findById(id);
+            } else {
+                e = q(cls).filter("_id", processId_(id)).get();
+            }
+        }
+        if (useCache && null != e) {
+            play.cache.Cache.set(k, e, expiration);
+        }
+        return e;
+    }
+
+    public static <T extends Model> T findById(Class<T> cls, Object id, boolean useFactory) {
+        return Model.findById(cls, id, useFactory, false, "");
     }
 
     /**
@@ -733,7 +867,7 @@ public class Model implements Serializable, play.db.Model {
         if (isNew) _h_OnAdd(); else _h_OnUpdate();
         Key<? extends Model> k = ds().save(this);
         saveBlobs();
-        if (isNew) {setSaved_();_h_Added();} else _h_Updated();
+        if (isNew) {setSaved_();_h_Added();} else _h_Updated(this);
         return k;
     }
 
@@ -834,10 +968,32 @@ public class Model implements Serializable, play.db.Model {
         // for enhancer usage
     }
 
+    protected boolean _cacheEnabled() {
+        return false;
+    }
+
+    protected String _cacheExpiration() {
+        return null;
+    }
+
+    protected void _removeFromCache() {
+        if (!_cacheEnabled()) return;
+        String cacheKey = _cacheKey();
+        play.cache.Cache.delete(cacheKey);
+    }
+
+    protected void _addToCache() {
+        if (!_cacheEnabled()) return;
+        String cacheKey = _cacheKey();
+        String expiration = _cacheExpiration();
+        play.cache.Cache.add(cacheKey, this, expiration);
+    }
+
     /**
      * for PlayMorphia internal usage only
      */
     private void _h_Added() {
+        _addToCache();
         h_Added();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.ADDED, this);
         postEvent_(MorphiaEvent.ADDED, this);
@@ -850,10 +1006,17 @@ public class Model implements Serializable, play.db.Model {
         // used by enhancer
     }
 
+    protected void _updateCache(Model updated) {
+        if (!_cacheEnabled()) return;
+        String cacheKey = _cacheKey();
+        play.cache.Cache.replace(cacheKey, null == updated ? this : updated, _cacheExpiration());
+    }
+
     /**
      * for PlayMorphia internal usage only
      */
-    private void _h_Updated() {
+    private void _h_Updated(Model updated) {
+        _updateCache(updated);
         h_Updated();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.UPDATED, this);
         postEvent_(MorphiaEvent.UPDATED, this);

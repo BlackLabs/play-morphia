@@ -7,6 +7,7 @@ h2. <a name="model">Advanced PlayMorphia Models</a>
 # "Auto incremental ID":sequence
 # "Model inheritance":inherit
 # "Specify collection and column names":rename
+# "Cache model entity":cache
 
 h2. <a name="other">Other advanced topics</a>
 

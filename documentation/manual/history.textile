@@ -4,9 +4,19 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
+h2. <a name="1.2.13">Updates in 1.2.13</a>
+
+* "Cache entity feature":cache
+* <code>@OnUpdate</code> and <code>@Updated</code> annotated functions get triggered when calling @Model._update()@ interface
+
+h2. <a name="1.2.12">Updates in 1.2.12</a>
+
+* The new <a href="update"><code>_update</code> interface on model class</a>
+
 h2. <a name="1.2.11">Updates in 1.2.11</a>
 
-* Seq utility class for Long ID generation
+* "Seq utility class for Long ID generation":sequence
+* Add @getIdAsStr()@ method to Model class
 
 h2. <a name="1.2.10">Updates in 1.2.10</a>
 

@@ -1,0 +1,46 @@
+h1. Cache model entity
+
+Start from v1.2.13, PlayMorphia support cache entity feature. To enable the feature on a model class, annotate the class
+with <code>@CacheEntity</code> annotation:
+
+bc. @CacheEntity @Entity public class User extends Model {
+...
+}
+
+Later on when you trying to fetch a @User@ model with @findById@ call, the entity will be cached for 1 hour. Each update and save will also refresh the cache.
+
+You can change the cache time by giving an expiration time to <code>@CacheEntity</code> annotation:
+
+bc. @CacheEntity("10mn") ...
+
+p(note). **Note**: query result are not cached.
+
+h2. About <code>@CacheEntity</code> and <code>@Reference</code>
+
+You should *not* use <code>@CacheEntity</code> along with <code>@Reference</code>. Suppose you have a @Blog@ entity which has references @author@ to @User@ entity. You should avoid using <code>@CacheEntity</code> on @Blog@ class:
+
+bc. @Entity
+// should not use @CacheEntity here because there is @Reference
+public class Blog {
+    @Reference User author;
+    ...
+}
+
+The reason is the Blog entity which get cached will miss the data changes in @author@ reference. However the following pattern allows you to use <code>@CacheEntity</code>:
+
+bc. @Entity
+@CacheEntity
+public class Blog {
+    @Column("author")
+    public String authorId
+    public User getAuthor() {
+        return User.findById(authorId);
+    }
+}
+
+You can also use <code>@CacheEntity</code> on @User@ class to speed up @Blog.getAuthor()@ method.
+
+Links:
+# "PlayMorphia Model":model
+# "Advanced topics":advance
+# "Home":home
