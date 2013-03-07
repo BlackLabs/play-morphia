@@ -7,3 +7,7 @@ play-morphia.jar
 dist
 target
 lib
+.idea
+.dbshell
+*.iml
+*.eml
