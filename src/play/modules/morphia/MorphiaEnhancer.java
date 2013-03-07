@@ -340,7 +340,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(groupSum);
 
         // group-count
-        CtMethod groupCount = CtMethod.make("public static AggregationResult groupCount(String field, String[] groupKeys) {return q().groupCount(field, groupKeys);}", ctClass);
+        CtMethod groupCount = CtMethod.make("public static AggregationResult groupCount(String[] groupKeys) {return q().groupCount(groupKeys);}", ctClass);
         ctClass.addMethod(groupCount);
 
         // deleteAll

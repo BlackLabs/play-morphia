@@ -431,6 +431,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public <T extends Model> T _update(String fieldExpr, Object ... values) {
+        if (null == values) values = new Object[]{null};
         if (values.length == 0) throw new IllegalArgumentException("At least one value required");
         _h_OnUpdate();
         try {
@@ -610,8 +611,7 @@ public class Model implements Serializable, play.db.Model {
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
 
-    public static AggregationResult groupCount(String field,
-            String... groupKeys) {
+    public static AggregationResult groupCount(String... groupKeys) {
         throw new UnsupportedOperationException(
                 "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
     }
@@ -1607,7 +1607,7 @@ public class Model implements Serializable, play.db.Model {
 
         public Map<String, Long> cloud(String field) {
             field = MorphiaPlugin.mongoColName(c_, field);
-            String map = String.format("function() {if (!this.%s) return; for (index in this.%s) emit(this.tags[index], 1);}", field, field);
+            String map = String.format("function() {if (!this.%1$s) return; for (index in this.%1$s) emit(this.%1$s[index], 1);}", field);
             String reduce = "function(previous, current) {var count = 0; for (index in current) count += current[index]; return count;}";
             MapReduceCommand cmd = new MapReduceCommand(col(), map, reduce, null, MapReduceCommand.OutputType.INLINE, q_.getQueryObject());
             MapReduceOutput out = col().mapReduce(cmd);
@@ -1705,10 +1705,10 @@ public class Model implements Serializable, play.db.Model {
             return groupSum(field).getResult();
         }
 
-        public AggregationResult groupCount(String field, String... groupKeys) {
-            String mappedField = MorphiaPlugin.mongoColName(c_, field);
+        public AggregationResult groupCount(String... groupKeys) {
+            String mappedField = MorphiaPlugin.mongoColName(c_, "_id");
             String reduce = String.format("function(obj, prev){prev.%s++;}", mappedField);
-            return aggregate_(field, mappedField, null, 0L, reduce, null, groupKeys);
+            return aggregate_("_id", mappedField, null, 0L, reduce, null, groupKeys);
         }
 
         public <T extends Model> Iterable<T> fetchEmptyEntities() {

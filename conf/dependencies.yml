@@ -1,11 +1,18 @@
 # History
-# 1.2.13a    - Hook <code>_update</code> to <code>@OnUpdate</code> and <code>@Updated</code> annotated functions
-#           - Cache entity feature
-# 1.2.12    - _set and _unset, fix exception on _update when null value encountered
-# 1.2.11    - Seq: sequence generator
-# 1.2.10    - _update method on Model
-# 1.2.9     - generic getId() method
-#           - Support intelligent @Converters annotation processing
+# 1.2.14  - Add <code>asMap</code> method to <code>AggregationResult</code> class
+#         _ "Model.cloud() function error":https://github.com/greenlaw110/play-morphia/issues/105
+#         _ "Group by field":https://github.com/greenlaw110/play-morphia/issues/102
+#         _ "Model.groupAverage doesn't respect Model.Column annotationhttps://github.com/greenlaw110/play-morphia/issues/98":
+#         _ "Application.conf morphia.autoTimestamp doesn't work at all":https://github.com/greenlaw110/play-morphia/issues/97
+#         _ "@Unique validation not working correctly when updating record":https://github.com/greenlaw110/play-morphia/issues/96
+# 1.2.13b - enable passing <code>null</code> to Model._update()
+#         - Hook <code>_update</code> to <code>@OnUpdate</code> and <code>@Updated</code> annotated functions
+#         - Cache entity feature
+# 1.2.12   - _set and _unset, fix exception on _update when null value encountered
+# 1.2.11   - Seq: sequence generator
+# 1.2.10   - _update method on Model
+# 1.2.9    - generic getId() method
+#            - Support intelligent @Converters annotation processing
 # 1.2.8     - batch insert; support String type ID, mongodb driver options; configure connection using url style
 # 1.2.7-20120530 Fix issue: Doesn't compile when Rythm presented
 # 1.2.7-20120528 Fix issue: #55 Play 1.2.4 - Loading of fixtures no longer supports references?
@@ -18,6 +25,6 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.2.13a
+self: play -> morphia 1.2.14
 require:
     - play 1.2

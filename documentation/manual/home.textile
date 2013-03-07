@@ -1,8 +1,10 @@
 h1. PlayMorphia module Documentation
 
-Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.13 release* and may significantly differ from previous module version's documentation.
+Welcome to PlayMorphia module documentation. This documentation is intended for the *1.2.14 release* and may significantly differ from previous module version's documentation.
 
 Check the "version history":history
+
+p(note). *Break changes*: For those who use *Long* as ID type, your mongodb database needs to run a script to update the
 
 p(note). *Break changes*: Start from v1.2.8 "Auto timestamp feature enabled to all Model classes by default":model#timestamp. Add the following line to your @conf/application.conf@ file to maintain the compatibility to your existing project: @morphia.autoTimestamp=false@
 

@@ -1,12 +1,9 @@
 package play.modules.morphia;
 
-import java.util.List;
-
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import play.modules.morphia.utils.StringUtil;
 
-import com.mongodb.CommandResult;
+import java.util.*;
 
 public class AggregationResult {
     private List<BasicDBObject> r_ = null;
@@ -40,7 +37,7 @@ public class AggregationResult {
         if (sa.length != groupValues.length) throw new IllegalArgumentException("the number of group keys does not match the number of group values");
         for (BasicDBObject r: r_) {
             boolean found = true;
-            String s = null;
+            String s;
             for (int i = 0; i < sa.length; ++i) {
                 s = MorphiaPlugin.mongoColName(c_, sa[i]);
                 if (!isEqual_(r.get(s), groupValues[i])) {
@@ -52,7 +49,21 @@ public class AggregationResult {
         }
         return null;
     }
-
+    
+    public Map<String, Long> asNumberMap() {
+        Map<String, Long> m = new HashMap(r_.size());
+        for (BasicDBObject r : r_) {
+            Collection<?> c = r.values();
+            Iterator itr = c.iterator();
+            String k = itr.next().toString();
+            String s = itr.next().toString();
+            float f = Float.parseFloat(s);
+            long l = (long)f;
+            m.put(k, l);
+        }
+        return m;
+    }
+    
     public List<BasicDBObject> raw() {
         return r_;
     }

@@ -1,11 +1,11 @@
-import java.util.List;
-
+import models.Account;
 import org.junit.Before;
 import org.junit.Test;
-
-import models.Account;
 import play.modules.morphia.AggregationResult;
 import play.test.UnitTest;
+
+import java.util.List;
+import java.util.Map;
 
 
 public class AggregationTest extends UnitTest {
@@ -84,7 +84,7 @@ public class AggregationTest extends UnitTest {
     @Test
     public void testCount() {
         setUpAggregation();
-        AggregationResult r = Account.groupCount("score", "region");
+        AggregationResult r = Account.groupCount("region");
         assertSame(2L, r.getResult("region", "CN"));
     }
 
@@ -94,6 +94,15 @@ public class AggregationTest extends UnitTest {
         String[] regions = {"AU", "CN"};
         List<Account> l = Account.q("region in ", java.util.Arrays.asList(regions)).asList();
         assertSame(4, l.size());
+    }
+    
+    @Test
+    public void testGroupCount() {
+        setUpAggregation();
+        AggregationResult r = Account.groupCount("region");
+        Map<String, Long> m = r.asNumberMap();
+        assertSame(2L, m.get("AU"));
+        assertSame(2L, m.get("CN"));
     }
 
 }
