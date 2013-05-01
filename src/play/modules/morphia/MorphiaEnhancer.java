@@ -117,6 +117,16 @@ public class MorphiaEnhancer extends Enhancer {
         enhance_(ctClass, applicationClass, addId, useFactory, autoTS);
     }
 
+    protected Object getAnnotation(CtClass ctClass, String annotation) throws ClassNotFoundException {
+        for (Object object : ctClass.getAvailableAnnotations()) {
+            java.lang.annotation.Annotation ann = (java.lang.annotation.Annotation) object;
+            if (ann.annotationType().getName().equals(annotation)) {
+                return ann;
+            }
+        }
+        return null;
+    }
+
     /**
      * Enhance classes marked with the MongoEntity annotation.
      *
@@ -274,8 +284,8 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(get);
 
         // cache methods
-        boolean useCache = ctClass.hasAnnotation(CacheEntity.class);
-        CacheEntity cacheEntity = useCache ? (CacheEntity)ctClass.getAnnotation(CacheEntity.class) : null;
+        boolean useCache = hasAnnotation(ctClass, CacheEntity.class.getName());
+        CacheEntity cacheEntity = useCache ? (CacheEntity)getAnnotation(ctClass, CacheEntity.class.getName()) /*ctClass.getAnnotation(CacheEntity.class)*/ : null;
         String expiration = null == cacheEntity ? "" : cacheEntity.value();
         CtMethod _cacheEnabled = CtMethod.make("protected boolean _cacheEnabled() { return " + useCache + "; }", ctClass);
         ctClass.addMethod(_cacheEnabled);
@@ -366,7 +376,7 @@ public class MorphiaEnhancer extends Enhancer {
         // -- saveBlobs
         StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
         for (String blob: blobs) {
-            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) { com.mongodb.gridfs.GridFSDBFile file = blob.getGridFSFile(); if (null != file) {file.put(\"name\", name); file.save();}}}", blob, blob, blob));
+            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) { blob.save(); com.mongodb.gridfs.GridFSDBFile file = blob.getGridFSFile(); if (null != file) {file.put(\"name\", name); file.save();}}}", blob, blob, blob));
         }
         sb.append("blobFieldsTracker.clear();}");
         CtMethod method = CtMethod.make(sb.toString(), ctClass);

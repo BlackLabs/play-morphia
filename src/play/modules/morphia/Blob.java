@@ -1,25 +1,29 @@
 package play.modules.morphia;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.apache.commons.lang.RandomStringUtils;
-import org.bson.types.ObjectId;
-
-import play.Logger;
-import play.db.Model.BinaryField;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
+import org.apache.commons.lang.RandomStringUtils;
+import org.bson.types.ObjectId;
+import play.Logger;
+import play.db.Model.BinaryField;
 
 import javax.activation.MimetypesFileTypeMap;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class Blob implements BinaryField {
 
     private GridFSDBFile file;
+    
+    private InputStream is;
+    
+    private File file0;
+    
+    private String type;
 
     public Blob() {}
 
@@ -30,11 +34,7 @@ public class Blob implements BinaryField {
 
     public Blob(File inputFile, String type) {
         this();
-        try {
-            set(inputFile, type);
-        } catch (IOException e) {
-            Logger.debug("File not found: %s (%s)", inputFile.getAbsolutePath(), e.getMessage());
-        }
+        set(inputFile, type);
     }
     
     public Blob(File inputFile) {
@@ -58,39 +58,43 @@ public class Blob implements BinaryField {
 
     @Override
     public InputStream get() {
-        return file != null ? file.getInputStream() : null;
-    }
-    
-    public void set(File file, String type) throws IOException {
-        if (!file.exists()) {
-            Logger.warn("File not exists: %s", file);
-            return;
+        if (null != file) {
+            return file != null ? file.getInputStream() : null;
+        } else if (null != is) {
+            return is;
+        } else if (null != file0) {
+            try {
+                return new FileInputStream(file0);
+            } catch (IOException e) {
+                throw new RuntimeException("cannot get input stream from " + file0.getAbsolutePath());
+            }
         }
-        GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(file);
-        inputFile.setContentType(type);
-        inputFile.save();
-        this.file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
+        return null;
     }
     
+    public void set(File file, String type) {
+        this.file0 = file;
+        this.type = type;
+    }
 
     @Override
     public void set(InputStream is, String type) {
-        String rand = RandomStringUtils.randomAlphanumeric(10);
-        GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(is);
-        inputFile.setContentType(type);
-        inputFile.put("name", rand);
-        inputFile.save();
-        file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
+        this.is = is;
+        this.type = type;
     }
 
     @Override
     public long length() {
-        return file == null ? 0 : file.getLength();
+        if (null != file0) return file0.length();
+        else if (null != file) return file == null ? 0 : file.getLength();
+        else return 0;
     }
 
     @Override
     public String type() {
-        return file.getContentType();
+        if (null != type) return type;
+        else if (null != file) return file.getContentType();
+        else return null;
     }
 
     @Override
@@ -109,8 +113,40 @@ public class Blob implements BinaryField {
     @Override
     public String toString() {
         if (file != null) {
-            return file.getId() + "/" + file.getFilename();
+            return "BLOB://" + file.getId() + "/" + file.getFilename();
+        } else if (null != file0) { 
+            return "BLOB://" + file0.getPath();
+        } else if (null != is) {
+            return "BLOB://" + is;
         }
-        return null;
+        return "BLOB://null";
+    }
+    
+    public boolean isNew() {
+        return file == null;
+    }
+    
+    public void save() {
+        if (null != is) {
+            String rand = RandomStringUtils.randomAlphanumeric(10);
+            GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(is);
+            inputFile.setContentType(type);
+            inputFile.put("name", rand);
+            inputFile.save();
+            file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
+        } else if (null != file0) {
+            if (!file0.exists()) {
+                Logger.warn("File not exists: %s", file0);
+                return;
+            }
+            try {
+                GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(file0);
+                inputFile.setContentType(type);
+                inputFile.save();
+                this.file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
+            } catch (IOException e){
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

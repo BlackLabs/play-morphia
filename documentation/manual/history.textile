@@ -4,7 +4,14 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
-h2. <a name="1.2.13b">Updates in 1.2.14</a>
+h2. <a name="1.2.15">Updates in 1.2.15</a>
+
+* Add @isDeleted()@ method to @Model@ class
+* Bug fixed:
+** "new Blob() should not save the content into gridfs":https://github.com/greenlaw110/play-morphia/issues/107
+** "Morphia 1.2.14 is missing javassist dependency":https://github.com/greenlaw110/play-morphia/issues/106
+
+h2. <a name="1.2.14">Updates in 1.2.14</a>
 
 * Bug fixed:
 ** "Model.cloud() function error":https://github.com/greenlaw110/play-morphia/issues/105

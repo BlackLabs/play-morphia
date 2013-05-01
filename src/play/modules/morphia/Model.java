@@ -62,6 +62,7 @@ public class Model implements Serializable, play.db.Model {
         _h_OnDelete();
         ds().delete(this);
         _h_Deleted();
+        deleted_ = true;
     }
 
     // -- porting from play.db.GenericModel
@@ -380,6 +381,9 @@ public class Model implements Serializable, play.db.Model {
     // -- helper utilities
     @Transient
     private transient boolean saved_ = false;
+    
+    @Transient
+    private transient boolean deleted_ = false;
 
     /**
      * A utility method determine whether this entity is a newly constructed
@@ -390,6 +394,10 @@ public class Model implements Serializable, play.db.Model {
      */
     public final boolean isNew() {
         return !saved_;
+    }
+    
+    public final boolean isDeleted() {
+        return deleted_;
     }
 
     private void setSaved_() {
