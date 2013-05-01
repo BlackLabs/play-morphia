@@ -4,24 +4,20 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.bson.types.ObjectId;
 import play.Logger;
 import play.db.Model.BinaryField;
 
 import javax.activation.MimetypesFileTypeMap;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 public class Blob implements BinaryField {
 
     private GridFSDBFile file;
     
-    private InputStream is;
-    
-    private File file0;
+    private byte[] buf = null;
     
     private String type;
 
@@ -60,32 +56,35 @@ public class Blob implements BinaryField {
     public InputStream get() {
         if (null != file) {
             return file != null ? file.getInputStream() : null;
-        } else if (null != is) {
-            return is;
-        } else if (null != file0) {
-            try {
-                return new FileInputStream(file0);
-            } catch (IOException e) {
-                throw new RuntimeException("cannot get input stream from " + file0.getAbsolutePath());
-            }
+        } else if (null != buf) {
+            return new ByteArrayInputStream(buf);
+        } else {
+            return null;
         }
-        return null;
     }
     
     public void set(File file, String type) {
-        this.file0 = file;
+        try {
+            buf = IOUtils.toByteArray(new FileInputStream(file));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         this.type = type;
     }
 
     @Override
     public void set(InputStream is, String type) {
-        this.is = is;
+        try {
+            buf = IOUtils.toByteArray(is);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         this.type = type;
     }
 
     @Override
     public long length() {
-        if (null != file0) return file0.length();
+        if (null != buf) return buf.length;
         else if (null != file) return file == null ? 0 : file.getLength();
         else return 0;
     }
@@ -114,12 +113,11 @@ public class Blob implements BinaryField {
     public String toString() {
         if (file != null) {
             return "BLOB://" + file.getId() + "/" + file.getFilename();
-        } else if (null != file0) { 
-            return "BLOB://" + file0.getPath();
-        } else if (null != is) {
-            return "BLOB://" + is;
+        } else if (null != buf) { 
+            return "BLOB://[...]";
+        } else {
+            return "BLOB://null";
         }
-        return "BLOB://null";
     }
     
     public boolean isNew() {
@@ -127,26 +125,16 @@ public class Blob implements BinaryField {
     }
     
     public void save() {
-        if (null != is) {
+        if (!isNew()) {
+            return;
+        }
+        if (null != buf) {
             String rand = RandomStringUtils.randomAlphanumeric(10);
-            GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(is);
+            GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(buf);
             inputFile.setContentType(type);
             inputFile.put("name", rand);
             inputFile.save();
             file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
-        } else if (null != file0) {
-            if (!file0.exists()) {
-                Logger.warn("File not exists: %s", file0);
-                return;
-            }
-            try {
-                GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(file0);
-                inputFile.setContentType(type);
-                inputFile.save();
-                this.file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
-            } catch (IOException e){
-                throw new RuntimeException(e);
-            }
         }
     }
 }
