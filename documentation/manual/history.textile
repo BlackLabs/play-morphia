@@ -4,7 +4,7 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
-h2. <a name="1.2.15">Updates in 1.2.15</a>
+h2. <a name="1.2.15a">Updates in 1.2.15a</a>
 
 * Add @isDeleted()@ method to @Model@ class
 * Bug fixed:

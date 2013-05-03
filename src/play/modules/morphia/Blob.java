@@ -7,7 +7,6 @@ import com.mongodb.gridfs.GridFSInputFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.bson.types.ObjectId;
-import play.Logger;
 import play.db.Model.BinaryField;
 
 import javax.activation.MimetypesFileTypeMap;
@@ -20,6 +19,8 @@ public class Blob implements BinaryField {
     private byte[] buf = null;
     
     private String type;
+    
+    private String name;
 
     public Blob() {}
 
@@ -38,8 +39,7 @@ public class Blob implements BinaryField {
     }
 
     public Blob(String id) {
-        DBObject queryObj = new BasicDBObject("name", id);
-        file = MorphiaPlugin.gridFs().findOne(queryObj);
+        file = findFile(id);
     }
     
     public void delete() {
@@ -69,6 +69,7 @@ public class Blob implements BinaryField {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        name = file.getName();
         this.type = type;
     }
 
@@ -79,6 +80,7 @@ public class Blob implements BinaryField {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        name = RandomStringUtils.randomAlphanumeric(10);
         this.type = type;
     }
 
@@ -124,17 +126,18 @@ public class Blob implements BinaryField {
         return file == null;
     }
     
-    public void save() {
+    public Blob save(String name) {
         if (!isNew()) {
-            return;
+            return this;
         }
         if (null != buf) {
-            String rand = RandomStringUtils.randomAlphanumeric(10);
             GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(buf);
             inputFile.setContentType(type);
-            inputFile.put("name", rand);
+            inputFile.put("name", name);
+            inputFile.put("filename", this.name);
             inputFile.save();
             file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
         }
+        return this;
     }
 }

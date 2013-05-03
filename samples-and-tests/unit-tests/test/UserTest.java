@@ -1,21 +1,14 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
+import com.mongodb.gridfs.GridFSDBFile;
 import models.User;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
-
 import play.modules.morphia.Blob;
 import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
-import com.mongodb.gridfs.GridFSDBFile;
+import java.io.*;
 
 
 public class UserTest extends UnitTest {

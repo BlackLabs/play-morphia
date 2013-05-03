@@ -376,7 +376,7 @@ public class MorphiaEnhancer extends Enhancer {
         // -- saveBlobs
         StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
         for (String blob: blobs) {
-            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) { blob.save(); com.mongodb.gridfs.GridFSDBFile file = blob.getGridFSFile(); if (null != file) {file.put(\"name\", name); file.save();}}}", blob, blob, blob));
+            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) {blob.save(name);}}", blob, blob, blob));
         }
         sb.append("blobFieldsTracker.clear();}");
         CtMethod method = CtMethod.make(sb.toString(), ctClass);
