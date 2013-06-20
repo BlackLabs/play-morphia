@@ -1,0 +1,81 @@
+package play.modules.morphia;
+
+import com.greenlaw110.exception.UnexpectedIOException;
+import com.greenlaw110.storage.ISObject;
+import com.greenlaw110.storage.IStorageService;
+import com.greenlaw110.storage.KeyGenerator;
+import com.greenlaw110.storage.impl.SObject;
+import com.greenlaw110.storage.impl.StorageServiceBase;
+import com.greenlaw110.util.C;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSInputFile;
+import play.Logger;
+import play.mvc.Router;
+
+import java.util.Map;
+
+/**
+ * A storage service built on top of mongodb GridFS
+ */
+public class GridFSStorageService extends StorageServiceBase implements IStorageService {
+
+    public GridFSStorageService(KeyGenerator keygen) {
+        super(keygen);
+    }
+
+    @Override
+    public ISObject get(String key) {
+        GridFSDBFile file = findFile(key);
+        if (null == file) {
+            // try legacy
+            file = findFile(BlobStorageService.getLegacyKey(key));
+            if (null != file) {
+                Logger.warn("You have legacy blob data, please consider migrating them to new version");
+            }
+        }
+        if (null == file) {
+            return null;
+        }
+        ISObject sobj = SObject.valueOf(key, file.getInputStream());
+        return sobj.setAttribute(Blob.FILENAME, file.getFilename())
+            .setAttribute(Blob.CONTENT_TYPE, file.getContentType());
+    }
+
+    @Override
+    public void put(String key, ISObject stuff) throws UnexpectedIOException {
+        GridFS gfs = gfs();
+        gfs.remove(new BasicDBObject("name", key));
+        GridFSInputFile inputFile = gfs.createFile(stuff.asByteArray());
+        inputFile.setContentType(stuff.getAttribute(Blob.CONTENT_TYPE));
+        inputFile.put("name", key);
+        inputFile.put("filename", stuff.getAttribute(Blob.FILENAME));
+        inputFile.save();
+    }
+
+    @Override
+    public void remove(String key) {
+        gfs().remove(new BasicDBObject("name", key));
+        // the following line is to make sure the old blob data get removed
+        // the line will be removed in the next release
+        BlobStorageService.removeLater(BlobStorageService.getLegacyKey(key), this);
+    }
+
+    @Override
+    public String getUrl(String key) {
+        Map<String, Object> params = C.newMap("key", key);
+        return Router.getFullUrl("controllers.BlobViewer.view", params);
+    }
+
+    private static GridFSDBFile findFile(String key) {
+        DBObject queryObj = new BasicDBObject("name", key);
+        return gfs().findOne(queryObj);
+    }
+    
+    private static GridFS gfs() {
+        return MorphiaPlugin.gridFs();
+    }
+    
+}

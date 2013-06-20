@@ -1,0 +1,62 @@
+body.gray {background-color: #eee; color: #000;}
+body.gray p, body.gray div.alert {
+    text-shadow: 0px 1px 0px #fff;
+    color: #000;
+}
+body.gray h1, 
+body.gray h2, 
+body.gray h3, 
+body.gray h4, 
+body.gray h5, 
+body.gray h6 {color: #666;} 
+body.gray code {color: #666;}
+body.gray #doc-content h3 {background-color: #666; color: #ddd;}
+body.gray #doc-content h4 {border-bottom-color: #666;}
+
+body.gray #doc-content .h3 {color: #ddd;}
+
+body.gray a {color: #0E6786;}
+body.gray a:hover, body.gray a:focus {background: transparent; color: #3d6c80; text-shadow: 0px 1px 0px #3d6c80;}
+
+body.gray .navbar-inner {border-bottom-color: #444 !important;}
+
+body.gray iframe[data-id] {border: 1px solid #aaa;}
+
+body.gray .links a.nav-btn {
+    background-color: #437288;
+    color: #efefef;
+}
+body.gray .links a.nav-btn:hover {
+    background-color: #4c8da4;
+    text-decoration: none;
+}
+
+body.gray #overlay {
+    background-color: #333;
+}
+
+body.gray #overlay-spinner {
+    background-color: #333;
+}
+
+body.gray #overlay-spinner h2 {
+    color: #aaa;
+}
+
+body.gray #overlay-spinner .gauge-meter {
+    background-color: #000;
+}
+
+body.gray #overlay {opacity: .96;}
+
+body.gray .pun {
+    color: #bbb;
+}
+
+body.gray .pln {
+    color: #bbb;
+}
+
+body.gray #nav-box h4 {
+    border-bottom-color: #666;
+}

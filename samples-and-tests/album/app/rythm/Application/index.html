@@ -1,0 +1,17 @@
+@extends(main)
+
+@args List<Album> albums
+
+<ul>
+@for(albums) {
+    <li>
+        <a href="@url(album(_.getId()))">@_.name</a>
+    </li>
+} else {
+    <div class="alert alert-info">There is no album created yet</div>
+}
+</ul>
+
+<div>
+    <a href="@url(albumForm)" class="btn">Create new album</a>
+</div>

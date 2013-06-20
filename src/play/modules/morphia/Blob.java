@@ -1,143 +1,258 @@
 package play.modules.morphia;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.gridfs.GridFSDBFile;
-import com.mongodb.gridfs.GridFSInputFile;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.RandomStringUtils;
+import com.greenlaw110.exception.UnexpectedIOException;
+import com.greenlaw110.storage.ISObject;
+import com.greenlaw110.storage.IStorageService;
+import com.greenlaw110.storage.impl.SObject;
+import com.greenlaw110.util.C;
+import com.greenlaw110.util.E;
+import com.greenlaw110.util.S;
+import com.greenlaw110.util._;
 import org.bson.types.ObjectId;
+import play.cache.Cache;
 import play.db.Model.BinaryField;
+import play.libs.F;
+import play.mvc.Router;
 
-import javax.activation.MimetypesFileTypeMap;
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
-public class Blob implements BinaryField {
+public class Blob implements BinaryField, Serializable {
 
-    private GridFSDBFile file;
+    private static class LazyLoadSObject implements ISObject {
+        private ISObject sobj;
+
+        LazyLoadSObject(ISObject sobj) {
+            _.NPE(sobj);
+            this.sobj = sobj;
+        }
+        
+        @Override
+        public String getKey() {
+            return sobj.getKey();
+        }
+
+        @Override
+        public long getLength() {
+            return sobj.getLength();
+        }
+
+        @Override
+        public String getAttribute(String key) {
+            return sobj.getKey();
+        }
+
+        @Override
+        public ISObject setAttribute(String key, String val) {
+            return sobj.setAttribute(key, val);
+        }
+
+        @Override
+        public boolean hasAttribute() {
+            return sobj.hasAttribute();
+        }
+
+        @Override
+        public Map<String, String> getAttributes() {
+            return sobj.getAttributes();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return sobj.isEmpty();
+        }
+
+        @Override
+        public boolean isValid() {
+            return sobj.isValid();
+        }
+
+        @Override
+        public Throwable getException() {
+            return sobj.getException();
+        }
+
+        @Override
+        public File asFile() throws UnexpectedIOException {
+            return sobj.asFile();
+        }
+
+        @Override
+        public String asString() throws UnexpectedIOException {
+            return sobj.asString();
+        }
+
+        @Override
+        public byte[] asByteArray() throws UnexpectedIOException {
+            return sobj.asByteArray();
+        }
+
+        @Override
+        public InputStream asInputStream() throws UnexpectedIOException {
+            return sobj.asInputStream();
+        }
+    }
+
+    public static final String CONTENT_TYPE = "content-type";
+    public static final String FILENAME = "filename";
     
-    private byte[] buf = null;
-    
-    private String type;
-    
-    private String name;
+    public static final String TMP_ID_SUFFIX = "__TMPBLOB__";
 
-    public Blob() {}
+    private static final String NULL_KEY = "BLOB_NULL_ID";
+
+    private ISObject sobj;
+    private BlobStorageService ss;
+    
+    private String tmpId;
 
     public Blob(InputStream is, String type) {
-        this();
         set(is, type);
     }
 
     public Blob(File inputFile, String type) {
-        this();
-        set(inputFile, type);
-    }
-    
-    public Blob(File inputFile) {
-        this(inputFile, new MimetypesFileTypeMap().getContentType(inputFile));
+        sobj = SObject.valueOf(NULL_KEY, inputFile);
+        if (S.notEmpty(type)) {
+            type(type);
+        }
     }
 
-    public Blob(String id) {
-        file = findFile(id);
+    public Blob(File inputFile) {
+        sobj = SObject.valueOf(NULL_KEY, inputFile);
+    }
+
+    public Blob(ISObject sobj, BlobStorageService ss) {
+        _.NPE(sobj, ss);
+        
+        this.sobj = sobj;
+        this.ss = ss;
+
+        if (sobj instanceof LazyLoadSObject) {
+            final F.Promise<ISObject> p = ss.loadLater(sobj.getKey());
+            final Blob me = this;
+            new play.jobs.Job (){
+                @Override
+                public void doJob() throws Exception {
+                    ISObject sobj = p.get();
+                    if (null != sobj) {
+                        me.sobj = sobj;
+                    }
+                }
+            }.now();
+        }
     }
     
-    public void delete() {
-        if (null == file) return;
-        MorphiaPlugin.gridFs().remove((ObjectId)file.getId());
+    private void type(String type) {
+        sobj.setAttribute(CONTENT_TYPE, type);
     }
     
-    public static GridFSDBFile findFile(String name) {
-        DBObject queryObj = new BasicDBObject("name", name);
-        return MorphiaPlugin.gridFs().findOne(queryObj);
+    public String getKey() {
+        return sobj.getKey();
+    }
+
+    public static Blob load(String key, BlobStorageService ss) {
+        ISObject sobj = ss.get(key);
+        if (null == sobj) {
+            // might be null because we are using
+            // async method to put the object
+            // so create a proxy sobj
+            sobj = new LazyLoadSObject(SObject.valueOf(key, ""));
+        }
+        return new Blob(sobj, ss);
     }
 
     @Override
     public InputStream get() {
-        if (null != file) {
-            return file != null ? file.getInputStream() : null;
-        } else if (null != buf) {
-            return new ByteArrayInputStream(buf);
-        } else {
-            return null;
-        }
-    }
-    
-    public void set(File file, String type) {
-        try {
-            buf = IOUtils.toByteArray(new FileInputStream(file));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        name = file.getName();
-        this.type = type;
+        return sobj.asInputStream();
     }
 
     @Override
     public void set(InputStream is, String type) {
-        try {
-            buf = IOUtils.toByteArray(is);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (exists()) {
+            BlobStorageService.removeLater(sobj.getKey(), ss);
         }
-        name = RandomStringUtils.randomAlphanumeric(10);
-        this.type = type;
+        sobj = SObject.valueOf(NULL_KEY, is);
+        type(type);
     }
 
     @Override
     public long length() {
-        if (null != buf) return buf.length;
-        else if (null != file) return file == null ? 0 : file.getLength();
-        else return 0;
+        return sobj.getLength();
     }
 
     @Override
     public String type() {
-        if (null != type) return type;
-        else if (null != file) return file.getContentType();
-        else return null;
+        return sobj.getAttribute(CONTENT_TYPE);
     }
 
     @Override
     public boolean exists() {
-        return file != null && file.getId() != null;
-    }
-    
-    public static void delete(String name) {
-        MorphiaPlugin.gridFs().remove(new BasicDBObject("name", name));
+        return S.neq(NULL_KEY, sobj.getKey());
     }
 
-    public GridFSDBFile getGridFSFile() {
-        return file;
+    public void delete() {
+        if (exists()) {
+            ss.remove(sobj.getKey());
+        }
+    }
+
+    public static void delete(String key, IStorageService ss) {
+        ss.remove(key);
     }
 
     @Override
     public String toString() {
-        if (file != null) {
-            return "BLOB://" + file.getId() + "/" + file.getFilename();
-        } else if (null != buf) { 
-            return "BLOB://[...]";
+        return S.fmt("BLOB://[%s]/%s", sobj.getKey(), sobj.getAttribute(FILENAME));
+    }
+
+    public String createKey(String hostId, String fieldName, BlobStorageService ss) {
+        E.invalidStateIf(exists(), "cannot create key for existing blob");
+        return ss.getKey(hostId, fieldName, this);
+    }
+
+    public void batchDelete(Collection<String> keys) {
+        Set<String> set = C.set(keys);
+        for (String key : set) {
+            ss.remove(key);
+        }
+    }
+
+    public Blob save(String key, BlobStorageService ss) {
+        if (exists()) {
+            if (S.neq(sobj.getKey(), key)) {
+                throw E.unexpected("Blob key doesn't match");
+            } else {
+                // remove previous version
+                ss.remove(key);
+            }
         } else {
-            return "BLOB://null";
+            // this replace the NULL_KEY with the real key
+            sobj = SObject.valueOf(key, sobj);
         }
-    }
-    
-    public boolean isNew() {
-        return file == null;
-    }
-    
-    public Blob save(String name) {
-        if (!isNew()) {
-            return this;
-        }
-        if (null != buf) {
-            GridFSInputFile inputFile = MorphiaPlugin.gridFs().createFile(buf);
-            inputFile.setContentType(type);
-            inputFile.put("name", name);
-            inputFile.put("filename", this.name);
-            inputFile.save();
-            file = MorphiaPlugin.gridFs().findOne(new ObjectId(inputFile.getId().toString()));
-        }
+        ss.put(key, sobj);
+        this.ss = ss;
         return this;
+    }
+    
+    public String getUrl() {
+        if (!exists()) {
+            if (null == tmpId) {
+                tmpId = new ObjectId().toString() + TMP_ID_SUFFIX;
+            }
+            Cache.set(tmpId, this, "10min");
+            Map<String, Object> params = C.newMap("key", tmpId);
+            return Router.getFullUrl("controllers.BlobViewer.view", params);
+        } else {
+            String key = getKey();
+            if (Cache.get(key) != null) {
+                Map<String, Object> params = C.newMap("key", key);
+                return Router.getFullUrl("controllers.BlobViewer.view", params);
+            } else {
+                return ss.getUrl(this);
+            }
+        }
     }
 }

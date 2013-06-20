@@ -1,0 +1,34 @@
+@extends(main)
+
+@args Album album
+
+<h1>Album - @album.name</h1>
+
+<style type="text/css">
+    ul.gallery {
+        list-style: none;
+        margin-left: 0;
+    }
+</style>
+
+<ul class="gallery">
+    @for(Photo photo: album.getPhotos()) {
+        <li class="photo">
+            <img src="@photo.getUrl()">
+            <div class="desc">
+                @photo.desc
+            </div>
+            <div>
+                <a class="btn" href="@url('deletePhoto(photo.getIdAsStr())')">Delete</a>
+            </div>
+        </li>
+    } else {
+        <li class="alert alert-info">
+            No photo found in this album
+        </li>
+    }
+</ul>
+
+<div>
+    <a class="btn" href="@url('newPhotoForm(album.getIdAsStr())')">Add photo</a>
+</div>

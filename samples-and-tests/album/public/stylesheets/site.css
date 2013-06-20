@@ -1,0 +1,147 @@
+#wrap .container {
+    width: 940px;
+}
+footer.footer {
+    font-size: 12pt !important;
+    margin-top: 50px;
+    position: relative;
+    bottom: 0;
+}
+
+.navbar-inner {
+    border-bottom-color: #aaa !important;
+    box-shadow: 3px 3px 5px 6px #ccc;
+}
+.navbar-inner a {
+    font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+    text-shadow: 1px 0 1px #444;
+}
+.navbar-inner a.brand {color: #fff;}
+.navbar-inner a.brand:hover {background: transparent;}
+.navbar-inner ul.nav {
+    padding-top: 2px;
+}
+
+a:hover {
+    text-decoration: none;
+    background-color: #efefef;
+}
+
+body .main.container {
+    font-size: 14pt;
+    line-height: 22px;
+}
+
+h1 {
+    margin-bottom: 40px;
+}
+
+.gist {
+    font-size: 11pt !important;
+    text-shadow: none;
+}
+
+code {background-color: transparent; border: none;text-shadow: none; color: #b65b19; font-size: 15px; padding:0;}
+pre code {background-color: #333; border-color: #333; text-shadow: none; color: #fff;}
+
+li p {line-height: 30px;}
+
+li pre {margin-top: 10px;}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+
+html,
+body {
+    height: 100%;
+    /* The html and body elements cannot have any padding or margin. */
+}
+
+body {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+div.alert {font-size: 80%; margin-top: 20px;}
+
+/* Wrapper for page content to push down footer */
+#wrap {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    padding: 0 20px;
+    /* Negative indent footer by it's height */
+    margin: 0 auto -80px;
+}
+
+/* Set the fixed height of the footer here */
+#push,
+#footer {
+    height: 80px;
+}
+
+@media (min-width: 767px) {
+    .main.container {
+        padding-top: 80px;
+    }
+}
+
+/* Lastly, apply responsive CSS fixes as necessary */
+@media (max-width: 767px) {
+    #footer {
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+.navbar-inverse .nav .active>a, .navbar-inverse .nav .active>a:hover, .navbar-inverse .nav .active>a:focus {
+background: transparent;
+}
+.navbar-inverse {color: #999;}
+.navbar-inverse .nav .active>a, .navbar-inverse .nav .active>a:hover, .navbar-inverse .nav .active>a:focus {color: #eee;}
+ul.nav i.icon-caret-down {cursor: pointer;} 
+ul.nav li.active i.icon-caret-down, ul.nav i.icon-caret-down:hover {color: #eee;} 
+
+.nav-sub {
+    list-style: none;
+    text-align: center;
+    position: relative;
+    display: none;
+    width: 800px;
+}
+
+.nav-sub.doc li {
+    display: block;
+    float: left;
+    padding: 20px 20px;
+    position: relative;
+    width: 150px;
+    height: 62px;
+    cursor: pointer;
+}
+
+.nav-sub.theme li {
+    display: block;
+    float: right;
+    margin: 10px 10px;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.nav-sub.theme li:hover {
+    opacity: 1;
+}
+
+.nav-sub.theme li img {
+    border: 1px solid #aaa;
+    width: 200px;
+}
+
+.nav-sub.doc li:hover{background-color: #333;}
+.nav-sub.doc li:hover, .nav-sub.doc li.active {
+    color: #eee;
+}
+
+table.table {font-size: 11pt;}

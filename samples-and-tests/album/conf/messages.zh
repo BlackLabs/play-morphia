@@ -1,0 +1,31 @@
+# You can specialize this file for each language.
+# For example, for French create a messages.fr file
+#
+main.title=Rythm模板引擎
+main.desc=一个使用类.Net Razor语法的高性能Java模板引擎
+main.rythm=@Rythm
+main.download=下载
+main.feature=特性
+main.doc=文档
+main.fiddle=在线演示
+main.community=社区
+main.about=关于
+main.by=
+main.lgl=罗格林
+main.book.index=文档中心
+main.book.tutorial=教程
+main.book.template_guide=模版指南 (WIP)
+main.book.developer_guide=开发指南
+main.book.configuration=配置手册
+main.book.directive=指令手册(WIP)
+main.book.builtin_transformer=内置转换器
+
+
+
+index.title=一个专为Java程序员设计的模版引擎
+index.link.online-demo=在线演示
+index.link.doc=产品文档
+index.link.get-rythm=获得Rythm
+
+load.found-bug=发现文档有错误？
+load.report-bug=在这里报告

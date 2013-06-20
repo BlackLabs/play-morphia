@@ -1,0 +1,63 @@
+body.dark {background-color: #1d1d1d;color: #aaa;}
+body.dark p, body.dark div.alert {
+    text-shadow: 0px 1px 0px #000;
+    color: #aaa;
+}
+body.dark h1, 
+body.dark h2, 
+body.dark h3, 
+body.dark h4, 
+body.dark h5, 
+body.dark h6 {color: #999;} 
+body.dark code {color: #888;}
+body.dark #doc-content h3 {background-color: #3f3f3f;}
+body.dark #doc-content h4 {border-bottom-color: #666;}
+body.dark .nav-list>li>a, body.dark .nav-list .nav-header {
+    text-shadow: 0 1px 0 #000;
+}
+
+body.dark a {color: #ddd;}
+body.dark a:hover, body.dark a:focus {background-color: #333; color: #eee;}
+
+body.dark .navbar-inner {border-bottom-color: #444 !important;}
+
+body.dark .links a.nav-btn {
+    background-color: #333;
+    color: #999;
+}
+body.dark .links a.nav-btn:hover {
+    background-color: #555;
+    color: #bbb;
+}
+
+body.dark #overlay {
+    background-color: #333;
+}
+
+body.dark #overlay-spinner {
+    background-color: #333;
+}
+
+body.dark #overlay-spinner h2 {
+    color: #aaa;
+}
+
+body.dark #overlay-spinner .gauge-meter {
+    background-color: #000;
+}
+
+body.dark #overlay {opacity: .96;}
+
+body.dark .pun {
+    color: #bbb;
+}
+
+body.dark .pln {
+    color: #bbb;
+}
+
+body.dark #nav-box h4 {
+    border-bottom-color: #666;
+}
+
+body.dark table code, body.dark table pre {color: #aaa;} 

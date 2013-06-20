@@ -1,0 +1,12 @@
+# Application dependencies
+
+require:
+    - com.gelinsoft -> play-rythm 1.0-b9c
+    - com.amazonaws -> aws-java-sdk 1.4.6
+
+repositories:
+    - gelinsoft:
+        type: http
+        artifact: "http://gelinsoft.com/play/repo/[module]-[revision].zip"
+        contains:
+            - com.gelinsoft -> *

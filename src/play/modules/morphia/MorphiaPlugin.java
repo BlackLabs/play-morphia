@@ -10,6 +10,9 @@ import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.mapping.validation.ConstraintViolationException;
 import com.google.code.morphia.query.Criteria;
 import com.google.code.morphia.query.Query;
+import com.greenlaw110.storage.IStorageService;
+import com.greenlaw110.storage.KeyGenerator;
+import com.greenlaw110.util.*;
 import com.mongodb.*;
 import com.mongodb.gridfs.GridFS;
 import org.apache.commons.lang.StringUtils;
@@ -26,7 +29,6 @@ import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.PlayLogrFactory;
 import play.modules.morphia.utils.SilentLogrFactory;
-import play.modules.morphia.utils.StringUtil;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -44,8 +46,9 @@ import java.util.regex.Pattern;
  *
  * @author greenlaw110@gmail.com
  */
-public class MorphiaPlugin extends PlayPlugin {
-    public static final String VERSION = "1.2.15a";
+public final class MorphiaPlugin extends PlayPlugin {
+
+    public static final String VERSION = "1.3";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -108,6 +111,8 @@ public class MorphiaPlugin extends PlayPlugin {
     private static Datastore ds_ = null;
     private static GridFS gridfs;
 
+    public static boolean migrateData = false;
+
     private static boolean configured_ = false;
 
     private static boolean appStarted_ = false;
@@ -128,12 +133,14 @@ public class MorphiaPlugin extends PlayPlugin {
 
     public static enum IdType {
         STRING, LONG, OBJECT_ID;
+
         public static IdType parseStr(String s) {
             if ("Long".equalsIgnoreCase(s)) return LONG;
             if ("String".equalsIgnoreCase(s)) return STRING;
 
             return OBJECT_ID;
         }
+
         public boolean isObjectId() {
             return this == OBJECT_ID;
         }
@@ -151,6 +158,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 return java.util.UUID.randomUUID().toString();
             }
         };
+
         public abstract String generate();
     }
 
@@ -183,7 +191,7 @@ public class MorphiaPlugin extends PlayPlugin {
     private final static ConcurrentMap<String, Datastore> dataStores_ = new ConcurrentHashMap<String, Datastore>();
 
     public static Datastore ds(String dbName) {
-        if (StringUtil.isEmpty(dbName))
+        if (S.empty(dbName))
             return ds();
         Datastore ds = dataStores_.get(dbName);
         if (null == ds) {
@@ -203,12 +211,12 @@ public class MorphiaPlugin extends PlayPlugin {
     @Override
     public void enhance(ApplicationClass applicationClass) throws Exception {
         //onConfigurationRead(); // ensure configuration be read before
-                               // enhancement
+        // enhancement
         initIdType_();
         e_.enhanceThisClass(applicationClass);
     }
 
-    private static List<IMorphiaEventHandler> globalEventHandlers_ =  new ArrayList<IMorphiaEventHandler>();
+    private static List<IMorphiaEventHandler> globalEventHandlers_ = new ArrayList<IMorphiaEventHandler>();
     private static Map<Class<? extends Model>, List<IMorphiaEventHandler>> modelEventHandlers_ = new HashMap<Class<? extends Model>, List<IMorphiaEventHandler>>();
 
     public static synchronized void registerGlobalEventHandler(IMorphiaEventHandler handler) {
@@ -264,12 +272,12 @@ public class MorphiaPlugin extends PlayPlugin {
         Class<? extends Model> c = model.getClass();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
         if (null != l) {
-            for (IMorphiaEventHandler h: l) {
+            for (IMorphiaEventHandler h : l) {
                 event.invokeOn(h, model);
             }
         }
 
-        for (IMorphiaEventHandler h: globalEventHandlers_) {
+        for (IMorphiaEventHandler h : globalEventHandlers_) {
             event.invokeOn(h, model);
         }
     }
@@ -278,12 +286,12 @@ public class MorphiaPlugin extends PlayPlugin {
         Class<? extends Model> c = query.getEntityClass();
         List<IMorphiaEventHandler> l = modelEventHandlers_.get(c);
         if (null != l) {
-            for (IMorphiaEventHandler h: l) {
+            for (IMorphiaEventHandler h : l) {
                 event.invokeOn(h, query);
             }
         }
 
-        for (IMorphiaEventHandler h: globalEventHandlers_) {
+        for (IMorphiaEventHandler h : globalEventHandlers_) {
             event.invokeOn(h, query);
         }
     }
@@ -360,14 +368,73 @@ public class MorphiaPlugin extends PlayPlugin {
         }
     }
 
+    public static BlobStorageService bss(KeyGenerator keygen, String ss) {
+        return BlobStorageService.valueOf(keygen, ss);
+    }
+
+    public static Map<String, Class<? extends IStorageService>> ssMap = C.newMap("gfs", GridFSStorageService.class);
+    public static Map<String, Map<String, String>> ssConfs = C.newMap();
+    public static String defaultStorage = "gfs";
+
+    public static Class<? extends IStorageService> getStorageClass(String storage) {
+        if (!configured_) {
+            // Rythm is precompiling app code before morphia plugin configured, let's 
+            // do it here
+            new MorphiaPlugin().onConfigurationRead();
+        }
+        return ssMap.get(storage);
+    }
+
+    public static Map<String, String> getStorageConfig(String storage) {
+        Map<String, String> m = ssConfs.get(storage);
+        if (null == m) {
+            return C.EMPTY_MAP;
+        } else {
+            return C.map(m);
+        }
+    }
+
+    public static Class<? extends IStorageService> getDefaultStorageClass() {
+        return ssMap.get(defaultStorage);
+    }
+
+    public static Map<String, String> getDefaultStorageConf() {
+        return ssConfs.get(defaultStorage);
+    }
+
     @Override
     public void onConfigurationRead() {
         if (configured_)
             return;
         debug("reading configuration");
         initIdType_();
-        MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(Play.configuration.getProperty("morphia.postPluginEvent", "false"));
+        Properties conf = Play.configuration;
+        MorphiaPlugin.postPluginEvent = Boolean.parseBoolean(conf.getProperty("morphia.postPluginEvent", "false"));
         configureConnection_();
+        migrateData = Boolean.parseBoolean(conf.getProperty("morphia.storage.migrateData", "false"));
+        defaultStorage = conf.getProperty("morphia.storage.default", "gfs");
+        String storage = conf.getProperty("morphia.storage");
+        if (S.notEmpty(storage)) {
+            Set<String> storages = C.set(storage.split("[, ;:\t]+"));
+            Map<String, String> ssConf = C.newMap();
+            for (Object k : conf.keySet()) {
+                if (S.str(k).startsWith("morphia.storage.")) {
+                    ssConf.put(S.after(k.toString(), "morphia."), conf.get(k).toString());
+                }
+            }
+            for (String s : storages) {
+                String ssCls = conf.getProperty(S.fmt("morphia.storage.%s.serviceImpl", s));
+                if (null == ssCls) {
+                    E.invalidConfiguration("cannot find serviceImpl for morphia storage: %s", s);
+                }
+                Class<? extends IStorageService> cls = _.classForName(ssCls);
+                ssMap.put(s, cls);
+                ssConfs.put(s, ssConf);
+            }
+            if (!ssMap.keySet().contains(defaultStorage)) {
+                E.invalidConfiguration("default storage[%s] implementation not found", defaultStorage);
+            }
+        }
         configured_ = true;
     }
 
@@ -377,10 +444,10 @@ public class MorphiaPlugin extends PlayPlugin {
 
         String url = c.getProperty(PREFIX + "url");
         String seeds = c.getProperty(PREFIX + "seeds");
-        if (!StringUtil.isEmpty(url)) {
+        if (!S.empty(url)) {
             MongoURI mongoURI = new MongoURI(url);
             mongo_ = connect_(mongoURI);
-        } else if (!StringUtil.isEmpty(seeds)) {
+        } else if (!S.empty(seeds)) {
             mongo_ = connect_(seeds, options);
         } else {
             String host = c.getProperty(PREFIX + "host", "localhost");
@@ -426,7 +493,7 @@ public class MorphiaPlugin extends PlayPlugin {
         String username = c.getProperty(PREFIX + "username");
         String password = c.getProperty(PREFIX + "password");
 
-        if (!StringUtil.isEmpty(url)) {
+        if (!S.empty(url)) {
             MongoURI mongoURI = new MongoURI(url);
             dbName = mongoURI.getDatabase();
             // overwrite these if set via url
@@ -445,7 +512,7 @@ public class MorphiaPlugin extends PlayPlugin {
 
         DB db = mongo_.getDB(dbName);
 
-        if (!StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
+        if (!S.empty(username) && !S.empty(password)) {
             if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
                 throw new RuntimeException("MongoDB authentication failed: " + dbName);
             }
@@ -477,19 +544,19 @@ public class MorphiaPlugin extends PlayPlugin {
         String uploadCollection = c.getProperty("morphia.collection.upload", "uploads");
         gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
 
-        morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor(){
+        morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor() {
             @Override
             public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
                 if (ent instanceof Model) {
                     PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
-                    ((Model)ent)._h_OnLoad();
+                    ((Model) ent)._h_OnLoad();
                 }
             }
 
             @Override
             public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
                 if (ent instanceof Model) {
-                    Model m = (Model)ent;
+                    Model m = (Model) ent;
                     PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
                     m._h_Loaded();
                 }
@@ -543,10 +610,11 @@ public class MorphiaPlugin extends PlayPlugin {
 
     // -- used to map field name to mongo db column name
     public static Map<Class, Map<String, String>> colNameMap = new HashMap();
+
     private void initColNameMap() {
         long l = System.currentTimeMillis();
         boolean initSeq = idType_ == IdType.LONG;
-        for (ApplicationClass ac: Play.classes.getAnnotatedClasses(Entity.class)) {
+        for (ApplicationClass ac : Play.classes.getAnnotatedClasses(Entity.class)) {
             Class<?> c = ac.javaClass;
             if (Modifier.isAbstract(c.getModifiers())) continue;
 
@@ -610,26 +678,26 @@ public class MorphiaPlugin extends PlayPlugin {
         appStarted_ = true;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void registerEventHandlers_() {
         if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.autoRegisterEventHandler", "true"))) return;
 
         // -- register handlers from event handler class --
         List<Class> classes = Play.classloader.getAssignableClasses(IMorphiaEventHandler.class);
-        for (Class c: classes) {
+        for (Class c : classes) {
             IMorphiaEventHandler h = null;
             try {
                 Constructor cnst = c.getDeclaredConstructor();
                 cnst.setAccessible(true);
-                h = (IMorphiaEventHandler)cnst.newInstance();
+                h = (IMorphiaEventHandler) cnst.newInstance();
             } catch (Exception e) {
                 Logger.error(e, "Cannot init IMorphiaEventHandler from class: %s", c.getName());
                 continue;
             }
-            Watch w = (Watch)c.getAnnotation(Watch.class);
+            Watch w = (Watch) c.getAnnotation(Watch.class);
             if (null != w) {
                 Class[] ca = w.value();
-                for (Class modelClass: ca) {
+                for (Class modelClass : ca) {
                     registerModelEventHandlers_(modelClass, h);
                 }
             }
@@ -637,17 +705,17 @@ public class MorphiaPlugin extends PlayPlugin {
 
         // -- register handlers from model class --
         classes = Play.classloader.getAssignableClasses(Model.class);
-        for (Class c: classes) {
-            WatchBy wb = (WatchBy)c.getAnnotation(WatchBy.class);
+        for (Class c : classes) {
+            WatchBy wb = (WatchBy) c.getAnnotation(WatchBy.class);
             if (null == wb) continue;
             Class[] ca = wb.value();
-            for (Class handler: ca) {
+            for (Class handler : ca) {
                 if ((IMorphiaEventHandler.class.isAssignableFrom(handler))) {
                     IMorphiaEventHandler h = null;
                     try {
                         Constructor cnst = handler.getDeclaredConstructor();
                         cnst.setAccessible(true);
-                        h = (IMorphiaEventHandler)cnst.newInstance();
+                        h = (IMorphiaEventHandler) cnst.newInstance();
                     } catch (Exception e) {
                         Logger.error(e, "Cannot init IMorphiaEventHandler from class: %s", c.getName());
                         continue;
@@ -669,7 +737,7 @@ public class MorphiaPlugin extends PlayPlugin {
             @SuppressWarnings("rawtypes")
             List<Class> lc = Play.classloader.getAssignableClasses(modelClass);
             lc.remove(modelClass);
-            for (@SuppressWarnings("rawtypes") Class c: lc) {
+            for (@SuppressWarnings("rawtypes") Class c : lc) {
                 registerModelEventHandlers_(c, h);
             }
         }
@@ -734,8 +802,8 @@ public class MorphiaPlugin extends PlayPlugin {
     @Override
     @SuppressWarnings("unchecked")
     public Object bind(String name, @SuppressWarnings("rawtypes") Class clazz,
-            java.lang.reflect.Type type, Annotation[] annotations,
-            Map<String, String[]> params) {
+                       java.lang.reflect.Type type, Annotation[] annotations,
+                       Map<String, String[]> params) {
         if (Model.class.isAssignableFrom(clazz)) {
             String keyName = modelFactory(clazz).keyName();
             String idKey = name + "." + keyName;
@@ -810,8 +878,8 @@ public class MorphiaPlugin extends PlayPlugin {
 
         @Override
         public List<play.db.Model> fetch(int offset, int size, String orderBy,
-                String order, List<String> searchFields, String keywords,
-                String where) {
+                                         String order, List<String> searchFields, String keywords,
+                                         String where) {
             if (orderBy == null)
                 orderBy = keyName();
             if ("DESC".equalsIgnoreCase(order))
@@ -826,7 +894,7 @@ public class MorphiaPlugin extends PlayPlugin {
                 String[] sa = keywords.split("[\\W]+");
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
                     List<Criteria> cl0 = new ArrayList<Criteria>();
-                    for (String s: sa) {
+                    for (String s : sa) {
                         cl0.add(q.criteria(f).containsIgnoreCase(s));
                     }
                     cl.add(q.and(cl0.toArray(new Criteria[]{})));
@@ -856,18 +924,18 @@ public class MorphiaPlugin extends PlayPlugin {
 
         @Override
         public Long count(List<String> searchFields, String keywords,
-                String where) {
+                          String where) {
             Query<?> q = ds().createQuery(clazz);
 
             if (keywords != null && !keywords.equals("")) {
                 List<Criteria> cl = new ArrayList<Criteria>();
                 String[] sa = keywords.split("[\\W]+");
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
-                    for (String s: sa) {
+                    for (String s : sa) {
                         cl.add(q.criteria(f).contains(keywords));
                     }
                 }
-                q.or(cl.toArray(new Criteria[] {}));
+                q.or(cl.toArray(new Criteria[]{}));
             }
 
             processWhere(q, where);
@@ -900,7 +968,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     }
                     String prop = sa[0];
                     String val = sa[1];
-                    val = StringUtil.trim(val);
+                    val = S.trim(val);
                     debug("where prop val pair found: %1$s = %2$s", prop, val);
                     prop = prop.replaceAll("[\"' ]", "");
                     if (val.matches("[\"'].*[\"']")) {
@@ -989,7 +1057,7 @@ public class MorphiaPlugin extends PlayPlugin {
 
         // enumerable all searchable fields including embedded recursively
         private static void listAllSearchableFields_(Class<?> clazz,
-                List<String> l, String prefix) {
+                                                     List<String> l, String prefix) {
             Set<Field> fields = new HashSet<Field>();
             Class<?> tclazz = clazz;
             while (!tclazz.equals(Object.class)) {
@@ -1096,7 +1164,7 @@ public class MorphiaPlugin extends PlayPlugin {
                     modelProperty.isRelation = true;
                     modelProperty.relationType = field.getType();
                     modelProperty.choices = new Model.Choices() {
-                        @SuppressWarnings({ "unchecked" })
+                        @SuppressWarnings({"unchecked"})
                         public List<Object> list() {
                             return (List<Object>) ds().createQuery(
                                     field.getType()).asList();

@@ -1,9 +1,9 @@
 package morphia;
 
+import com.greenlaw110.util.S;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import play.modules.morphia.utils.StringUtil;
 
 public class Filter {
 
@@ -40,8 +40,8 @@ public class Filter {
             if (o.checked)
                 selected.add(o.name);
         }
-        return selected.size() == 0 ? "" : String.format("%1$s in (%2$s)",
-                property, StringUtil.join(",", selected));
+        return selected.size() == 0 ? "" : S.fmt("%1$s in (%2$s)",
+                property, S.join(",", selected));
     }
 
     public static String toString(List<Filter> filters) {
@@ -50,10 +50,10 @@ public class Filter {
         List<String> l = new ArrayList<String>();
         for (Filter f : filters) {
             String s = f.toString();
-            if (!StringUtil.isEmpty(s))
+            if (!S.empty(s))
                 l.add(s);
         }
-        return null == filters ? null : StringUtil.join(" and ", l);
+        return null == filters ? null : S.join(" and ", l);
     }
 
 }

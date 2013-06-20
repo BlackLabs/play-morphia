@@ -1,0 +1,20 @@
+@extends(main)
+
+@args Album album
+
+<h1>
+    @if(album.isNew()){
+        Create new album
+    } else {
+        Edit album - @album.name
+    }
+</h1>
+<form action="@url(saveAlbum)" method="post">
+    <div>
+        <label>Name</label>
+        <input type="text" name="album.name" value="@album.name">
+    </div>
+    <div>
+        <button class="btn">Submit</button>
+    </div>
+</form>

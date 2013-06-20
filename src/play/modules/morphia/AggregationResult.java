@@ -1,7 +1,7 @@
 package play.modules.morphia;
 
+import com.greenlaw110.util.S;
 import com.mongodb.BasicDBObject;
-import play.modules.morphia.utils.StringUtil;
 
 import java.util.*;
 
@@ -29,7 +29,7 @@ public class AggregationResult {
     }
 
     public Long getResult(String groupKeys, Object... groupValues) {
-        if (StringUtil.isEmpty(groupKeys)) {
+        if (S.empty(groupKeys)) {
             if (groupValues.length == 0) return getResult();
             throw new IllegalArgumentException("the number of group keys does not match the number of group values");
         }

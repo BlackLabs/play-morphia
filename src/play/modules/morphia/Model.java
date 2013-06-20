@@ -9,8 +9,13 @@ import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.query.*;
-import com.google.code.morphia.query.Query;
+import com.greenlaw110.exception.UnsupportedException;
+import com.greenlaw110.util.C;
+import com.greenlaw110.util.E;
+import com.greenlaw110.util.S;
+import com.greenlaw110.util._;
 import com.mongodb.*;
+import com.mongodb.gridfs.GridFS;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
 import play.Logger;
@@ -22,16 +27,16 @@ import play.data.binding.ParamNode;
 import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.utils.IdGenerator;
-import play.modules.morphia.utils.StringUtil;
 import play.mvc.Scope.Params;
 
-import javax.persistence.*;
+import javax.persistence.NoResultException;
 import java.io.Serializable;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -316,11 +321,9 @@ public class Model implements Serializable, play.db.Model {
      * annotated \@Id fields
      */
     protected void setId_(Object id) {
-        throw new UnsupportedOperationException(
-                "Please override this method for user marked Id field entity: "
-                        + this.getClass().getName());
+        toBeEnhanced("Please override this method for user marked Id field entity: %s", getClass().getName());
     }
-
+    
     private void generateId_() {
         if (isEmbedded_())
             return;
@@ -335,8 +338,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static play.db.Model.Factory getModelFactory() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     // -- common object methods
@@ -437,8 +439,12 @@ public class Model implements Serializable, play.db.Model {
     public MorphiaBatchUpdates startBatchUpates() {
         return new MorphiaBatchUpdates(this);
     }
-
+    
     public <T extends Model> T _update(String fieldExpr, Object ... values) {
+        return _update(false, fieldExpr, values);
+    }
+
+    public <T extends Model> T _update(boolean noRefresh, String fieldExpr, Object ... values) {
         if (null == values) values = new Object[]{null};
         if (values.length == 0) throw new IllegalArgumentException("At least one value required");
         _h_OnUpdate();
@@ -481,7 +487,9 @@ public class Model implements Serializable, play.db.Model {
             new MorphiaBatchUpdates<T>(this)._set(nnf, notNullList.toArray())._unset(nf).commit();
             return (T) this;
         } finally {
-            _h_Updated(refresh());
+            if (!noRefresh) {
+                _h_Updated(refresh());
+            }
         }
     }
 
@@ -517,8 +525,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static Model create(String name, Params params) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -527,8 +534,7 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public static <T extends Model> MorphiaQuery q() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static <T extends Model> MorphiaQuery q(Class<T> cls) {
@@ -540,8 +546,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static <T extends Model> MorphiaQuery createQuery() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static <T extends Model> MorphiaQuery createQuery(Class<T> cls) {
@@ -553,18 +558,15 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static <T extends Model> MorphiaQuery disableValidation() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static long count() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static long count(String keys, Object... params) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -574,59 +576,48 @@ public class Model implements Serializable, play.db.Model {
      * @return a distinct set of key values
      */
     public static Set<?> _distinct(String key) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static Long _max(String field) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static AggregationResult groupMax(String field, String... groupKeys) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static Long _min(String field) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static AggregationResult groupMin(String field, String... groupKeys) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static Long _average(String field) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static AggregationResult groupAverage(String field,
             String... groupKeys) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static Long _sum(String field) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static AggregationResult groupSum(String field, String... groupKeys) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static AggregationResult groupCount(String... groupKeys) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static Map<String, Long> _cloud(String field) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     @SuppressWarnings("unchecked")
@@ -672,11 +663,24 @@ public class Model implements Serializable, play.db.Model {
     }
 
     protected void deleteBlobs() {
-        // for enhancer usage
+        Map<String, String> blobKeys = getBlobKeys();
+        for (Map.Entry<String, String> entry: blobKeys.entrySet()) {
+            bss(entry.getKey()).remove(entry.getValue());
+        }
+        deleteLegacyBlobs();
+    }
+    
+    private void deleteLegacyBlobs() {
+        GridFS gfs = MorphiaPlugin.gridFs();
+        Pattern ptn = Pattern.compile(getIdAsStr());
+        gfs.remove(new BasicDBObject("name", ptn));
     }
 
     protected void deleteBlobsInBatch(MorphiaQuery q) {
-        // for enhancer usage
+        q.retrievedFields(true, "blobKeys");
+        for (Model model : q.asList()) {
+            model.deleteBlobs();
+        }
     }
 
     /**
@@ -700,8 +704,7 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public static long deleteAll() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -710,8 +713,7 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public static <T extends Model> MorphiaQuery find() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -726,18 +728,15 @@ public class Model implements Serializable, play.db.Model {
      */
     public static <T extends Model> MorphiaQuery find(String keys,
             Object... params) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static <T> List<T> findAll() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static <T extends Model> T findById(Object id) {
-        throw new UnsupportedOperationException(
-                "Embedded entity does not support this method");
+        throw toBeEnhanced();
     }
 
     protected String _cacheKey() {
@@ -780,8 +779,7 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public static <T extends Model> MorphiaQuery q(String keys, Object value) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -799,12 +797,11 @@ public class Model implements Serializable, play.db.Model {
      */
     public static <T extends Model> MorphiaQuery filter(String property,
             Object value) {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     public static <T extends Model> MorphiaUpdateOperations createUpdateOperations() {
-        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -813,7 +810,7 @@ public class Model implements Serializable, play.db.Model {
      * @return
      */
     public static <T extends Model> MorphiaUpdateOperations o() {
-        throw new UnsupportedClassVersionError("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     // -- additional quick access method
@@ -822,8 +819,7 @@ public class Model implements Serializable, play.db.Model {
      * record found
      */
     public static <T extends Model> T get() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -839,8 +835,7 @@ public class Model implements Serializable, play.db.Model {
      * Return MongoDB DBCollection for this model
      */
     public static DBCollection col() {
-        throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        throw toBeEnhanced();
     }
 
     /**
@@ -873,8 +868,8 @@ public class Model implements Serializable, play.db.Model {
         boolean isNew = isNew();
         postEvent_(isNew ? MorphiaEvent.ON_ADD : MorphiaEvent.ON_UPDATE, this);
         if (isNew) _h_OnAdd(); else _h_OnUpdate();
-        Key<? extends Model> k = ds().save(this);
         saveBlobs();
+        Key<? extends Model> k = ds().save(this);
         if (isNew) {setSaved_();_h_Added();} else _h_Updated(this);
         return k;
     }
@@ -963,10 +958,16 @@ public class Model implements Serializable, play.db.Model {
      */
     public final void _h_Loaded() {
         setSaved_();
-        loadBlobs();
+        if (null == __blobs) {
+            __blobs = C.newMap();
+        }
+        boolean saveBlobKeys = loadBlobs();
         h_Loaded();
         MorphiaPlugin.onLifeCycleEvent(MorphiaEvent.LOADED, this);
         postEvent_(MorphiaEvent.LOADED, this);
+        if (saveBlobKeys) {
+            _update(true, "__blobs", __blobs);
+        }
     }
 
     /**
@@ -1074,54 +1075,80 @@ public class Model implements Serializable, play.db.Model {
         // used by enhancer
     }
 
-    protected void loadBlobs() {
+    protected boolean loadBlobs() {
         // used by enhander
+        return false;
+    }
+    
+    protected BlobStorageService bss(String fieldName) {
+        throw toBeEnhanced();
     }
 
-    transient protected final Map<String, Boolean> blobFieldsTracker = new HashMap<String, Boolean>();
-    protected final boolean blobChanged(String fieldName) {
+    private Map<String, String> __blobs = new HashMap<String, String>();
+    
+    protected Map<String, String> getBlobKeys() {
+        return C.map(__blobs);
+    }
+
+    protected void __setBlobKey(String field, String blobKey) {
+        _.NPE(field, blobKey);
+        __blobs.put(field, blobKey);
+    }
+
+    protected String __getBlobKey(String field) {
+        _.NPE(field);
+        return __blobs.get(field);
+    }
+
+    @Transient
+    transient protected final Map<String, Boolean> blobFieldsTracker = C.newMap();
+    protected final boolean __blobChanged(String fieldName) {
         return (blobFieldsTracker.containsKey(fieldName) && blobFieldsTracker.get(fieldName));
     }
-    protected final void setBlobChanged(String fieldName) {
+    
+    protected final void __setBlobChanged(String fieldName) {
         blobFieldsTracker.put(fieldName, true);
     }
 
+    @Deprecated
     public String getBlobFileName(String fieldName) {
-        return getBlobFileName(getClass().getSimpleName(), getId(), fieldName);
+        return getBlobFileName(getId(), fieldName);
     }
 
-    public static String getBlobFileName(String className, Object id, String fieldName) {
+    @Deprecated
+    public static String getBlobFileName(Object id, String fieldName) {
         return String.format("%s_%s", StringUtils.capitalize(fieldName), id);
     }
-
-    public static void removeGridFSFiles(String className, Object id, String...fieldNames) {
-        for (String fieldName: fieldNames) {
-            String fileName = getBlobFileName(className, id, fieldName);
-            Blob.delete(fileName);
-        }
-    }
-
-    public static void removeGridFSFiles(MorphiaQuery q, String... fieldNames) {
-        q.retrievedFields(true, "_id");
-        for (Key<Model> key: q.fetchKeys()) {
-            Object id = key.getId();
-            removeGridFSFiles(q.getEntityClass().getSimpleName(), id, fieldNames);
+    
+    protected void removeBlobs(MorphiaQuery q, String fieldName) {
+        q.retrievedFields(true, "blobKeys");
+        for (Model model : q.asList()) {
+            String key = model.getBlobKeys().get(fieldName);
+            if (null != key) {
+                bss(fieldName).remove(key);
+            }
         }
     }
 
     // -- auto timestamp methods
     public long _getCreated() {
-        throw new UnsupportedOperationException(
-                "Please annotate model with @AutoTimestamp annotation");
+        throw toBeEnhanced("Please annotate model with @AutoTimestamp annotation");
     }
 
     public long _getModified() {
-        throw new UnsupportedOperationException(
-                "Please annotate model with @AutoTimestamp annotation");
+        throw toBeEnhanced("Please annotate model with @AutoTimestamp annotation");
     }
 
     private static void postEvent_(MorphiaEvent event, Object context) {
         if (MorphiaPlugin.postPluginEvent) PlayPlugin.postEvent(event.getId(), context);
+    }
+    
+    private static UnsupportedException toBeEnhanced() {
+        return E.unsupport("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+    } 
+    
+    private static UnsupportedException toBeEnhanced(String msg, Object... args) {
+        return toBeEnhanced(msg, args);
     }
 
     public static class MorphiaUpdateOperations {
@@ -1179,7 +1206,7 @@ public class Model implements Serializable, play.db.Model {
         public MorphiaUpdateOperations isolate(boolean isolate) {
             if (isolate) u_.isolated();
             else {
-                throw new UnsupportedOperationException("Morphia does not support set isolated to false");
+                throw E.unsupport("Morphia does not support set isolated to false");
             }
             return this;
         }
@@ -1217,9 +1244,7 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public MorphiaUpdateOperations dec(String fieldExpr) {
-            if (StringUtil.isEmpty(fieldExpr)) {
-                throw new IllegalArgumentException("Invalid fieldExpr or params");
-            }
+            E.invalidArgIf(S.empty(fieldExpr));;
             if (fieldExpr.startsWith("by"))
                 fieldExpr = fieldExpr.substring(2);
             String[] keys = fieldExpr.split("(And|[,;\\s]+)");
@@ -1233,9 +1258,7 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public MorphiaUpdateOperations inc(String fieldExpr) {
-            if (StringUtil.isEmpty(fieldExpr)) {
-                throw new IllegalArgumentException("Invalid fieldExpr or params");
-            }
+            E.invalidArgIf(S.empty(fieldExpr));;
             if (fieldExpr.startsWith("by"))
                 fieldExpr = fieldExpr.substring(2);
             String[] keys = fieldExpr.split("(And|[,;\\s]+)");
@@ -1249,18 +1272,13 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public MorphiaUpdateOperations inc(String fieldExpr, Number... values) {
-            if (null == values) values = new Number[] {null};
-            if (StringUtil.isEmpty(fieldExpr) || values.length == 0) {
-                throw new IllegalArgumentException("Invalid fieldExpr or params");
-            }
+            E.invalidArgIf(S.empty(fieldExpr) || values.length == 0);;
             if (fieldExpr.startsWith("by"))
                 fieldExpr = fieldExpr.substring(2);
             String[] keys = fieldExpr.split("(And|[,;\\s]+)");
 
-            if ((values.length != 1) && (keys.length != values.length)) {
-                throw new IllegalArgumentException(
-                        "Query key number does not match the params number");
-            }
+            E.invalidArgIf((values.length != 1) && (keys.length != values.length), 
+                "Query key number does not match the params number");
 
             Number oneVal = values.length == 1 ? values[0] : null;
 
@@ -1293,18 +1311,13 @@ public class Model implements Serializable, play.db.Model {
         }
 
         public MorphiaUpdateOperations set(String fieldExpr, Object... values) {
-            if (null == values) values = new Object[] {null};
-            if (null == fieldExpr || values.length == 0) {
-                throw new IllegalArgumentException("Invalid query or params");
-            }
+            E.invalidArgIf(S.empty(fieldExpr) || values.length == 0);
             if (fieldExpr.startsWith("by"))
                 fieldExpr = fieldExpr.substring(2);
             String[] keys = fieldExpr.split("(And|[,;\\s]+)");
 
-            if ((values.length != 1) && (keys.length != values.length)) {
-                throw new IllegalArgumentException(
-                        "Query key number does not match the params number");
-            }
+            E.invalidArgIf((values.length != 1) && (keys.length != values.length), 
+                "Query key number does not match the params number");
 
             Object oneVal = values.length == 1 ? values[0] : null;
 
@@ -1445,7 +1458,7 @@ public class Model implements Serializable, play.db.Model {
                 }
                 m = (Model)c.newInstance();
             } catch (Exception e) {
-                throw new RuntimeException("Cannot init model class", e);
+                E.unexpected(e);
             }
             if (null != m) {
                 m.h_OnBatchDelete(this);
@@ -1481,18 +1494,13 @@ public class Model implements Serializable, play.db.Model {
          * @return
          */
         public MorphiaQuery findBy(String query, Object... params) {
-            if (null == params) params = new Object[] {null};
-            if (null == query || params.length == 0) {
-                throw new IllegalArgumentException("Invalid query or params");
-            }
+            E.invalidArgIf(null == query || params.length == 0);
             if (query.startsWith("by"))
                 query = query.substring(2);
             String[] keys = query.split("(And|[,;\\s]+)");
 
-            if ((params.length != 1) && (keys.length != params.length)) {
-                throw new IllegalArgumentException(
-                        "Query key number does not match the params number");
-            }
+            E.invalidArgIf((params.length != 1) && (keys.length != params.length), 
+                "Query key number does not match the params number");
 
             Object oneVal = params.length == 1 ? params[0] : null;
 
@@ -1636,7 +1644,7 @@ public class Model implements Serializable, play.db.Model {
         public List<BasicDBObject> group(String groupKeys, DBObject initial,
                 String reduce, String finalize) {
             DBObject key = new BasicDBObject();
-            if (!StringUtil.isEmpty(groupKeys)) {
+            if (!S.empty(groupKeys)) {
                 if (groupKeys.startsWith("by"))
                     groupKeys = groupKeys.substring(2);
                 String[] sa = groupKeys.split("(And|[\\s,;]+)");
@@ -1654,7 +1662,7 @@ public class Model implements Serializable, play.db.Model {
             if (null == initial)
                 initial = new BasicDBObject();
             initial.put(mappedField, initVal);
-            return new AggregationResult(group(StringUtil.join(",", groupKeys),
+            return new AggregationResult(group(S.join(",", groupKeys),
                     initial, reduce, finalize), field, c_);
         }
 
@@ -2000,4 +2008,5 @@ public class Model implements Serializable, play.db.Model {
     public @interface BatchDeleted {
     }
 
+    
 }

@@ -2,6 +2,8 @@ package play.modules.morphia;
 
 import com.google.code.morphia.annotations.*;
 import com.google.code.morphia.utils.IndexDirection;
+import com.greenlaw110.storage.KeyGenerator;
+import com.greenlaw110.util.*;
 import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
@@ -14,9 +16,11 @@ import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
 import play.modules.morphia.Model.*;
-import play.modules.morphia.utils.StringUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class uses the Play framework enhancement process to enhance classes
@@ -117,11 +121,21 @@ public class MorphiaEnhancer extends Enhancer {
         enhance_(ctClass, applicationClass, addId, useFactory, autoTS);
     }
 
-    protected Object getAnnotation(CtClass ctClass, String annotation) throws ClassNotFoundException {
+    protected <T> T getAnnotation(CtClass ctClass, String annotation) throws ClassNotFoundException {
         for (Object object : ctClass.getAvailableAnnotations()) {
             java.lang.annotation.Annotation ann = (java.lang.annotation.Annotation) object;
             if (ann.annotationType().getName().equals(annotation)) {
-                return ann;
+                return (T)ann;
+            }
+        }
+        return null;
+    }
+    
+    protected <T> T getAnnotation(CtMember ctMember, String annotation) throws ClassNotFoundException {
+        for (Object object : ctMember.getAvailableAnnotations()) {
+            java.lang.annotation.Annotation ann = (java.lang.annotation.Annotation) object;
+            if (ann.annotationType().getName().equals(annotation)) {
+                return (T)ann;
             }
         }
         return null;
@@ -358,7 +372,7 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.addMethod(deleteAll);
 
         // add @Transient to all blobs automatically
-        Set<String> blobs = processFields(ctClass);
+        Map<String, F.T2<KeyGenerator, String>> blobs = processFields(ctClass);
         boolean hasBlobField = blobs.size() > 0;
 
         // enhance blob methods: save, delete, batchDelete, load and setters
@@ -372,41 +386,42 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.defrost();
     }
 
-    private void enhanceBlobMethods(CtClass ctClass, Set<String> blobs) throws CannotCompileException, NotFoundException {
-        // -- saveBlobs
-        StringBuilder sb = new StringBuilder("protected void saveBlobs() {");
-        for (String blob: blobs) {
-            sb.append(String.format("{Blob blob = %s; String name = getBlobFileName(\"%s\"); if (blobChanged(\"%s\")) {play.modules.morphia.Blob.delete(name);} if (null != blob) {blob.save(name);}}", blob, blob, blob));
+    private void enhanceBlobMethods(CtClass ctClass, Map<String, F.T2<KeyGenerator, String>> blobs) throws CannotCompileException, NotFoundException {
+        // -- get blob storage service
+        StringBuilder sb = S.builder("protected play.modules.morphia.BlobStorageService bss(String field) {");
+        for (String blob : blobs.keySet()) {
+            F.T2<KeyGenerator, String> anno = blobs.get(blob);
+            sb.append(S.fmt("\nif (\"%s\".equals(field)) {\n\treturn play.modules.morphia.MorphiaPlugin.bss(%s, \"%s\");\n}", blob, KeyGenerator.class.getName() + "." + anno._1.name(), anno._2));
         }
-        sb.append("blobFieldsTracker.clear();}");
+        sb.append("\nthrow new java.lang.IllegalArgumentException(\"unknown blob field: \" + field);\n}");
+        
         CtMethod method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
 
-        String blobList = StringUtil.join(",", blobs, true);
-        // -- deleteBlobs
-        sb = new StringBuilder("protected void deleteBlobs() { String[] blobs = {").append(blobList).append("}; removeGridFSFiles(\"").append(ctClass.getSimpleName()).append("\", getId(), blobs);}");
-        method = CtMethod.make(sb.toString(), ctClass);
-        ctClass.addMethod(method);
-
-        // -- deleteBlobsInBatch
-        sb = new StringBuilder("protected void deleteBlobsInBatch(play.modules.morphia.Model.MorphiaQuery q) { String[] blobs = {").append(blobList).append("}; removeGridFSFiles(q, blobs);}");
+        // -- saveBlobs
+        sb = S.builder("protected void saveBlobs() {");
+        for (String blob : blobs.keySet()) {
+            sb.append(String.format("\n\t{\n\t\tBlob blob = %1$s; \n\t\tif (null != blob && __blobChanged(\"%1$s\")) {\n\t\t\tString key = blob.createKey(getIdAsStr(), \"%1$s\", bss(\"%1$s\")); \n\t\t\tblob.save(key, bss(\"%1$s\")); \n\t\t\t__setBlobKey(\"%1$s\", key);\n\t\t}\n\t}", blob));
+        }
+        sb.append("\n\tblobFieldsTracker.clear();}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
 
         // -- loadBlobs
-        sb = new StringBuilder("protected void loadBlobs() {");
-        for (String blob: blobs) {
-            sb.append(String.format("{String fileName = getBlobFileName(\"%s\"); Blob b = new Blob(fileName); if (b.exists()) {%s = b;} }", blob, blob));
+        sb = new StringBuilder("protected boolean loadBlobs() {");
+        sb.append("\n\tboolean needsave = false;");
+        for (String blob : blobs.keySet()) {
+            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());save();needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
         }
-        sb.append("blobFieldsTracker.clear();}");
+        sb.append("\n\tblobFieldsTracker.clear();\nreturn needsave;}");
         method = CtMethod.make(sb.toString(), ctClass);
         ctClass.addMethod(method);
 
         // -- blob setters
-        for (String blob: blobs) {
-            String setter = "set" + StringUtil.upperFirstChar(blob);
+        for (String blob : blobs.keySet()) {
+            String setter = "set" + S.capFirst(blob);
             CtMethod ctMethod = ctClass.getDeclaredMethod(setter);
-            ctMethod.insertAfter(String.format("setBlobChanged(\"%s\");", blob));
+            ctMethod.insertAfter(String.format("__setBlobChanged(\"%s\");", blob));
         }
     }
 
@@ -416,17 +431,34 @@ public class MorphiaEnhancer extends Enhancer {
      * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */
-    private Set<String> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
+    private Map<String, F.T2<KeyGenerator, String>> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
         List<CtField> fields  = new ArrayList<CtField>();
         fields.addAll(Arrays.asList(ctClass.getDeclaredFields()));
         fields.addAll(Arrays.asList(ctClass.getFields()));
-        Set<String> blobs = new HashSet<String>();
+        Map<String, F.T2<KeyGenerator, String>> blobs = C.newMap();
         List<MemberValue> converterList = new ArrayList<MemberValue>();
         for (CtField cf: fields) {
             CtClass ctReturnType = cf.getType();
             if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && cf.getDeclaringClass().getName().equals(ctClass.getName())) {
                 createAnnotation(getAnnotations(cf), Transient.class);
-                blobs.add(cf.getName());
+                KeyGenerator kg = KeyGenerator.BY_DATE;
+                BlobStorageService.KeyGen annKG = getAnnotation(cf, BlobStorageService.KeyGen.class.getName());
+                if (null != annKG) {
+                    kg = annKG.value(); 
+                }
+                String ss = "";
+                BlobStorageService.Storage annSS = getAnnotation(cf, BlobStorageService.Storage.class.getName());
+                if (null != annSS) {
+                    String storage = annSS.value();
+                    if (S.notEmpty(storage)) {
+                        Class ssCls = MorphiaPlugin.getStorageClass(storage);
+                        if (null == ssCls) {
+                            throw E.invalidConfiguration("storage[%s] not configured", storage);
+                        }
+                        ss = storage;
+                    }
+                }
+                blobs.put(cf.getName(), F.T2(kg, ss));
                 continue;
             }
 
@@ -453,6 +485,7 @@ public class MorphiaEnhancer extends Enhancer {
                 } else if (a.getTypeName().equals(play.data.validation.Unique.class.getName())) {
                     uniquePlay = a;
                 }
+                
             }
             while (true) {
                 // check if there are converters annotation added to the field type declaration

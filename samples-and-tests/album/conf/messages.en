@@ -1,0 +1,29 @@
+# You can specialize this file for each language.
+# For example, for French create a messages.fr file
+#
+main.title=Rythm Template Engine
+main.desc=A static typed high performance and .net Razor like syntax template engine for java
+main.rythm=@Rythm
+main.download=Download
+main.feature=Feature
+main.doc=Document
+main.fiddle=<i class="icon-cloud"></i> Fiddle
+main.community=Community
+main.about=About
+main.by=by
+main.lgl=Gelin Luo
+main.book.index=Document Center
+main.book.tutorial=Beginner's Tutorial
+main.book.template_guide=Template Guide (WIP)
+main.book.developer_guide=Developer Guide
+main.book.configuration=Configuration Reference
+main.book.directive=Directive Reference (WIP)
+main.book.builtin_transformer=Built-in Transformers
+
+index.title=A template engine for Java programmer
+index.link.online-demo=Online Demo
+index.link.doc=Document
+index.link.get-rythm=Get Rythm
+
+load.found-bug=Found document defects?
+load.report-bug=Report it

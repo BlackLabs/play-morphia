@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Album Demo</title>
+    <meta charset="@_response_encoding">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <link rel="shortcut icon" type="image/png" href="/public/img/favicon.gif">
+    <style type="text/css">
+    </style>
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.0.1.min.js"></script>
+    <script>
+        if (!window.jQuery) {
+            document.write('<link href="/css/bootstrap-fontawesome.css" rel="stylesheet">'
+        @if(s().eq(lang, "zh")) {
+            + '<link rel="stylesheet" media="screen" href="/css/font.zh.css">'
+        } else {
+            + '<link rel="stylesheet" media="screen" href="/css/font.css">'
+        }
+            + '<link rel="stylesheet" media="screen" href="/css/site.css">'
+            + '<script src="/js/jquery.js">\x3C/script>'
+            + '<script src="/js/bootstrap.js">\x3C/script>'
+            + '<script src="/js/prettify.js">\x3C/script>'
+            );
+        } else {
+            document.write('<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">'
+            + '<link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.min.css" rel="stylesheet">'
+            + '<link rel="stylesheet" media="screen" href="/css/site.css">'
+        @if(s().eq(lang, "zh")) {
+            + '<link rel="stylesheet" media="screen" href="/css/font.zh.css">'
+        } else {
+            + '<link rel="stylesheet" media="screen" href="/css/font.css">'
+        }
+            + '<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.0/js/bootstrap.min.js">\x3C/script>'
+            + '<script src="//cdnjs.cloudflare.com/ajax/libs/prettify/r224/prettify.js">\x3C/script>'
+            );
+        }
+    </script>
+    <link rel="stylesheet" media="screen" href="/css/color-dark.css">
+    <link rel="stylesheet" media="screen" href="/css/color-gray.css">
+    @render("moreStyles")
+    @render("moreHeaderScripts")
+    @initCodeMarker()
+</head>
+<body class='@get("bodyClass") gray'>
+    <div id="wrap">
+        <div class="navbar navbar-fixed-top navbar-inverse">
+            <div class="navbar-inner">
+                <div class="container clearfix" style="padding: 5px;position: relative">
+                    <a data-target=".nav-collapse" data-toggle="collapse" class="btn btn-navbar">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    @codeMarker()
+                    <a class="brand" href="/">ALBUM DEMO</a>
+                    <div class="nav-collapse">
+                        @def opt(String pageId, String url) {
+                            @{
+                                String label = __i18n("main." + pageId);
+                            }
+                            
+                            <li>
+                                <a href="@url">@label.raw()</a>
+                            </li>
+                        }
+                        <ul class="nav">
+                            @codeMarker()
+                            @opt("Album List", "/")
+                            @opt("about", "/about")
+                        </ul>
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+    
+        <div class="main container" style="min-height: 600px">
+            @doLayout()
+        </div>
+        
+        <div id="push"></div>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <p class="pull-right">
+                &copy; Copyright 2013 @i18n("main.by") <a href=http://github.com/greenlaw110>@i18n("main.lgl")</a>
+                @codeMarker()                
+            </p>
+        </div>
+    </footer>
+
+    @render('moreScripts")
+</body>
+</html>
