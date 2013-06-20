@@ -1,3 +1,5 @@
+p(note). Play!Framework official web site is close to module update. Please follow https://gist.github.com/2868365 to get new morphia module version
+
 h1. PlayMorphia overview
 
 The PlayMorphia module a powerful and yet easy to use framework that provides "MongoDB":http://www.mongodb.org/ access to your Play!framework application. This module is built on top of the famous "Morphia project":http://code.google.com/p/morphia/.
