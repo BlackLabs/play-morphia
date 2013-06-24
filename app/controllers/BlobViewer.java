@@ -1,8 +1,7 @@
 package controllers;
 
-import com.greenlaw110.storage.ISObject;
-import com.greenlaw110.util.F;
-import com.greenlaw110.util.S;
+import org.osgl.storage.ISObject;
+import org.osgl.util.S;
 import play.cache.Cache;
 import play.modules.morphia.Blob;
 import play.modules.morphia.BlobStorageService;
@@ -25,7 +24,7 @@ public class BlobViewer extends Controller {
                 response.setContentTypeIfNotSet(sobj.getAttribute(ISObject.ATTR_CONTENT_TYPE));
                 renderBinary(sobj.asInputStream());
             }
-            F.Str s = S.str(key);
+            S.Str s = S.str(key);
             String ssKey = s.afterLast("-").get();
             BlobStorageService bss = BlobStorageService.getService(ssKey);
             String objKey = s.beforeFirst("-").get();

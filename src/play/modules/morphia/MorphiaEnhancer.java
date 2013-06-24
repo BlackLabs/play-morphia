@@ -2,8 +2,8 @@ package play.modules.morphia;
 
 import com.google.code.morphia.annotations.*;
 import com.google.code.morphia.utils.IndexDirection;
-import com.greenlaw110.storage.KeyGenerator;
-import com.greenlaw110.util.*;
+import org.osgl.storage.KeyGenerator;
+import org.osgl.util.*;
 import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;

@@ -1,6 +1,6 @@
 package play.modules.morphia;
 
-import com.greenlaw110.util.S;
+import org.osgl.util.S;
 import com.mongodb.BasicDBObject;
 
 import java.util.*;

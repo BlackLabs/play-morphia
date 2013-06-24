@@ -1,13 +1,13 @@
 package play.modules.morphia;
 
-import com.greenlaw110.exception.UnexpectedIOException;
-import com.greenlaw110.storage.ISObject;
-import com.greenlaw110.storage.IStorageService;
-import com.greenlaw110.storage.impl.SObject;
-import com.greenlaw110.util.C;
-import com.greenlaw110.util.E;
-import com.greenlaw110.util.S;
-import com.greenlaw110.util._;
+import org.osgl.exception.UnexpectedIOException;
+import org.osgl.storage.ISObject;
+import org.osgl.storage.IStorageService;
+import org.osgl.storage.impl.SObject;
+import org.osgl.util.C;
+import org.osgl.util.E;
+import org.osgl.util.S;
+import org.osgl.util._;
 import org.bson.types.ObjectId;
 import play.cache.Cache;
 import play.db.Model.BinaryField;
@@ -186,6 +186,10 @@ public class Blob implements BinaryField, Serializable {
     @Override
     public String type() {
         return sobj.getAttribute(CONTENT_TYPE);
+    }
+    
+    public String fileName() {
+        return sobj.getAttribute(FILENAME);
     }
 
     @Override

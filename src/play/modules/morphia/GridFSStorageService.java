@@ -1,12 +1,12 @@
 package play.modules.morphia;
 
-import com.greenlaw110.exception.UnexpectedIOException;
-import com.greenlaw110.storage.ISObject;
-import com.greenlaw110.storage.IStorageService;
-import com.greenlaw110.storage.KeyGenerator;
-import com.greenlaw110.storage.impl.SObject;
-import com.greenlaw110.storage.impl.StorageServiceBase;
-import com.greenlaw110.util.C;
+import org.osgl.exception.UnexpectedIOException;
+import org.osgl.storage.ISObject;
+import org.osgl.storage.IStorageService;
+import org.osgl.storage.KeyGenerator;
+import org.osgl.storage.impl.SObject;
+import org.osgl.storage.impl.StorageServiceBase;
+import org.osgl.util.C;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFS;

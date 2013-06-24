@@ -1,11 +1,11 @@
 package play.modules.morphia;
 
-import com.greenlaw110.exception.UnexpectedIOException;
-import com.greenlaw110.storage.ISObject;
-import com.greenlaw110.storage.IStorageService;
-import com.greenlaw110.storage.KeyGenerator;
-import com.greenlaw110.storage.impl.StorageServiceBase;
-import com.greenlaw110.util.*;
+import org.osgl.exception.UnexpectedIOException;
+import org.osgl.storage.ISObject;
+import org.osgl.storage.IStorageService;
+import org.osgl.storage.KeyGenerator;
+import org.osgl.storage.impl.StorageServiceBase;
+import org.osgl.util.*;
 import play.Logger;
 import play.cache.Cache;
 

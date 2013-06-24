@@ -1,6 +1,6 @@
 package morphia;
 
-import com.greenlaw110.util.S;
+import org.osgl.util.S;
 
 import java.util.ArrayList;
 import java.util.List;
