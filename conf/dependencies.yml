@@ -1,5 +1,5 @@
 # History
-# 1.3     - new blob handling logic, enable external storage (e.g. S3) in addition to gridfs
+# 1.3a    - new blob handling logic, enable external storage (e.g. S3) in addition to gridfs
 # 1.2.15a - improve Blob handling
 # 1.2.15  - Add <code>isDeleted()</code> method to <code>Model</code> class 
 #         - "new Blob() should not save the content into gridfs":https://github.com/greenlaw110/play-morphia/issues/107
@@ -30,6 +30,6 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.3
+self: play -> morphia 1.3a
 require:
     - play 1.2

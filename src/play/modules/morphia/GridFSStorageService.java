@@ -1,5 +1,10 @@
 package play.modules.morphia;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSInputFile;
 import org.osgl.exception.UnexpectedIOException;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
@@ -7,11 +12,7 @@ import org.osgl.storage.KeyGenerator;
 import org.osgl.storage.impl.SObject;
 import org.osgl.storage.impl.StorageServiceBase;
 import org.osgl.util.C;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSDBFile;
-import com.mongodb.gridfs.GridFSInputFile;
+import org.osgl.util.S;
 import play.Logger;
 import play.mvc.Router;
 
@@ -40,8 +41,16 @@ public class GridFSStorageService extends StorageServiceBase implements IStorage
             return null;
         }
         ISObject sobj = SObject.valueOf(key, file.getInputStream());
-        return sobj.setAttribute(Blob.FILENAME, file.getFilename())
-            .setAttribute(Blob.CONTENT_TYPE, file.getContentType());
+        String fn = file.getFilename();
+        if (S.empty(fn)) {
+            fn = S.random(8);
+        }
+        String type = file.getContentType();
+        if (S.empty(type)) {
+            type = "application/octet-stream";
+        }
+        return sobj.setAttribute(Blob.FILENAME, fn)
+            .setAttribute(Blob.CONTENT_TYPE, type);
     }
 
     @Override

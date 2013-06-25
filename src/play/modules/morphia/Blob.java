@@ -194,7 +194,7 @@ public class Blob implements BinaryField, Serializable {
 
     @Override
     public boolean exists() {
-        return S.neq(NULL_KEY, sobj.getKey());
+        return null != sobj && S.neq(NULL_KEY, sobj.getKey());
     }
 
     public void delete() {

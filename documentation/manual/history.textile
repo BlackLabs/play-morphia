@@ -4,7 +4,7 @@ h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
 
-h2. <a name="1.3">Updates in 1.3</a>
+h2. <a name="1.3a">Updates in 1.3a</a>
 
 * "Support external storage in addition to GridFS":https://github.com/greenlaw110/play-morphia/issues/110
 

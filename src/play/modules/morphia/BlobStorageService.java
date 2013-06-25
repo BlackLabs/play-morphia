@@ -39,14 +39,28 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     private static class SJob<T> extends play.jobs.Job<T> {
         
         F.IFunc0<T> func;
+        F.IFunc0<Void> success;
+        F.IFunc1<Void, Throwable> fail;
         
         SJob(F.IFunc0<T> func) {
+            this(func, F.F0, F.F1);
+        }
+        SJob(F.IFunc0<T> func, F.IFunc0 success, F.IFunc1<Void, Throwable> fail) {
             this.func = func;
+            this.success = success;
+            this.fail = fail;
         }
 
         @Override
         public T doJobWithResult() throws Exception {
-            return func.run();
+            try {
+                T t = func.run();
+                success.run();
+                return t;
+            } catch (Throwable e) {
+                fail.run(e);
+                return null;
+            }
         }
     }
     
@@ -116,7 +130,11 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     }
 
     static void putLater(String key, ISObject sobj, IStorageService ss) {
-        new SJob<Void>(IStorageService.f.put(key, sobj, ss)).now();
+        putLater(key, sobj, ss, F.F0, F.F1);
+    }
+
+    static void putLater(String key, ISObject sobj, IStorageService ss, F.IFunc0<Void> success, F.IFunc1<Void, Throwable> fail) {
+        new SJob<Void>(IStorageService.f.put(key, sobj, ss), success, fail).now();
     }
 
     static void removeLater(String key, IStorageService ss) {
@@ -128,29 +146,48 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     }
 
     @Override
-    public ISObject get(String key) {
-        ISObject sobj = ss.get(key);
-        if (!sobj.isValid()) {
-            Throwable cause = sobj.getException();
-            Logger.warn(cause, "error load blob by key[%s]", key);
-            if (migrateData) {
-                sobj = gs.get(key);
-                if (null != sobj) {
-                    putLater(key, sobj, ss);
-                    removeLater(key, gs, 60);
-                }
+    public ISObject get(final String key) {
+        ISObject sobj = Cache.get(key, ISObject.class);
+        if (null != sobj) {
+            return sobj;
+        }
+        if (migrateData) {
+            // try gfs first
+            sobj = gs.get(key);
+            if (null != sobj) {
+                putLater(key, sobj, ss, new F.F0<Void>() {
+                    @Override
+                    public Void run() {
+                        removeLater(key, gs, 60);
+                        return null;
+                    }
+                }, F.F1);
+            }
+        }
+        if (null == sobj) {
+            sobj = ss.get(key);
+            if (!sobj.isValid()) {
+                Throwable cause = sobj.getException();
+                Logger.warn(cause, "error load blob by key[%s]", key);
             }
         }
         return sobj;
     }
 
     @Override
-    public void put(String key, ISObject sobj) throws UnexpectedIOException {
+    public void put(final String key, final ISObject sobj) throws UnexpectedIOException {
         if (putAsync) {
-            putLater(key, sobj, ss);
+            putLater(key, sobj, ss, F.F0, new F.F1<Void, Throwable>() {
+                @Override
+                public Void run(Throwable e) {
+                    Logger.warn(e, "error put storage object with key[%s]. persist into GridFS", key);
+                    gs.put(key, sobj);
+                    return null;
+                }
+            });
             long len = sobj.getLength();
             // suppose the network transfer 100K per second
-            String timeout = len / (1000 * 100) + "s";
+            String timeout = (5 + len / (1000 * 100)) + "s";
             Cache.set(key, sobj, timeout);
         } else {
             ss.put(key, sobj);
@@ -208,5 +245,23 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         type = S.after(type, "/");
         String key = legacy + "." + type;
         return getKey(key);
+    }
+
+    public void migrate(String key, F.IFunc1<Void, Throwable> fail) {
+        if (!migrateData) {
+            return;
+        }
+        
+        ISObject sobj = gs.get(key);
+        if (null == sobj) {
+            return;
+        }
+
+        try {
+            ss.put(key, sobj);
+            gs.remove(key);
+        } catch (Throwable e) {
+            fail.run(e);
+        }
     }
 }

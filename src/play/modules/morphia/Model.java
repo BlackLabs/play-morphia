@@ -663,7 +663,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     protected void deleteBlobs() {
-        Map<String, String> blobKeys = getBlobKeys();
+        Map<String, String> blobKeys = __getBlobKeys();
         for (Map.Entry<String, String> entry: blobKeys.entrySet()) {
             bss(entry.getKey()).remove(entry.getValue());
         }
@@ -677,7 +677,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     protected void deleteBlobsInBatch(MorphiaQuery q) {
-        q.retrievedFields(true, "blobKeys");
+        q.retrievedFields(true, "__blobs");
         for (Model model : q.asList()) {
             model.deleteBlobs();
         }
@@ -1084,9 +1084,9 @@ public class Model implements Serializable, play.db.Model {
         throw toBeEnhanced();
     }
 
-    private Map<String, String> __blobs = new HashMap<String, String>();
+    private Map<String, String> __blobs = C.newMap();
     
-    protected Map<String, String> getBlobKeys() {
+    protected Map<String, String> __getBlobKeys() {
         return C.map(__blobs);
     }
 
@@ -1121,9 +1121,9 @@ public class Model implements Serializable, play.db.Model {
     }
     
     protected void removeBlobs(MorphiaQuery q, String fieldName) {
-        q.retrievedFields(true, "blobKeys");
+        q.retrievedFields(true, "__blobs");
         for (Model model : q.asList()) {
-            String key = model.getBlobKeys().get(fieldName);
+            String key = model.__getBlobKeys().get(fieldName);
             if (null != key) {
                 bss(fieldName).remove(key);
             }
