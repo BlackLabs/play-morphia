@@ -1494,9 +1494,13 @@ public class Model implements Serializable, play.db.Model {
          * @return
          */
         public MorphiaQuery findBy(String query, Object... params) {
-            E.invalidArgIf(null == query || params.length == 0);
-            if (query.startsWith("by"))
+            E.invalidArgIf(null == query);
+            if (query.startsWith("by")) {
                 query = query.substring(2);
+            }
+            if (null == params) {
+                params = new Object[]{null};
+            }
             String[] keys = query.split("(And|[,;\\s]+)");
 
             E.invalidArgIf((params.length != 1) && (keys.length != params.length), 

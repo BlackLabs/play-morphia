@@ -168,6 +168,13 @@ public class Blob implements BinaryField, Serializable {
     public InputStream get() {
         return sobj.asInputStream();
     }
+    
+    public InputStream forceGet() {
+        if (sobj.isEmpty()) {
+            sobj = ss.forceGet(sobj.getKey());
+        }
+        return sobj.asInputStream();
+    }
 
     @Override
     public void set(InputStream is, String type) {
@@ -248,12 +255,12 @@ public class Blob implements BinaryField, Serializable {
             }
             Cache.set(tmpId, this, "10min");
             Map<String, Object> params = C.newMap("key", tmpId);
-            return Router.getFullUrl("controllers.BlobViewer.view", params);
+            return Router.getFullUrl("controllers.BlobController.view", params);
         } else {
             String key = getKey();
             if (Cache.get(key) != null) {
                 Map<String, Object> params = C.newMap("key", key);
-                return Router.getFullUrl("controllers.BlobViewer.view", params);
+                return Router.getFullUrl("controllers.BlobController.view", params);
             } else {
                 return ss.getUrl(this);
             }

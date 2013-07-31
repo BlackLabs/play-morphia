@@ -76,7 +76,6 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     private IStorageService gs = null;
     private String ssKey;
     private boolean putAsync = false;
-    private boolean noGet = false;
 
     private BlobStorageService(boolean migrateData, KeyGenerator keygen, IStorageService ss, String ssKey) {
         super(keygen);
@@ -115,7 +114,6 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             boolean migrateData = MorphiaPlugin.migrateData;
             bss = new BlobStorageService(migrateData, keygen, ss, ssKey);
             registry.put(bss.ssKey, bss);
-            bss.noGet = Boolean.parseBoolean(_.ensureGet(ssConf.get("storage." + storage + ".get.waive"), "false"));
             bss.putAsync = Boolean.parseBoolean(_.ensureGet(ssConf.get("storage." + storage + ".put.async"), "false"));
         }
         return bss;
@@ -166,6 +164,35 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         }
         if (null == sobj) {
             sobj = ss.get(key);
+            if (!sobj.isValid()) {
+                Throwable cause = sobj.getException();
+                Logger.warn(cause, "error load blob by key[%s]", key);
+            }
+        }
+        return sobj;
+    }
+
+    @Override
+    public ISObject forceGet(final String key) {
+        ISObject sobj = Cache.get(key, ISObject.class);
+        if (null != sobj) {
+            return sobj;
+        }
+        if (migrateData) {
+            // try gfs first
+            sobj = gs.get(key);
+            if (null != sobj) {
+                putLater(key, sobj, ss, new F.F0<Void>() {
+                    @Override
+                    public Void run() {
+                        removeLater(key, gs, 60);
+                        return null;
+                    }
+                }, F.F1);
+            }
+        }
+        if (null == sobj) {
+            sobj = ss.forceGet(key);
             if (!sobj.isValid()) {
                 Throwable cause = sobj.getException();
                 Logger.warn(cause, "error load blob by key[%s]", key);
@@ -247,6 +274,18 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         return getKey(key);
     }
 
+    private static int count(String s, String search) {
+        int n = 0, l = search.length();
+        while (true) {
+            int i = s.indexOf(search);
+            if (-1 == i) {
+                return n;
+            }
+            n++;
+            s = s.substring(i + l);
+        }
+    }
+    
     public void migrate(String key, F.IFunc1<Void, Throwable> fail) {
         if (!migrateData) {
             return;
@@ -257,9 +296,14 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             return;
         }
 
+        String key0 = key;
+        if (count(key, "_") == 2 && S.after(key, "_").length() == 24) {
+            // the very old Blob name
+            key = S.afterFirst(key, "_");
+        }
         try {
             ss.put(key, sobj);
-            gs.remove(key);
+            gs.remove(key0);
         } catch (Throwable e) {
             fail.run(e);
         }

@@ -1,1 +1,2 @@
-GET /blob/{id} BlobViewer.view
+GET /blob/migrate BlobController.migrate
+GET /blob/{id} BlobController.view

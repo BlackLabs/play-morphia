@@ -1,0 +1,8 @@
+#{extends 'BlobController/_layout.html'/}
+#{set title: 'Blob Migrate Tool' /}
+#{set description: 'Migrating blobs from GridFS to ' + play.modules.morphia.MorphiaPlugin.defaultStorage /}
+<script>
+    setTimeout(function(){
+        window.location.reload();
+    }, 10 * 1000);
+</script>
