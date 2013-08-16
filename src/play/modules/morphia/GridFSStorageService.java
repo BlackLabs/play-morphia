@@ -75,7 +75,7 @@ public class GridFSStorageService extends StorageServiceBase implements IStorage
     @Override
     public String getUrl(String key) {
         Map<String, Object> params = C.newMap("key", key);
-        return Router.getFullUrl("controllers.BlobViewer.view", params);
+        return Router.getFullUrl("controllers.BlobController.view", params);
     }
 
     private static GridFSDBFile findFile(String key) {
