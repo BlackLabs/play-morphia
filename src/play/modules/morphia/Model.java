@@ -158,11 +158,9 @@ public class Model implements Serializable, play.db.Model {
 
                                     MorphiaQuery q = new MorphiaQuery(c);
                                     q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, _id, Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
-                                    try {
+                                    Object to = q.get();
+                                    if (to != null) {
                                         l.add(q.get());
-
-                                    } catch (NoResultException e) {
-                                        Validation.addError(name + "." + field.getName(), "validation.notFound", _id);
                                     }
                                 }
                                 bw.set(field.getName(), o, l);
@@ -173,22 +171,12 @@ public class Model implements Serializable, play.db.Model {
 
                                 MorphiaQuery q = new MorphiaQuery(c);
                                 q.filter(keyName, Binder.directBind(rootParamNode.getOriginalKey(), annotations, ids[0], Model.Manager.factoryFor((Class<Model>) Play.classloader.loadClass(relation)).keyType(), null));
-                                try {
-                                    Object to = q.get();
+                                Object to = q.get();
+                                if (to != null) {
                                     edit(paramNode, field.getName(), to, field.getAnnotations());
                                     // Remove it to prevent us from finding it again later
                                     paramNode.removeChild( field.getName(), removedNodesList);
                                     bw.set(field.getName(), o, to);
-                                } catch (NoResultException e) {
-                                    Validation.addError(fieldParamNode.getOriginalKey(), "validation.notFound", ids[0]);
-                                    // Remove only the key to prevent us from finding it again later
-                                    // This how the old impl does it..
-                                    fieldParamNode.removeChild(keyName, removedNodesList);
-                                    if (fieldParamNode.getAllChildren().size()==0) {
-                                        // remove the whole node..
-                                        paramNode.removeChild( field.getName(), removedNodesList);
-                                    }
-
                                 }
 
                             } else if (ids != null && ids.length > 0 && ids[0].equals("")) {
