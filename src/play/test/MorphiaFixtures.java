@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.scanner.ScannerException;
+import org.yaml.snakeyaml.constructor.CustomClassLoaderConstructor;
 import play.Play;
 import play.classloading.ApplicationClasses;
 import play.data.binding.Binder;
@@ -78,7 +79,7 @@ public class MorphiaFixtures extends Fixtures {
 
             String renderedYaml = TemplateLoader.load(yamlFile).render();
 
-            Yaml yaml = new Yaml();
+            Yaml yaml = new Yaml(new CustomClassLoaderConstructor(Play.classloader));
             Object o = yaml.load(renderedYaml);
             if (o instanceof LinkedHashMap<?, ?>) {
                 @SuppressWarnings("unchecked") LinkedHashMap<Object, Map<?, ?>> objects = (LinkedHashMap<Object, Map<?, ?>>) o;
