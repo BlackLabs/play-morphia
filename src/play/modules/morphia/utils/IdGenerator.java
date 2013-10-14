@@ -1,15 +1,11 @@
 package play.modules.morphia.utils;
 
+import com.google.code.morphia.Datastore;
 import org.bson.types.ObjectId;
-
+import org.osgl.util.S;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;
 import play.modules.morphia.MorphiaPlugin.IdType;
-
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.query.Query;
-import com.google.code.morphia.query.UpdateOperations;
-import com.google.code.morphia.utils.LongIdEntity.StoredId;
 import play.modules.morphia.Seq;
 
 
@@ -84,7 +80,7 @@ public class IdGenerator {
     }
 
     public static String processStringId(Object id) {
-        return null == id ? null : id.toString();
+        return S.empty(S.string(id)) ? null : id.toString();
     }
 
     public static ObjectId processObjectId(Object id) {
