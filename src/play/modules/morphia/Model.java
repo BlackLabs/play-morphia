@@ -1135,7 +1135,7 @@ public class Model implements Serializable, play.db.Model {
     } 
     
     private static UnsupportedException toBeEnhanced(String msg, Object... args) {
-        return toBeEnhanced(msg, args);
+        return E.unsupport(msg, args);
     }
 
     public static class MorphiaUpdateOperations {
