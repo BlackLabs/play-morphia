@@ -9,15 +9,15 @@ import com.google.code.morphia.annotations.Reference;
 import com.google.code.morphia.annotations.Transient;
 import com.google.code.morphia.mapping.Mapper;
 import com.google.code.morphia.query.*;
+import com.mongodb.*;
+import com.mongodb.gridfs.GridFS;
+import org.apache.commons.lang.StringUtils;
+import org.bson.types.CodeWScope;
 import org.osgl.exception.UnsupportedException;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
 import org.osgl.util._;
-import com.mongodb.*;
-import com.mongodb.gridfs.GridFS;
-import org.apache.commons.lang.StringUtils;
-import org.bson.types.CodeWScope;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -29,7 +29,6 @@ import play.exceptions.UnexpectedException;
 import play.modules.morphia.utils.IdGenerator;
 import play.mvc.Scope.Params;
 
-import javax.persistence.NoResultException;
 import java.io.Serializable;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
@@ -315,7 +314,7 @@ public class Model implements Serializable, play.db.Model {
     private void generateId_() {
         if (isEmbedded_())
             return;
-        if (null == getId()) {
+        if (null == getId() || S.empty(getIdAsStr())) {
             if (isUserDefinedId_()) {
                 throw new IllegalStateException(
                         "User defined ID should be populated before persist");

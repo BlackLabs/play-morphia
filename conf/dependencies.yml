@@ -1,5 +1,5 @@
 # History
-# 1.3.6   - Fix https://github.com/greenlaw110/play-morphia/issues/114
+# 1.3.6a  - Fix https://github.com/greenlaw110/play-morphia/issues/114
 # 1.3.5   - Merge pull requests: https://github.com/greenlaw110/play-morphia/pull/113
 #           1. NullPointerException when creating a Model which has an @Embeded entity
 #           2. Added Play! custom class loader to SnakeYAML
@@ -38,6 +38,6 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.3.6
+self: play -> morphia 1.3.6a
 require:
     - play 1.2
