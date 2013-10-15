@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  */
 public final class MorphiaPlugin extends PlayPlugin {
 
-    public static final String VERSION = "1.3.1";
+    public static final String VERSION = "1.3.6a";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
