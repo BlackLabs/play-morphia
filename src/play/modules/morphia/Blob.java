@@ -1,5 +1,6 @@
 package play.modules.morphia;
 
+import org.bson.types.ObjectId;
 import org.osgl.exception.UnexpectedIOException;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
@@ -8,10 +9,10 @@ import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
 import org.osgl.util._;
-import org.bson.types.ObjectId;
 import play.cache.Cache;
 import play.db.Model.BinaryField;
 import play.libs.F;
+import play.modules.morphia.utils.MimeTypes;
 import play.mvc.Router;
 
 import java.io.File;
@@ -115,13 +116,17 @@ public class Blob implements BinaryField, Serializable {
 
     public Blob(File inputFile, String type) {
         sobj = SObject.valueOf(NULL_KEY, inputFile);
+        if (S.empty(type)) {
+            type = MimeTypes.probe(inputFile);
+        }
         if (S.notEmpty(type)) {
             type(type);
         }
+        sobj.setAttribute(FILENAME, inputFile.getName());
     }
 
     public Blob(File inputFile) {
-        sobj = SObject.valueOf(NULL_KEY, inputFile);
+        this(inputFile, null);
     }
 
     public Blob(ISObject sobj, BlobStorageService ss) {

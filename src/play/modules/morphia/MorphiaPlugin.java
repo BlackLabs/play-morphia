@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  */
 public final class MorphiaPlugin extends PlayPlugin {
 
-    public static final String VERSION = "1.3.6b";
+    public static final String VERSION = "1.3.7";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -216,6 +216,7 @@ public final class MorphiaPlugin extends PlayPlugin {
         //onConfigurationRead(); // ensure configuration be read before
         // enhancement
         initIdType_();
+        initCrud_();
         e_.enhanceThisClass(applicationClass);
     }
 
@@ -225,7 +226,6 @@ public final class MorphiaPlugin extends PlayPlugin {
     public static synchronized void registerGlobalEventHandler(IMorphiaEventHandler handler) {
         if (null == handler) throw new NullPointerException();
         if (!globalEventHandlers_.contains(handler)) globalEventHandlers_.add(handler);
-
     }
 
     public static synchronized void unregisterGlobalEventHandler(IMorphiaEventHandler handler) {
@@ -403,6 +403,29 @@ public final class MorphiaPlugin extends PlayPlugin {
 
     public static Map<String, String> getDefaultStorageConf() {
         return ssConfs.get(defaultStorage);
+    }
+
+    public static Boolean crud = null;
+
+    private void initCrud_() {
+        if (null != crud) {
+            return;
+        }
+        if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.crud", "false"))) {
+            crud = false;
+            return;
+        }
+        try {
+            //Class.forName("controllers.CRUD");
+            crud = true;
+        } catch (Exception e) {
+            throw new ConfigurationException("Cannot find CRUD class. Please make sure CRUD module is enabled for your application; or disable 'morphia.crud' option");
+        }
+    }
+
+    @Override
+    public void onLoad() {
+        initCrud_();
     }
 
     @Override

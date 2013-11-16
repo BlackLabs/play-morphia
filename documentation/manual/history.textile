@@ -3,6 +3,41 @@ h1. PlayMorphia version history
 h2. <a name="roadmap">TODO list</a>
 
 * MongoDB multi-tenant support
+# 1.3.7a  - https://github.com/greenlaw110/play-morphia/issues/117
+# 1.3.7   - https://github.com/greenlaw110/play-morphia/issues/115
+# 1.3.6b  - https://github.com/greenlaw110/play-morphia/issues/114
+
+h2. <a name="1.3.7a">Updates in 1.3.7a</a>
+
+Bug fixed:
+
+* "Hide generated fields for CRUD":https://github.com/greenlaw110/play-morphia/issues/115
+* "File name not correctly retrieved when using fs(File system) as storage service":https://github.com/greenlaw110/play-morphia/issues/117
+
+h2. <a name="1.3.6b">Updates in 1.3.6b</a>
+
+Bug fixed:
+
+* "CRUD add model generate empty String as _id":https://github.com/greenlaw110/play-morphia/issues/114
+
+h2. <a name="1.3.5">Updates in 1.3.5</a>
+
+Merge pull requests: https://github.com/greenlaw110/play-morphia/pull/113
+
+* NullPointerException when creating a Model which has an @Embeded entity
+* Added Play! custom class loader to SnakeYAML
+
+h2. <a name="1.3.4a">Updates in 1.3.4a</a>
+
+Add storage migrate controller and viewers
+
+h2. <a name="1.3.3">Updates in 1.3.3</a>
+
+Migrate even earlier blob version which name is composed by modelClass_fieldName_oid
+
+h2. <a name="1.3.2">Updates in 1.3.2</a>
+
+Add blob migrate controller action method
 
 h2. <a name="1.3.1">Updates in 1.3.1</a>
 

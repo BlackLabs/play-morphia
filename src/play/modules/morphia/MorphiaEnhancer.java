@@ -2,8 +2,6 @@ package play.modules.morphia;
 
 import com.google.code.morphia.annotations.*;
 import com.google.code.morphia.utils.IndexDirection;
-import org.osgl.storage.KeyGenerator;
-import org.osgl.util.*;
 import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
@@ -12,6 +10,8 @@ import javassist.bytecode.annotation.Annotation;
 import javassist.bytecode.annotation.ArrayMemberValue;
 import javassist.bytecode.annotation.EnumMemberValue;
 import javassist.bytecode.annotation.MemberValue;
+import org.osgl.storage.KeyGenerator;
+import org.osgl.util.*;
 import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
@@ -30,7 +30,22 @@ import java.util.Map;
  */
 public class MorphiaEnhancer extends Enhancer {
 
+    public static interface FieldEnhancer {
+        void enhance(CtField field, CtClass clz);
+    }
+
     public static final String PACKAGE_NAME = "play.modules.morphia";
+
+    private static FieldEnhancer crud = null;
+
+    private static void enhanceCRUDField(CtField fld, CtClass clz) {
+        if (MorphiaPlugin.crud) {
+            if (null == crud) {
+                crud = new CRUDFieldEnhancer();
+            }
+            crud.enhance(fld, clz);
+        }
+    }
 
     @Override
     public void enhanceThisClass(ApplicationClass applicationClass) throws Exception {
@@ -177,6 +192,7 @@ public class MorphiaEnhancer extends Enhancer {
                     AnnotationsAttribute.visibleTag);
             Annotation idAnn = new Annotation(Id.class.getName(), ctClass.getClassFile().getConstPool());
             aa.addAnnotation(idAnn);
+            enhanceCRUDField(idField, ctClass);
             idField.getFieldInfo().addAttribute(aa);
             ctClass.addField(idField);
             Logger.trace("ID field added to entity[%2$s]: %1$s", idField.getSignature(), ctClass.getName());
@@ -223,11 +239,13 @@ public class MorphiaEnhancer extends Enhancer {
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
         	createdField.getFieldInfo().addAttribute(attribute);
         	createdField.setModifiers(Modifier.PUBLIC);
+        	enhanceCRUDField(createdField, ctClass);
         	ctClass.addField(createdField);
 
         	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
         	modifiedField.getFieldInfo().addAttribute(attribute);
         	modifiedField.setModifiers(Modifier.PUBLIC);
+            enhanceCRUDField(modifiedField, ctClass);
         	ctClass.addField(modifiedField);
 
         	CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
