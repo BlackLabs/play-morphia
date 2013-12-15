@@ -4,10 +4,11 @@ import com.google.code.morphia.Datastore;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.osgl._;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.KeyGenerator;
-import org.osgl.util.F;
 import org.osgl.util.S;
+import org.osgl.util.Str;
 import play.Logger;
 import play.cache.Cache;
 import play.modules.morphia.Blob;
@@ -34,10 +35,10 @@ public class BlobController extends Controller {
                 response.setContentTypeIfNotSet(sobj.getAttribute(ISObject.ATTR_CONTENT_TYPE));
                 renderBinary(sobj.asInputStream());
             }
-            S.Str s = S.str(key);
-            String ssKey = s.afterLast("-").get();
+            Str s = S.str(key);
+            String ssKey = s.afterLast("-").val();
             BlobStorageService bss = BlobStorageService.getService(ssKey);
-            String objKey = s.beforeFirst("-").get();
+            String objKey = s.beforeFirst("-").val();
             ISObject sobj = bss.get(objKey);
             if (null == objKey) {
                 sobj = Cache.get(key, ISObject.class);
@@ -84,9 +85,9 @@ public class BlobController extends Controller {
                     }
                     Logger.info("migrating %s of %s: %s...", i++, len, s);
                     final String key = s;
-                    ss.migrate(key, new F.F1<Void, Throwable>() {
+                    ss.migrate(key, new _.F1<Throwable, Void>() {
                         @Override
-                        public Void run(Throwable o) {
+                        public Void apply(Throwable o) {
                             errs.incrementAndGet();
                             Logger.error(o, "error migrating blob: %s", key);
                             return null;

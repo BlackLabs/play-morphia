@@ -1,12 +1,11 @@
 package models;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import play.modules.morphia.Model;
-
 import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Transient;
+import play.modules.morphia.Model;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings("serial")
 @Entity
@@ -55,6 +54,7 @@ public class LifeCycle extends Model {
     
     @Loaded
     void loaded() throws Exception {
+        if (null == foo) return; // batch deleting
         if (loadedFail) throw new Exception();
         Event.newEvent(foo, Loaded.class);
     }
@@ -160,6 +160,7 @@ public class LifeCycle extends Model {
         
         @Loaded
         void loaded() throws Exception {
+            if (null == fee) return; // batch deleting
             if (loadedFail) throw new Exception();
             Event.newEvent(fee, Loaded.class);
         }

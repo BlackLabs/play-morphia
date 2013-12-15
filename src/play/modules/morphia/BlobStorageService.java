@@ -1,11 +1,14 @@
 package play.modules.morphia;
 
+import org.osgl._;
 import org.osgl.exception.UnexpectedIOException;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.storage.KeyGenerator;
 import org.osgl.storage.impl.StorageServiceBase;
-import org.osgl.util.*;
+import org.osgl.util.C;
+import org.osgl.util.E;
+import org.osgl.util.S;
 import play.Logger;
 import play.cache.Cache;
 
@@ -38,14 +41,14 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     
     private static class SJob<T> extends play.jobs.Job<T> {
         
-        F.IFunc0<T> func;
-        F.IFunc0<Void> success;
-        F.IFunc1<Void, Throwable> fail;
+        _.Func0<T> func;
+        _.Func0<?> success;
+        _.Function<Throwable, Void> fail;
         
-        SJob(F.IFunc0<T> func) {
-            this(func, F.F0, F.F1);
+        SJob(_.Func0<T> func) {
+            this(func, _.F0, _.F1);
         }
-        SJob(F.IFunc0<T> func, F.IFunc0 success, F.IFunc1<Void, Throwable> fail) {
+        SJob(_.Func0<T> func, _.Func0<?> success, _.Function<Throwable, Void> fail) {
             this.func = func;
             this.success = success;
             this.fail = fail;
@@ -54,11 +57,11 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         @Override
         public T doJobWithResult() throws Exception {
             try {
-                T t = func.run();
-                success.run();
+                T t = func.apply();
+                success.apply();
                 return t;
             } catch (Throwable e) {
-                fail.run(e);
+                fail.apply(e);
                 return null;
             }
         }
@@ -79,7 +82,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
 
     private BlobStorageService(boolean migrateData, KeyGenerator keygen, IStorageService ss, String ssKey) {
         super(keygen);
-        _.NPE(keygen, ss);
+        E.NPE(keygen, ss);
         this.ss = ss;
         this.migrateData = migrateData && (!(ss instanceof GridFSStorageService));
         if (this.migrateData) {
@@ -128,10 +131,10 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     }
 
     static void putLater(String key, ISObject sobj, IStorageService ss) {
-        putLater(key, sobj, ss, F.F0, F.F1);
+        putLater(key, sobj, ss, _.F0, _.F1);
     }
 
-    static void putLater(String key, ISObject sobj, IStorageService ss, F.IFunc0<Void> success, F.IFunc1<Void, Throwable> fail) {
+    static void putLater(String key, ISObject sobj, IStorageService ss, _.Func0<Void> success, _.Func1<Throwable, Void> fail) {
         new SJob<Void>(IStorageService.f.put(key, sobj, ss), success, fail).now();
     }
 
@@ -153,17 +156,20 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             // try gfs first
             sobj = gs.get(key);
             if (null != sobj) {
-                putLater(key, sobj, ss, new F.F0<Void>() {
+                putLater(key, sobj, ss, new _.F0<Void>() {
                     @Override
-                    public Void run() {
+                    public Void apply() {
                         removeLater(key, gs, 60);
                         return null;
                     }
-                }, F.F1);
+                }, _.F1);
             }
         }
         if (null == sobj) {
             sobj = ss.get(key);
+            if (null == sobj) {
+                return sobj;
+            }
             if (!sobj.isValid()) {
                 Throwable cause = sobj.getException();
                 Logger.warn(cause, "error load blob by key[%s]", key);
@@ -182,13 +188,13 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             // try gfs first
             sobj = gs.get(key);
             if (null != sobj) {
-                putLater(key, sobj, ss, new F.F0<Void>() {
+                putLater(key, sobj, ss, new _.F0<Void>() {
                     @Override
-                    public Void run() {
+                    public Void apply() {
                         removeLater(key, gs, 60);
                         return null;
                     }
-                }, F.F1);
+                }, _.F1);
             }
         }
         if (null == sobj) {
@@ -204,9 +210,9 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     @Override
     public void put(final String key, final ISObject sobj) throws UnexpectedIOException {
         if (putAsync) {
-            putLater(key, sobj, ss, F.F0, new F.F1<Void, Throwable>() {
+            putLater(key, sobj, ss, _.F0, new _.F1<Throwable, Void>() {
                 @Override
-                public Void run(Throwable e) {
+                public Void apply(Throwable e) {
                     Logger.warn(e, "error put storage object with key[%s]. persist into GridFS", key);
                     gs.put(key, sobj);
                     return null;
@@ -259,7 +265,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     }
 
     public static String getLegacyKey(String key) {
-        return S.str(key).after("/").before(".").get();
+        return S.str(key).after("/").before(".").value();
     }
 
     public String getKey(String hostId, String fieldName, Blob blob) {
@@ -286,7 +292,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         }
     }
     
-    public void migrate(String key, F.IFunc1<Void, Throwable> fail) {
+    public void migrate(String key, _.Func1<Throwable, Void> fail) {
         if (!migrateData) {
             return;
         }
@@ -305,7 +311,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             ss.put(key, sobj);
             gs.remove(key0);
         } catch (Throwable e) {
-            fail.run(e);
+            fail.apply(e);
         }
     }
 }

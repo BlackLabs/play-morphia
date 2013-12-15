@@ -17,7 +17,6 @@ import org.osgl.exception.UnsupportedException;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
-import org.osgl.util._;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -1078,12 +1077,12 @@ public class Model implements Serializable, play.db.Model {
     }
 
     protected void __setBlobKey(String field, String blobKey) {
-        _.NPE(field, blobKey);
+        E.NPE(field, blobKey);
         __blobs.put(field, blobKey);
     }
 
     protected String __getBlobKey(String field) {
-        _.NPE(field);
+        E.NPE(field);
         return __blobs.get(field);
     }
 

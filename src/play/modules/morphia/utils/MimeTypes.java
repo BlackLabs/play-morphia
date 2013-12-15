@@ -66,7 +66,7 @@ public enum MimeTypes {
         // try JDK util first
         String type = URLConnection.guessContentTypeFromName(fileName);
         if (null == type) {
-            String suffix = "." + S.str(fileName).afterLast(".").get();
+            String suffix = "." + S.afterLast(fileName, ".");
             type = _.get(suffix);
         }
         return type;

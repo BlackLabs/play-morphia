@@ -17,7 +17,7 @@ import com.mongodb.gridfs.GridFS;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
-import org.osgl.util._;
+import org.osgl._;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
 import play.Logger;
@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  */
 public final class MorphiaPlugin extends PlayPlugin {
 
-    public static final String VERSION = "1.3.7";
+    public static final String VERSION = "1.4.0";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -376,6 +376,7 @@ public final class MorphiaPlugin extends PlayPlugin {
     }
 
     public static Map<String, Class<? extends IStorageService>> ssMap = C.newMap("gfs", GridFSStorageService.class);
+
     public static Map<String, Map<String, String>> ssConfs = C.newMap();
     public static String defaultStorage = "gfs";
 
@@ -391,9 +392,9 @@ public final class MorphiaPlugin extends PlayPlugin {
     public static Map<String, String> getStorageConfig(String storage) {
         Map<String, String> m = ssConfs.get(storage);
         if (null == m) {
-            return C.EMPTY_MAP;
+            return C.map();
         } else {
-            return C.map(m);
+            return C.newMap(m);
         }
     }
 
@@ -444,7 +445,7 @@ public final class MorphiaPlugin extends PlayPlugin {
             Set<String> storages = C.set(storage.split("[, ;:\t]+"));
             Map<String, String> ssConf = C.newMap();
             for (Object k : conf.keySet()) {
-                if (S.str(k).startsWith("morphia.storage.")) {
+                if (S.string(k).startsWith("morphia.storage.")) {
                     ssConf.put(S.after(k.toString(), "morphia."), conf.get(k).toString());
                 }
             }

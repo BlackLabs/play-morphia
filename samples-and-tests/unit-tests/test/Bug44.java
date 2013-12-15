@@ -1,18 +1,15 @@
-import java.io.File;
-import java.util.List;
-
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFSDBFile;
 import models.User;
-
 import org.junit.Before;
 import org.junit.Test;
-
 import play.modules.morphia.Blob;
 import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.gridfs.GridFSDBFile;
+import java.io.File;
+import java.util.List;
 
 
 public class Bug44 extends UnitTest {
@@ -36,7 +33,7 @@ public class Bug44 extends UnitTest {
         user.photo = newBlob("test/user.png");
         user.save();
         
-        String name = user.getBlobFileName("photo");
+        String name = user.photo.getKey();
         DBObject queryObj = new BasicDBObject("name", name);
         List<GridFSDBFile> list = MorphiaPlugin.gridFs().find(queryObj);
         

@@ -8,7 +8,6 @@ import org.osgl.storage.impl.SObject;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
-import org.osgl.util._;
 import play.cache.Cache;
 import play.db.Model.BinaryField;
 import play.libs.F;
@@ -28,7 +27,7 @@ public class Blob implements BinaryField, Serializable {
         private ISObject sobj;
 
         LazyLoadSObject(ISObject sobj) {
-            _.NPE(sobj);
+            E.NPE(sobj);
             this.sobj = sobj;
         }
         
@@ -130,7 +129,7 @@ public class Blob implements BinaryField, Serializable {
     }
 
     public Blob(ISObject sobj, BlobStorageService ss) {
-        _.NPE(sobj, ss);
+        E.NPE(sobj, ss);
         
         this.sobj = sobj;
         this.ss = ss;
