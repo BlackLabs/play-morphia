@@ -959,7 +959,7 @@ public final class MorphiaPlugin extends PlayPlugin {
                 String[] sa = keywords.split("[\\W]+");
                 for (String f : fillSearchFieldsIfEmpty_(searchFields)) {
                     for (String s : sa) {
-                        cl.add(q.criteria(f).contains(keywords));
+                        cl.add(q.criteria(f).containsIgnoreCase(keywords));
                     }
                 }
                 q.or(cl.toArray(new Criteria[]{}));
