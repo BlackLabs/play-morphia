@@ -705,6 +705,12 @@ public final class MorphiaPlugin extends PlayPlugin {
         appStarted_ = true;
     }
 
+    @Override
+    public void onApplicationStop() {
+        mongo_.close();
+        appStarted_ = false;
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void registerEventHandlers_() {
         if (!Boolean.parseBoolean(Play.configuration.getProperty("morphia.autoRegisterEventHandler", "true"))) return;
