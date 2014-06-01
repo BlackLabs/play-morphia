@@ -1,7 +1,7 @@
 package models;
 
 import play.modules.morphia.Model;
-import com.google.code.morphia.annotations.*;
+import org.mongodb.morphia.annotations.*;
 
 import java.lang.String;
 import java.util.*;

@@ -1,4 +1,4 @@
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 import org.junit.Before;
 import org.junit.Test;
 import play.modules.morphia.Model;

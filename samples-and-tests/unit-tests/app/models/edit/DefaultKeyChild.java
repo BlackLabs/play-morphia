@@ -2,7 +2,7 @@ package models.edit;
 
 import play.modules.morphia.Model;
 
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 
 /**
  * An entity that uses the default key.

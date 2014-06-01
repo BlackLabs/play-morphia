@@ -45,7 +45,7 @@ bc. > db.usr.findOne()
 
 So with the parameters we put into the <code>@Entity</code> and <code>@Column</code> annotation we changed to collection name from "User" to "usr", and we changed to column name "firstName" to "fn", and "lastName" to "ln".
 
-p(note). You can also use <code>@com.google.code.morphia.annotations.Property</code> in place of <code>@play.modules.morphia.Model.Column</code>. However if you use <code>@Property</code> annotation you will be forced to use full qualified annotation class name always, because the word *Property* is used by @play.db.Model.Property@ interface and there is name confliction to <code>@com.google.code.morphia.annotations.Property</code>.
+p(note). You can also use <code>@org.mongodb.morphia.annotations.Property</code> in place of <code>@play.modules.morphia.Model.Column</code>. However if you use <code>@Property</code> annotation you will be forced to use full qualified annotation class name always, because the word *Property* is used by @play.db.Model.Property@ interface and there is name confliction to <code>@org.mongodb.morphia.annotations.Property</code>.
 
 People might want to ask why Morphia store @{"className": "models.User"}@, okay, that's for "model inheritance":inherit usage. If you are sure your model will never be involved in model inheritance, then you could suppress the class name storage as follows:
 

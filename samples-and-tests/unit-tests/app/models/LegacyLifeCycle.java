@@ -3,11 +3,11 @@ package models;
 import play.Logger;
 import play.modules.morphia.Model;
 
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.PostLoad;
-import com.google.code.morphia.annotations.PostPersist;
-import com.google.code.morphia.annotations.PreLoad;
-import com.google.code.morphia.annotations.PrePersist;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.PostLoad;
+import org.mongodb.morphia.annotations.PostPersist;
+import org.mongodb.morphia.annotations.PreLoad;
+import org.mongodb.morphia.annotations.PrePersist;
 
 @SuppressWarnings("serial")
 @Entity

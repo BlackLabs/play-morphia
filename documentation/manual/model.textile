@@ -10,7 +10,7 @@ The PlayMorphia model is created following Play's JPA model, so it's equally eas
 
 bc. package models;
 import play.modules.morphia.Model;
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 @Entity
 public class User extends Model {
 
@@ -30,7 +30,7 @@ As you can see, the only difference between the PlayMorphia version and the JPA 
 
 |_. JPA|_.|_. PlayMorphia|
 |play.db.jpa.Model|>>|play.modules.morphia.Model|
-|javax.persistence.Entity|>>|com.google.code.morphia.annotations.Entity|
+|javax.persistence.Entity|>>|org.mongodb.morphia.annotations.Entity|
 
 Now let's say how to use the User class. Again we will compare the PlayMorphia version with the JPA version (Search for @createAndRetrieveUser@ at "here":http://www.playframework.org/documentation/1.2.3/guide2#aWritingthefirsttesta)
 
@@ -52,7 +52,7 @@ h3. <a name="id">ID field</a>
 
 p(note). Start from PlayMorphia 1.2.8, it supports @String@ type system generated ID field.
 
-All Morphia model class must have an ID field defined. This is done by giving an <a href="http://code.google.com/p/morphia/wiki/AllAnnotations#Id">@com.google.code.morphia.annotations.Id@</a> annotation to the ID property of the model. Once you have done with that your ID property in Java class will be mapped to <a href="http://www.mongodb.org/display/DOCS/Object+IDs">"_id"</a> key of the document in MongoDB.
+All Morphia model class must have an ID field defined. This is done by giving an <a href="http://code.google.com/p/morphia/wiki/AllAnnotations#Id">@org.mongodb.morphia.annotations.Id@</a> annotation to the ID property of the model. Once you have done with that your ID property in Java class will be mapped to <a href="http://www.mongodb.org/display/DOCS/Object+IDs">"_id"</a> key of the document in MongoDB.
 
 Sharp eyed might spot that there is no @Id@ field in the <a href="#sample-1">sample code</a>. True, because we will add the ID field automatically using <a href="#enhance">code enhancing technology</a> when the application is starting up. By default an ID field name "_id" will be added with type @org.bson.types.ObjectId@. Application developer are allowed to change (not even possible in Play's JPA model!) the ID field type to @java.lang.String@ or @java.lang.Long@ by adding the following line into your <code>conf/application.conf</code>:
 
@@ -77,7 +77,7 @@ h3. <a name="rules">Rule of thumb</a>
 In summary, to create an model class with PlayMorphia you should:
 
 # Make that class extend @play.modules.morphia.Model@ class
-# Annotate that class with <code>@com.google.code.morphia.annotations.Entity</code> annotation
+# Annotate that class with <code>@org.mongodb.morphia.annotations.Entity</code> annotation
 # Define the ID field *ONLY* IF when you have specific reason, e.g. you are using facebook user id in your user model.
 # Add the property fields into the class. You are free to following Play's public property convention or Java's private plus manual getter/setter convention.
 # Add domain methods to the class.
@@ -99,7 +99,7 @@ h2. <a name="embed">Embedded Entity</a>
 
 Like JPA, Morphia support objects embed relationship via annotation <code>@Embedded</code>:
 
-bc. import com.google.code.morphia.annotations.*
+bc. import org.mongodb.morphia.annotations.*
 // define the embedded class
 @Embedded
 public class Address {
@@ -137,7 +137,7 @@ bc. {
 
 p(note). Even without <code>@Embedded</code> you can still use java class as field type as long as that class implements <a href="http://download.oracle.com/javase/6/docs/api/java/io/Serializable.html">@java.io.Serializable@</a>. However that field will be stored in MongoDB in binary format instead of structured data as shown above.
 
-p(note). Embedded object is actually NOT an entity at all, you should *NOT* extend embedded object to @play.modules.morphia.Model@, *neither* should you annotate embedded object with <code>@com.google.code.morphia.annotations.Entity</code>
+p(note). Embedded object is actually NOT an entity at all, you should *NOT* extend embedded object to @play.modules.morphia.Model@, *neither* should you annotate embedded object with <code>@org.mongodb.morphia.annotations.Entity</code>
 
 h2. <a name="reference">Reference other models</a>
 
@@ -152,7 +152,7 @@ p(note). A rule of thumb is to use Embedded relationship when the two parts has 
 
 There are two ways to do model "link/reference" relationship in your PlayMorphia model class:
 
-# <a href="#reference-annotate">Use <code>@com.google.code.morphia.annotations.Reference</code> to annotate the model property</a>
+# <a href="#reference-annotate">Use <code>@org.mongodb.morphia.annotations.Reference</code> to annotate the model property</a>
 # Store id field of the linked(referenced) entity and create getter/setter to fetch the linked instance
 
 h3. <a name="reference-annotate"><code>@Reference</code> annotation</a>
@@ -182,7 +182,7 @@ By default Morphia to load referenced (Customer and Product in the sample) objec
 
 p(note). According to "issue #91":https://github.com/greenlaw110/play-morphia/issues/91, <code>@Referece(lazy = true)</code> doesn't work as expected.
 
-By default Morphia will throw out @com.google.code.morphia.mapping.MappingException@ if the referenced object could not be load due to missing data in MongoDB. This is annoying sometimes, you can let Morphia to silently ignore the missing data by using <code>@Reference(ignoreMissing = true)</code>
+By default Morphia will throw out @org.mongodb.morphia.mapping.MappingException@ if the referenced object could not be load due to missing data in MongoDB. This is annoying sometimes, you can let Morphia to silently ignore the missing data by using <code>@Reference(ignoreMissing = true)</code>
 
 @Reference annotation is useful to create reference link between two domain models but there is another way to do the same thing and is more preferred.
 
@@ -288,9 +288,9 @@ Indexing is a very important tool in both SQL and MongoDB to boost query perform
 
 h3. <a name="index-property">Index a single property</a>
 
-To index a single property of your model, annotate that property with <code>@com.google.code.morphia.annotations.Indexed</code>:
+To index a single property of your model, annotate that property with <code>@org.mongodb.morphia.annotations.Indexed</code>:
 
-bc. import com.google.code.morphia.annotations.Indexed;
+bc. import org.mongodb.morphia.annotations.Indexed;
 @Entity public class extends Model {
     @Indexed
     public String firstName;
@@ -300,10 +300,10 @@ bc. import com.google.code.morphia.annotations.Indexed;
 
 h3. <a name="index-compound">Compound Index</a>
 
-To create a <a href="http://www.mongodb.org/display/DOCS/Indexes#Indexes-CompoundKeysIndexes">compound index</a> you can use @com.google.code.morphia.annotations.Indexes@ to annotate your model class:
+To create a <a href="http://www.mongodb.org/display/DOCS/Indexes#Indexes-CompoundKeysIndexes">compound index</a> you can use @org.mongodb.morphia.annotations.Indexes@ to annotate your model class:
 
-bc. import com.google.code.morphia.annotations.Indexes;
-import com.google.code.morphia.annotations.Index;
+bc. import org.mongodb.morphia.annotations.Indexes;
+import org.mongodb.morphia.annotations.Index;
 @Entity
 @AutoTimestamp
 @Indexes({

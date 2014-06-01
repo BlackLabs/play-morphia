@@ -3,14 +3,14 @@ package play.modules.morphia.utils;
 import play.Logger;
 import play.modules.morphia.MorphiaPlugin;
 
-import com.google.code.morphia.logging.Logr;
 
-public class PlayLogr implements Logr {
+public class PlayLogger implements org.mongodb.morphia.logging.Logger {
+
     private static final long serialVersionUID = -3207944672312237465L;
 
     @Override
     public boolean isTraceEnabled() {
-        return Logger.isTraceEnabled();
+        return play.Logger.isTraceEnabled();
     }
 
     @Override
@@ -47,13 +47,13 @@ public class PlayLogr implements Logr {
     public void debug(String msg, Throwable t) {
         MorphiaPlugin.debug(t, msg);
     }
-    
+
     private Boolean isInfoEnabled_ = null;
 
     @Override
     public boolean isInfoEnabled() {
         if (null == isInfoEnabled_) {
-            isInfoEnabled_ = Logger.isEnabledFor("INFO"); 
+            isInfoEnabled_ = Logger.isEnabledFor("INFO");
         }
         return isInfoEnabled_;
     }
@@ -74,10 +74,11 @@ public class PlayLogr implements Logr {
     }
 
     private Boolean isWarningEnabled_ = null;
+
     @Override
     public boolean isWarningEnabled() {
         if (null == isWarningEnabled_) {
-            isWarningEnabled_ = Logger.isEnabledFor("WARN"); 
+            isWarningEnabled_ = Logger.isEnabledFor("WARN");
         }
         return isWarningEnabled_;
     }
@@ -98,6 +99,7 @@ public class PlayLogr implements Logr {
     }
 
     private Boolean isErrorEnabled_ = null;
+
     @Override
     public boolean isErrorEnabled() {
         if (null == isErrorEnabled_) {
@@ -120,4 +122,6 @@ public class PlayLogr implements Logr {
     public void error(String msg, Throwable t) {
         MorphiaPlugin.error(t, msg);
     }
-    }
+
+
+}

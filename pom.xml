@@ -19,18 +19,19 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>com.google.code.maven-play-plugin</groupId>
         <artifactId>play-module-default-parent</artifactId>
-        <version>1.0.0-alpha6</version>
+        <version>1.0.0-beta7</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.greenlaw110.play-morphia</groupId>
     <artifactId>play-morphia</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
     <packaging>jar</packaging>
 
     <name>Play! Morphia Module</name>
@@ -55,25 +56,14 @@ under the License.
             </releases>
         </repository>
 
-        <repository>
-            <id>com.google.code.morphia</id>
-            <name>Morphia - releases and snapshots</name>
-            <url>http://morphia.googlecode.com/svn/mavenrepo</url>
-        </repository>
-        
-        <repository>
-            <id>mvnrepository</id>
-            <name>mvnrepository</name>
-            <url>http://mvnrepository.com/artifact</url>
-        </repository>
     </repositories>
 
     <properties>
         <play.manifest.section>Play</play.manifest.section>
         <play.manifest.specification.title>Morphia Module</play.manifest.specification.title>
-        <play.module.frameworkVersions>1.2.4</play.module.frameworkVersions>
+        <play.module.frameworkVersions>1.2.7</play.module.frameworkVersions>
 
-        <play.version>1.2.4</play.version>
+        <play.version>1.2.7</play.version>
     </properties>
 
     <dependencies>
@@ -87,24 +77,56 @@ under the License.
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
-            <version>2.7.3</version>
+            <version>2.12.2</version>
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.maven-play-plugin.com.google.code.morphia</groupId>
+            <groupId>org.mongodb.morphia</groupId>
             <artifactId>morphia</artifactId>
-            <version>1.00-20110403</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mongodb</groupId>
-                    <artifactId>mongo-java-driver</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>0.107</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.osgl</groupId>
+            <artifactId>osgl-tool</artifactId>
+            <version>0.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.osgl</groupId>
+            <artifactId>osgl-logging</artifactId>
+            <version>0.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.osgl</groupId>
+            <artifactId>osgl-storage</artifactId>
+            <version>0.3-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>UTF-8</encoding>
+                    <debuglevel>lines,vars,source</debuglevel>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1.2</version>
+                <configuration>
+                    <includePom>true</includePom>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>

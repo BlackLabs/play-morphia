@@ -1,11 +1,10 @@
 package models;
 
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.query.CriteriaContainer;
 import com.google.gson.Gson;
 import org.bson.types.ObjectId;
 import org.joda.time.DateMidnight;
+import org.mongodb.morphia.annotations.Embedded;
+import org.mongodb.morphia.annotations.Entity;
 import play.modules.morphia.Model;
 
 import java.util.ArrayList;

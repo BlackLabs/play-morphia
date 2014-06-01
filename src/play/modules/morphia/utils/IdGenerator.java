@@ -1,7 +1,7 @@
 package play.modules.morphia.utils;
 
-import com.google.code.morphia.Datastore;
 import org.bson.types.ObjectId;
+import org.mongodb.morphia.Datastore;
 import org.osgl.util.S;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;

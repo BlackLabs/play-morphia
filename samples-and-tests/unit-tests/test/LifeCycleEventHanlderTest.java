@@ -14,7 +14,7 @@ import play.modules.morphia.Watch;
 import play.modules.morphia.WatchBy;
 import play.test.UnitTest;
 
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 
 
 public class LifeCycleEventHanlderTest extends UnitTest {

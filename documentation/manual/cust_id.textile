@@ -24,7 +24,7 @@ bc. @Entity public class User extends Model {
 
 So the above code shows what you need to do to create a customized ID field model:
 
-# Declare your ID field. You can use any name and any type for this field but it must be annotated with <code>@com.google.code.morphia.annotations.Id</code>.
+# Declare your ID field. You can use any name and any type for this field but it must be annotated with <code>@org.mongodb.morphia.annotations.Id</code>.
 # Override @Model.getId()@ method which returns the ID field you declared
 # Override @Model.setId(Object)@ method which set the processed ID object to the ID field you declared
 # create @Model.processId_(Object)@ *static* method which convert the object to the type of your ID field

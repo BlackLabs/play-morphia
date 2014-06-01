@@ -139,11 +139,11 @@ h3. Morphia interface
 Once you installed PlayMorphia you get everything out of Morphia already. But trust me you almost have no chance to use them:
 
 bc. // get Morphia object
-com.google.code.morphia.Morphia morphia = MorphiaPlugin.morphia();
+org.mongodb.morphia.Morphia morphia = MorphiaPlugin.morphia();
 // get Datastore
-com.google.code.morphia.Datastore ds = MorphiaPlugin.ds();
+org.mongodb.morphia.Datastore ds = MorphiaPlugin.ds();
 // get AdvancedDatastore
-com.google.code.morphia.AdvancedDatastore ds = (AdvancedDatastore)MorphiaPlugin.ds();
+org.mongodb.morphia.AdvancedDatastore ds = (AdvancedDatastore)MorphiaPlugin.ds();
 
 h3. The MongoDB Java Driver interface
 

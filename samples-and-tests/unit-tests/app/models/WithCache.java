@@ -1,6 +1,6 @@
 package models;
 
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 import play.cache.CacheFor;
 import play.jobs.Job;
 import play.jobs.OnApplicationStart;

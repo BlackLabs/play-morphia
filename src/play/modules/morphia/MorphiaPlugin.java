@@ -1,25 +1,25 @@
 package play.modules.morphia;
 
-import com.google.code.morphia.AbstractEntityInterceptor;
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Morphia;
-import com.google.code.morphia.annotations.*;
-import com.google.code.morphia.logging.LogrFactory;
-import com.google.code.morphia.logging.MorphiaLoggerFactory;
-import com.google.code.morphia.mapping.Mapper;
-import com.google.code.morphia.mapping.validation.ConstraintViolationException;
-import com.google.code.morphia.query.Criteria;
-import com.google.code.morphia.query.Query;
-import org.osgl.storage.IStorageService;
-import org.osgl.storage.KeyGenerator;
 import com.mongodb.*;
 import com.mongodb.gridfs.GridFS;
+import org.apache.commons.lang.StringUtils;
+import org.bson.types.ObjectId;
+import org.mongodb.morphia.AbstractEntityInterceptor;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.annotations.*;
+import org.mongodb.morphia.logging.LoggerFactory;
+import org.mongodb.morphia.logging.MorphiaLoggerFactory;
+import org.mongodb.morphia.mapping.Mapper;
+import org.mongodb.morphia.mapping.validation.ConstraintViolationException;
+import org.mongodb.morphia.query.Criteria;
+import org.mongodb.morphia.query.Query;
+import org.osgl._;
+import org.osgl.storage.IStorageService;
+import org.osgl.storage.KeyGenerator;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
-import org.osgl._;
-import org.apache.commons.lang.StringUtils;
-import org.bson.types.ObjectId;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -30,8 +30,8 @@ import play.exceptions.ConfigurationException;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
-import play.modules.morphia.utils.PlayLogrFactory;
-import play.modules.morphia.utils.SilentLogrFactory;
+import play.modules.morphia.utils.PlayLoggerFactory;
+import play.modules.morphia.utils.SilentLoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  */
 public final class MorphiaPlugin extends PlayPlugin {
 
-    public static final String VERSION = "1.4.0";
+    public static final String VERSION = "1.5.0";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -442,7 +442,7 @@ public final class MorphiaPlugin extends PlayPlugin {
         defaultStorage = conf.getProperty("morphia.storage.default", "gfs");
         String storage = conf.getProperty("morphia.storage");
         if (S.notEmpty(storage)) {
-            Set<String> storages = C.set(storage.split("[, ;:\t]+"));
+            Set<String> storages = C.setOf(storage.split("[, ;:\t]+"));
             Map<String, String> ssConf = C.newMap();
             for (Object k : conf.keySet()) {
                 if (S.string(k).startsWith("morphia.storage.")) {
@@ -546,17 +546,17 @@ public final class MorphiaPlugin extends PlayPlugin {
         }
 
         String loggerClass = c.getProperty("morphia.logger");
-        Class<? extends LogrFactory> loggerClazz = SilentLogrFactory.class;
+        Class<? extends LoggerFactory> loggerClazz = SilentLoggerFactory.class;
         if (null != loggerClass) {
             final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes|on)", Pattern.CASE_INSENSITIVE);
             final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no|off)", Pattern.CASE_INSENSITIVE);
             if (P_PLAY.matcher(loggerClass).matches()) {
-                loggerClazz = PlayLogrFactory.class;
+                loggerClazz = PlayLoggerFactory.class;
             } else if (!P_SILENT.matcher(loggerClass).matches()) {
                 try {
-                    loggerClazz = (Class<? extends LogrFactory>) Class.forName(loggerClass);
+                    loggerClazz = (Class<? extends LoggerFactory>) Class.forName(loggerClass);
                 } catch (Exception e) {
-                    warn("Cannot init morphia logger factory using %s. Use PlayLogrFactory instead", loggerClass);
+                    warn("Cannot init morphia logger factory using %s. Use PlayLoggerFactory instead", loggerClass);
                 }
             }
         }

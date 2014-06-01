@@ -2,9 +2,9 @@ package models.why;
 
 import org.bson.types.ObjectId;
 
-import com.google.code.morphia.Morphia;
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Id;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
 
 @Entity("user")
 public class PureMorphiaUser {

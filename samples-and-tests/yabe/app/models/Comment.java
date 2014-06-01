@@ -8,8 +8,8 @@ import play.data.validation.MaxSize;
 import play.data.validation.Required;
 import play.modules.morphia.Model;
 
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Reference;
  
 @Entity
 public class Comment extends Model {

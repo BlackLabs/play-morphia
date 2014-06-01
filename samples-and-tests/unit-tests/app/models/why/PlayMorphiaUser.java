@@ -2,7 +2,7 @@ package models.why;
 
 import play.modules.morphia.Model;
 
-import com.google.code.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Entity;
 
 @Entity("user")
 public class PlayMorphiaUser extends Model {

@@ -27,27 +27,28 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
      * Define the SObject key generator. Default value is {@link KeyGenerator#BY_DATE}
      */
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.FIELD })
+    @Target({ElementType.FIELD})
     public static @interface KeyGen {
-        KeyGenerator value() default KeyGenerator.BY_DATE;      
+        KeyGenerator value() default KeyGenerator.BY_DATE;
     }
-    
-    
+
+
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.FIELD })
+    @Target({ElementType.FIELD})
     public static @interface Storage {
-        String value(); 
+        String value();
     }
-    
+
     private static class SJob<T> extends play.jobs.Job<T> {
-        
+
         _.Func0<T> func;
         _.Func0<?> success;
         _.Function<Throwable, Void> fail;
-        
+
         SJob(_.Func0<T> func) {
             this(func, _.F0, _.F1);
         }
+
         SJob(_.Func0<T> func, _.Func0<?> success, _.Function<Throwable, Void> fail) {
             this.func = func;
             this.success = success;
@@ -66,9 +67,9 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             }
         }
     }
-    
+
     /**
-     * Indicate whether the app is migrating data from gridfs to other storage e.g. S3 
+     * Indicate whether the app is migrating data from gridfs to other storage e.g. S3
      */
     private final boolean migrateData;
 
@@ -101,7 +102,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     }
 
     private static Map<String, BlobStorageService> registry = C.newMap();
-    
+
     public static BlobStorageService valueOf(KeyGenerator keygen, String storage) {
         if (S.empty(storage)) {
             storage = MorphiaPlugin.defaultStorage;
@@ -125,7 +126,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
     public static BlobStorageService getService(String ssKey) {
         return registry.get(ssKey);
     }
-    
+
     play.libs.F.Promise<ISObject> loadLater(String key) {
         return new SJob<ISObject>(IStorageService.f.get(key, ss)).now();
     }
@@ -134,14 +135,16 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         putLater(key, sobj, ss, _.F0, _.F1);
     }
 
-    static void putLater(String key, ISObject sobj, IStorageService ss, _.Func0<Void> success, _.Func1<Throwable, Void> fail) {
+    static void putLater(String key, ISObject sobj, IStorageService ss, _.Func0<Void> success,
+                         _.Func1<Throwable, Void> fail
+    ) {
         new SJob<Void>(IStorageService.f.put(key, sobj, ss), success, fail).now();
     }
 
     static void removeLater(String key, IStorageService ss) {
         new SJob<Void>(IStorageService.f.remove(key, ss)).now();
     }
-    
+
     static void removeLater(String key, IStorageService ss, int sec) {
         new SJob<Void>(IStorageService.f.remove(key, ss)).in(sec);
     }
@@ -259,7 +262,7 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         }
         return ss.getUrl(key);
     }
-    
+
     public static String getLegacyKey(String hostId, String fieldName) {
         return Model.getBlobFileName(hostId, fieldName);
     }
@@ -272,12 +275,17 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
         String legacy = getLegacyKey(hostId, fieldName);
         return newKey(legacy, blob);
     }
-    
+
     public String newKey(String legacy, Blob blob) {
         String type = blob.type();
         type = S.after(type, "/");
         String key = legacy + "." + type;
         return getKey(key);
+    }
+
+    @Override
+    public ISObject loadContent(ISObject sobj) {
+        return getFull(sobj.getKey());
     }
 
     private static int count(String s, String search) {
@@ -291,12 +299,12 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
             s = s.substring(i + l);
         }
     }
-    
+
     public void migrate(String key, _.Func1<Throwable, Void> fail) {
         if (!migrateData) {
             return;
         }
-        
+
         ISObject sobj = gs.get(key);
         if (null == sobj) {
             return;

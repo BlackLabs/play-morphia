@@ -1,7 +1,5 @@
 package play.modules.morphia;
 
-import com.google.code.morphia.annotations.*;
-import com.google.code.morphia.utils.IndexDirection;
 import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
@@ -10,6 +8,8 @@ import javassist.bytecode.annotation.Annotation;
 import javassist.bytecode.annotation.ArrayMemberValue;
 import javassist.bytecode.annotation.EnumMemberValue;
 import javassist.bytecode.annotation.MemberValue;
+import org.mongodb.morphia.annotations.*;
+import org.mongodb.morphia.utils.IndexDirection;
 import org.osgl._;
 import org.osgl.storage.KeyGenerator;
 import org.osgl.util.C;
@@ -231,7 +231,7 @@ public class MorphiaEnhancer extends Enhancer {
             ClassFile classFile = ctClass.getClassFile();
             ConstPool cp = classFile.getConstPool();
             AnnotationsAttribute attribute = new AnnotationsAttribute(cp, AnnotationsAttribute.visibleTag);
-            Annotation indexAnnotation = new Annotation(cp, ClassPool.getDefault().get("com.google.code.morphia.annotations.Indexed"));
+            Annotation indexAnnotation = new Annotation(cp, ClassPool.getDefault().get("org.mongodb.morphia.annotations.Indexed"));
             EnumMemberValue val = new EnumMemberValue(cp);
             val.setType(IndexDirection.class.getName());
             val.setValue(IndexDirection.DESC.name());
@@ -448,7 +448,7 @@ public class MorphiaEnhancer extends Enhancer {
 
     /*
      * 1. Add @Transparent to all Blob field
-     * 2. Convert @play.modules.morphia.Model.Column to @com.google.code.morphia.annotations.Property
+     * 2. Convert @play.modules.morphia.Model.Column to @org.mongodb.morphia.annotations.Property
      * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */

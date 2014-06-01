@@ -1,6 +1,6 @@
 package models;
 
-import com.google.code.morphia.query.CriteriaContainer;
+import org.mongodb.morphia.query.CriteriaContainer;
 import org.junit.Before;
 import org.junit.Test;
 import play.Logger;

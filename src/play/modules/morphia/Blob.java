@@ -1,6 +1,7 @@
 package play.modules.morphia;
 
 import org.bson.types.ObjectId;
+import org.osgl._;
 import org.osgl.exception.UnexpectedIOException;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
@@ -17,6 +18,7 @@ import play.mvc.Router;
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +89,11 @@ public class Blob implements BinaryField, Serializable {
         }
 
         @Override
+        public String asString(Charset charset) throws UnexpectedIOException {
+            return sobj.asString(charset);
+        }
+
+        @Override
         public byte[] asByteArray() throws UnexpectedIOException {
             return sobj.asByteArray();
         }
@@ -94,6 +101,17 @@ public class Blob implements BinaryField, Serializable {
         @Override
         public InputStream asInputStream() throws UnexpectedIOException {
             return sobj.asInputStream();
+        }
+
+        @Override
+        public ISObject setAttributes(Map<String, String> attrs) {
+            sobj.setAttributes(attrs);
+            return this;
+        }
+
+        @Override
+        public void consumeOnce(_.Function<InputStream, ?> consumer) throws UnexpectedIOException {
+            sobj.consumeOnce(consumer);
         }
     }
 

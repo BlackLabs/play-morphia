@@ -9,11 +9,11 @@ import play.modules.morphia.Model.OnAdd;
 import play.modules.morphia.MorphiaPlugin;
 import play.test.UnitTest;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.Morphia;
-import com.google.code.morphia.annotations.PostPersist;
-import com.google.code.morphia.annotations.PrePersist;
-import com.google.code.morphia.annotations.PreSave;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.annotations.PostPersist;
+import org.mongodb.morphia.annotations.PrePersist;
+import org.mongodb.morphia.annotations.PreSave;
 
 
 public class PureMorphiaModelTest extends UnitTest {

@@ -6,11 +6,11 @@ import play.modules.morphia.Model.Added;
 import play.modules.morphia.Model.OnAdd;
 import play.modules.morphia.Model.OnLoad;
 
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Id;
-import com.google.code.morphia.annotations.PostPersist;
-import com.google.code.morphia.annotations.PrePersist;
-import com.google.code.morphia.annotations.PreSave;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
+import org.mongodb.morphia.annotations.PostPersist;
+import org.mongodb.morphia.annotations.PrePersist;
+import org.mongodb.morphia.annotations.PreSave;
 
 @Entity
 public class PureMorphiaModel {

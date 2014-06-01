@@ -1,12 +1,12 @@
 package play.modules.morphia;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Id;
-import com.google.code.morphia.annotations.PrePersist;
-import com.google.code.morphia.annotations.Property;
-import com.google.code.morphia.query.Query;
-import com.google.code.morphia.query.UpdateOperations;
+
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
+import org.mongodb.morphia.annotations.PrePersist;
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.UpdateOperations;
 
 @Entity(value="ids", noClassnameStored=true)
 public class Seq {
@@ -15,7 +15,8 @@ public class Seq {
 
     protected Long value = 1L;
 
-    @PrePersist void prePersist() {
+    @PrePersist
+    void prePersist() {
         if (value != 1L) throw new IllegalStateException("cannot save Seq");
     }
 

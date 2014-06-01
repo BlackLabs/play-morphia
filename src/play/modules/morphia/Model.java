@@ -1,18 +1,18 @@
 package play.modules.morphia;
 
-import com.google.code.morphia.Datastore;
-import com.google.code.morphia.DatastoreImpl;
-import com.google.code.morphia.Key;
-import com.google.code.morphia.Morphia;
-import com.google.code.morphia.annotations.Embedded;
-import com.google.code.morphia.annotations.Reference;
-import com.google.code.morphia.annotations.Transient;
-import com.google.code.morphia.mapping.Mapper;
-import com.google.code.morphia.query.*;
 import com.mongodb.*;
 import com.mongodb.gridfs.GridFS;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.DatastoreImpl;
+import org.mongodb.morphia.Key;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.annotations.Embedded;
+import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Transient;
+import org.mongodb.morphia.mapping.Mapper;
+import org.mongodb.morphia.query.*;
 import org.osgl.exception.UnsupportedException;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -499,7 +499,7 @@ public class Model implements Serializable, play.db.Model {
 
     public static <T extends Model> MorphiaQuery all() {
         throw new UnsupportedOperationException(
-                "Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+                "Please annotate your model with @org.mongodb.morphia.annotations.Entity annotation.");
     }
 
     public static <T extends Model> MorphiaQuery all(Class<T> cls) {
@@ -1130,7 +1130,7 @@ public class Model implements Serializable, play.db.Model {
     }
     
     private static UnsupportedException toBeEnhanced() {
-        return E.unsupport("Please annotate your model with @com.google.code.morphia.annotations.Entity annotation.");
+        return E.unsupport("Please annotate your model with @org.mongodb.morphia.annotations.Entity annotation.");
     } 
     
     private static UnsupportedException toBeEnhanced(String msg, Object... args) {
@@ -1393,7 +1393,7 @@ public class Model implements Serializable, play.db.Model {
             return MorphiaPlugin.ds();
         }
 
-        private QueryImpl<? extends Model> q_;
+        private Query<? extends Model> q_;
         private Class<? extends Model> c_;
 
         public Query<? extends Model> getMorphiaQuery() {
@@ -1428,7 +1428,7 @@ public class Model implements Serializable, play.db.Model {
         public MorphiaQuery(Class<? extends Model> clazz, DBCollection coll,
                 Datastore ds, int offset, int limit) {
             // super(clazz, coll, ds, offset, limit);
-            q_ = new QueryImpl(clazz, coll, ds, offset, limit);
+            q_ = new QueryImpl(clazz, coll, ds).offset(offset).limit(limit);
             c_ = clazz;
         }
 
@@ -1850,7 +1850,7 @@ public class Model implements Serializable, play.db.Model {
         @Override
         public MorphiaQuery clone() {
             MorphiaQuery mq = new MorphiaQuery();
-            mq.q_ = q_.clone();
+            mq.q_ = q_.cloneQuery();
             return mq;
         }
     }

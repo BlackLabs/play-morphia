@@ -179,7 +179,7 @@ bc. public class UserAccountEventListener {
     }
 }
 
-To make the above event listener listen to @User@ and @Account@ lifecycle events you need to annotate the corresponding Model class with <code>@com.google.code.morphia.annotations.EntityListeners</code>:
+To make the above event listener listen to @User@ and @Account@ lifecycle events you need to annotate the corresponding Model class with <code>@org.mongodb.morphia.annotations.EntityListeners</code>:
 
 bc. @EntityListeners(UserAccountEventListener.class)
 @Entity public class User extends Model {...}
@@ -197,7 +197,7 @@ Note you can choose either PlayMorphia or Morphia lifecycle event dispatch mecha
 # PlayMorphia defines common event handler at global and model level
 # With PlayMorphia, you can define handler/model binding relationship by annotating on either Model (<code>@WatchBy</code>) or Handler (<code>@Watch</code>), while Morphia force you to annotate on Model class only (<code>@EntityListeners</code>)
 
-p(note). PlayMorphia lifecycle event handler (annotation based or interface based) will ONLY BE CALLED when you are operating on PlayMorphia classes. They will NOT get triggered when you are manupulating the low level objects, e.g. If you save/load/delete MongoDB's @DBObject@ directly the added/updated/loaded events will not trigger, if you call @delete()@ on @com.google.code.morphia.query.Query@, the onBatchDelete and batchDeleted events will not trigger.
+p(note). PlayMorphia lifecycle event handler (annotation based or interface based) will ONLY BE CALLED when you are operating on PlayMorphia classes. They will NOT get triggered when you are manupulating the low level objects, e.g. If you save/load/delete MongoDB's @DBObject@ directly the added/updated/loaded events will not trigger, if you call @delete()@ on @org.mongodb.morphia.query.Query@, the onBatchDelete and batchDeleted events will not trigger.
 
 h2. <a name="resource">Resources</code>
 

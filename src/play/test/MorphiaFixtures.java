@@ -1,25 +1,23 @@
 package play.test;
 
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.regex.Matcher;
-
+import org.mongodb.morphia.Datastore;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.scanner.ScannerException;
 import org.yaml.snakeyaml.constructor.CustomClassLoaderConstructor;
+import org.yaml.snakeyaml.scanner.ScannerException;
 import play.Play;
 import play.classloading.ApplicationClasses;
 import play.data.binding.Binder;
 import play.data.binding.ParamNode;
 import play.data.binding.RootParamNode;
-import play.db.jpa.JPAPlugin;
 import play.exceptions.YAMLException;
 import play.modules.morphia.Model;
 import play.modules.morphia.MorphiaPlugin;
-
-import com.google.code.morphia.Datastore;
 import play.templates.TemplateLoader;
 import play.vfs.VirtualFile;
+
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.regex.Matcher;
 
 public class MorphiaFixtures extends Fixtures {
 

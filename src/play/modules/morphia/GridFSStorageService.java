@@ -12,6 +12,7 @@ import org.osgl.storage.KeyGenerator;
 import org.osgl.storage.impl.SObject;
 import org.osgl.storage.impl.StorageServiceBase;
 import org.osgl.util.C;
+import org.osgl.util.IO;
 import org.osgl.util.S;
 import play.Logger;
 import play.mvc.Router;
@@ -40,7 +41,7 @@ public class GridFSStorageService extends StorageServiceBase implements IStorage
         if (null == file) {
             return null;
         }
-        ISObject sobj = SObject.valueOf(key, file.getInputStream());
+        ISObject sobj = SObject.of(key, IO.readContent(file.getInputStream()));
         String fn = file.getFilename();
         if (S.empty(fn)) {
             fn = S.random(8);
@@ -76,6 +77,11 @@ public class GridFSStorageService extends StorageServiceBase implements IStorage
     public String getUrl(String key) {
         Map<String, Object> params = C.newMap("key", ((Object)key));
         return Router.getFullUrl("controllers.BlobController.view", params);
+    }
+
+    @Override
+    public ISObject loadContent(ISObject sobj) {
+        return get(sobj.getKey());
     }
 
     private static GridFSDBFile findFile(String key) {

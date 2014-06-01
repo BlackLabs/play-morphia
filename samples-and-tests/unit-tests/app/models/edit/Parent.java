@@ -4,8 +4,8 @@ import java.util.List;
 
 import play.modules.morphia.Model;
 
-import com.google.code.morphia.annotations.Entity;
-import com.google.code.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Reference;
 
 /**
  * An entity that acts as parent and keeps references to single and multiple

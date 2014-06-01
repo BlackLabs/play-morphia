@@ -99,7 +99,7 @@ p(note). Version 1.2.9a is recalled because issue #88 is not valid
 h2. <a name="1.2.9">Updates in 1.2.9</a>
 
 * Enhancements:
-** Allow <code>@com.google.code.morphia.annotations.Converters</code> annotation be put on field type class declaration
+** Allow <code>@org.mongodb.morphia.annotations.Converters</code> annotation be put on field type class declaration
 ** Generic @getId()@ method interface
 ** "Handle transient field":https://github.com/greenlaw110/play-morphia/issues/87
 * Bug fixes:
