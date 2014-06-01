@@ -96,6 +96,10 @@ Disable generic getId() as an urgent fix to "Strange enhancement exception cause
 
 p(note). Version 1.2.9a is recalled because issue #88 is not valid
 
+h2. <a name="1.5.0">Updates in 1.5.0</a>
+
+* Update morphia library from `com.google.code.morphia 1.0` to `org.mongodb.morphia 0.107`. This is major change in the dependencies and it impact user application. Please do a text replace from "com.google.code.morphia" to "org.mongodb.morphia" in your application. In addition to morphia library update, the mongo-java-driver library has been updated to 2.12.2
+
 h2. <a name="1.2.9">Updates in 1.2.9</a>
 
 * Enhancements:
