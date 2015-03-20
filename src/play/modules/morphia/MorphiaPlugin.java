@@ -822,6 +822,7 @@ public final class MorphiaPlugin extends PlayPlugin {
 //            }
 //        }
 
+        mongo_.setWriteConcern(WriteConcern.UNACKNOWLEDGED);
         ds().ensureIndexes();
 
         String writeConcern = Play.configuration.getProperty(
