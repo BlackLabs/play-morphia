@@ -4,7 +4,7 @@ p(note). *Break changes*: play-morphia 1.5.0 update morphia library to org.mongo
 
 h1. PlayMorphia overview
 
-The PlayMorphia module a powerful and yet easy to use framework that provides "MongoDB":http://www.mongodb.org/ access to your Play!framework application. This module is built on top of the famous "Morphia project":http://code.google.com/p/morphia/.
+The PlayMorphia module a powerful and yet easy to use framework that provides "MongoDB":http://www.mongodb.org/ access to your Play!framework application. This module is built on top of the famous "Morphia project":https://github.com/mongodb/morphia.
 
 Stick to the philosophy of Play!Framework, PlayMorphia provides a data layer infrastructure to help developer focusing on the business logic instead of technical details. PlayMorphia is by far the most welcome MongoDB access module in the community
 
