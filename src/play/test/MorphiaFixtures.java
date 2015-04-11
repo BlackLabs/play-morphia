@@ -33,23 +33,23 @@ public class MorphiaFixtures extends Fixtures {
         }
     }
 
-    public static void delete(Class<? extends Model> ... types) {
+    public static void delete(Class ... types) {
     	idCache.clear();
         for (Class<? extends Model> type: types) {
             ds().getCollection(type).drop();
         }
     }
 
-    public static void delete(List<Class<? extends Model>> classes) {
+    public static void delete(List<Class<? extends play.db.Model>> classes) {
     	idCache.clear();
-        for (Class<? extends Model> type: classes) {
+        for (Class<? extends play.db.Model> type: classes) {
             ds().getCollection(type).drop();
         }
     }
 
     @SuppressWarnings("unchecked")
     public static void deleteAllModels() {
-        List<Class<? extends Model>> mongoClasses = new ArrayList<Class<? extends Model>>();
+        List<Class<? extends play.db.Model>> mongoClasses = new ArrayList<Class<? extends play.db.Model>>();
         for (ApplicationClasses.ApplicationClass c : Play.classes.getAssignableClasses(play.db.Model.class)) {
         	Class<?> jc = c.javaClass;
         	mongoClasses.add((Class<? extends Model>) jc);
