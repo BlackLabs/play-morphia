@@ -1,6 +1,7 @@
 import java.io.File;
 import java.util.List;
 
+import com.mongodb.MongoClientOptions;
 import models.User;
 
 import org.junit.Before;
@@ -17,19 +18,18 @@ import com.mongodb.gridfs.GridFSDBFile;
 
 public class MongoOptionsTest extends UnitTest {
 
-	private MongoOptions options;
+	private MongoClientOptions options;
 
 	@Before
 	public void before()
 	{
-        options = MorphiaPlugin.ds().getMongo().getMongoOptions();		
+        options = MorphiaPlugin.ds().getMongo().getMongoClientOptions();
 	}
 	
     @Test
     public void testMongoOptionsCanBeSetInApplicationConf() {
         
-        assertEquals(11, options.threadsAllowedToBlockForConnectionMultiplier);
-        assertEquals(12, options.connectionsPerHost);
-        assertEquals(true, options.slaveOk);
+        assertEquals(11, options.getThreadsAllowedToBlockForConnectionMultiplier());
+        assertEquals(12, options.getConnectionsPerHost());
     }
 }

@@ -2,6 +2,17 @@ package play.modules.morphia;
 
 import com.mongodb.*;
 import com.mongodb.gridfs.GridFS;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.AbstractEntityInterceptor;
@@ -32,17 +43,6 @@ import play.modules.morphia.Model.MorphiaQuery;
 import play.modules.morphia.MorphiaEvent.IMorphiaEventHandler;
 import play.modules.morphia.utils.PlayLoggerFactory;
 import play.modules.morphia.utils.SilentLoggerFactory;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
 
 /**
  * The plugin for the Morphia module.
@@ -299,13 +299,13 @@ public final class MorphiaPlugin extends PlayPlugin {
         }
     }
 
-    private static Mongo mongo_;
+    private static MongoClient mongo_;
 
     /*
      * Connect using conf - morphia.db.host=host1,host2... -
      * morphia.db.port=port1,port2...
      */
-    private final Mongo connect_(String host, String port, MongoOptions options) {
+    private final MongoClient connect_(String host, String port, MongoClientOptions options) {
         String[] ha = host.split("[,\\s;]+");
         String[] pa = port.split("[,\\s;]+");
         int len = ha.length;
@@ -314,7 +314,7 @@ public final class MorphiaPlugin extends PlayPlugin {
                     "host and ports number does not match");
         if (1 == len) {
             try {
-                return new Mongo(new ServerAddress(ha[0], Integer.parseInt(pa[0])), options);
+                return new MongoClient(new ServerAddress(ha[0], Integer.parseInt(pa[0])), options);
             } catch (Exception e) {
                 throw new ConfigurationException(String.format("Cannot connect to mongodb at %s:%s", host, port));
             }
@@ -330,13 +330,13 @@ public final class MorphiaPlugin extends PlayPlugin {
         if (addrs.isEmpty()) {
             throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new Mongo(addrs, options);
+        return new MongoClient(addrs, options);
     }
 
     /*
      * Connect using conf morphia.db.seeds=host1[:port1];host2[:port2]...
      */
-    private final Mongo connect_(String seeds, MongoOptions options) {
+    private final MongoClient connect_(String seeds, MongoClientOptions options) {
         String[] sa = seeds.split("[;,\\s]+");
         List<ServerAddress> addrs = new ArrayList<ServerAddress>(sa.length);
         for (String s : sa) {
@@ -357,15 +357,15 @@ public final class MorphiaPlugin extends PlayPlugin {
         if (addrs.isEmpty()) {
             throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new Mongo(addrs, options);
+        return new MongoClient(addrs, options);
     }
 
     /*
      * Connect using conf morphia.db.url=mongodb://fred:foobar@host:port/db
      */
-    private final Mongo connect_(MongoURI mongoURI) {
+    private final MongoClient connect_(MongoClientURI mongoURI) {
         try {
-            return new Mongo(mongoURI);
+            return new MongoClient(mongoURI);
         } catch (UnknownHostException e) {
             throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
         }
@@ -467,12 +467,12 @@ public final class MorphiaPlugin extends PlayPlugin {
 
     private void configureConnection_() {
         Properties c = Play.configuration;
-        MongoOptions options = readMongoOptions(c);
+        MongoClientOptions options = readMongoOptions(c);
 
         String url = c.getProperty(PREFIX + "url");
         String seeds = c.getProperty(PREFIX + "seeds");
         if (!S.empty(url)) {
-            MongoURI mongoURI = new MongoURI(url);
+            MongoClientURI mongoURI = new MongoClientURI(url);
             mongo_ = connect_(mongoURI);
         } else if (!S.empty(seeds)) {
             mongo_ = connect_(seeds, options);
@@ -483,32 +483,33 @@ public final class MorphiaPlugin extends PlayPlugin {
         }
     }
 
-    private static MongoOptions readMongoOptions(Properties c) {
-        MongoOptions options = new MongoOptions();
-        for (Field field : options.getClass().getFields()) {
-            String property = c.getProperty("morphia.driver." + field.getName());
+    private static MongoClientOptions readMongoOptions(Properties c) {
+        MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
+        for (Method method : MongoClientOptions.Builder.class.getMethods()) {
+            String property = c.getProperty("morphia.driver." + method.getName());
             if (StringUtils.isEmpty(property))
                 continue;
 
-            Class<?> fieldType = field.getType();
+            Class fieldType = method.getParameterTypes()[0];
+
             Object value = null;
             try {
-                if (fieldType == int.class)
-                    value = Integer.parseInt(property);
-                else if (fieldType == long.class)
-                    value = Long.parseLong(property);
-                else if (fieldType == String.class)
-                    value = property;
-                else if (fieldType == Double.class)
-                    value = Double.parseDouble(property);
-                else if (fieldType == boolean.class)
-                    value = Boolean.parseBoolean(property);
-                field.set(options, value);
+                if (fieldType == int.class) {
+                    method.invoke(builder, Integer.parseInt(property));
+                } else if (fieldType == long.class){
+                    method.invoke(builder,Long.parseLong(property));
+                } else if (fieldType == String.class){
+                    method.invoke(builder,property);
+                } else if (fieldType == Double.class){
+                    method.invoke(builder,Double.parseDouble(property));
+                } else if (fieldType == boolean.class){
+                    method.invoke(builder,Boolean.parseBoolean(property));
+                }
             } catch (Exception e) {
-                error(e, "error setting mongo option " + field.getName());
+                error(e, "error setting mongo option " + method.getName());
             }
         }
-        return options;
+        return builder.build();
     }
 
     @SuppressWarnings("unchecked")

@@ -4,14 +4,14 @@ import java.util.List;
 
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
-import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
 
 public class PureMorphiaApp {
 
     private static Datastore getDatastore() throws Exception {
         Morphia morphia = new Morphia();
         PureMorphiaUser.ensureMapped(morphia);
-        Mongo mongo = new Mongo();
+        MongoClient mongo = new MongoClient();
         return morphia.createDatastore(mongo, "mydatabase");
     }
 
