@@ -140,7 +140,6 @@ public class LifeCycle extends Model {
         Event.newEvent(null == foo ? "foo" : foo, Object.class);
     }
     
-    @Entity
     @NoId
     public static class Child extends LifeCycle {
         public String fee;

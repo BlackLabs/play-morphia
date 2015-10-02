@@ -1364,24 +1364,24 @@ public class Model implements Serializable, play.db.Model {
             return (T)ds().findAndModify((Query)q.getMorphiaQuery(), (UpdateOperations)u_, oldVersion, createIfMissing);
         }
 
-        public <T> UpdateResults<T> update(MorphiaQuery q) {
+        public <T> UpdateResults update(MorphiaQuery q) {
             return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
         }
 
-        public <T> UpdateResults<T> update(String query, Object... params) {
+        public <T> UpdateResults update(String query, Object... params) {
             MorphiaQuery q = new MorphiaQuery(c_).findBy(query, params);
             return ds().update((Query<T>)q.getMorphiaQuery(), (UpdateOperations<T>)u_);
         }
 
-        public <T> UpdateResults<T> update(Model entity) {
+        public <T> UpdateResults update(Model entity) {
             return update("_id", entity.getId());
         }
 
-        private <T> UpdateResults<T> update(Query<T> q) {
+        private <T> UpdateResults update(Query<T> q) {
             return ds().update(q, (UpdateOperations<T>)u_);
         }
 
-        public <T> UpdateResults<T> updateAll() {
+        public <T> UpdateResults updateAll() {
             return ds().update((QueryImpl) ds().createQuery(c_), (UpdateOperations<T>)u_);
         }
 
@@ -1775,13 +1775,7 @@ public class Model implements Serializable, play.db.Model {
             q_.offset(value);
             return this;
         }
-
-        @Deprecated
-        public <T extends Model> MorphiaQuery skip(int value) {
-            q_.skip(value);
-            return this;
-        }
-
+        
         public <T extends Model> MorphiaQuery enableValidation() {
             q_.enableValidation();
             return this;
