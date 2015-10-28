@@ -14,7 +14,7 @@ Thanks to the super powerful code enhancement mechanism of Play!framework, we co
 
 You define a model class as:
 
-bc. @Entity
+bc.. @Entity
 public class User extends Model {
     public String fName;
     public String lName;
@@ -31,7 +31,7 @@ public class User extends Model {
     }
 }
 
-You use the model in your application in the following ways:
+p. You use the model in your application in the following ways:
 
 bc. User user = new User("John", "Smith", "AU", "IT").save()
 Object id = user.getId();
