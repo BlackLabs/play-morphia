@@ -1,4 +1,4 @@
-p(note). As my focus is not on PlayFramework anymore, I am looking for new maintainer to take over play-morphia project. I am happy to transfer the ownership on github :-)
+**As my focus is not on PlayFramework anymore, I am looking for new maintainer to take over play-morphia project. I am happy to transfer the ownership on github**
 
 p(note). Play!Framework official web site is close to module update. Please follow https://gist.github.com/2868365 to get new morphia module version
 
