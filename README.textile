@@ -1,5 +1,7 @@
 p(note). Play!Framework official web site is close to module update. Please follow https://gist.github.com/2868365 to get new morphia module version
 
+p(note). *Important changes*: play-morphia 1.5.0e updates the morphia library to org.mongodb.morphia 1.2.1 and mongo java driver to org.mongodb 3.2.2. Please update your morphia username/password configuration to include them in the connection url, as they are currently unsupported.
+
 p(note). *Break changes*: play-morphia 1.5.0 update morphia library to org.mongodb.morphia 0.107. Please do text replacement in your application from "com.google.code.morphia" to "org.mongodb.morphia"
 
 h1. PlayMorphia overview

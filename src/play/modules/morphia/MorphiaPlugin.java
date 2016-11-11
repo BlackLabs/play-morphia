@@ -1,6 +1,7 @@
 package play.modules.morphia;
 
 import com.mongodb.*;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.gridfs.GridFS;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -350,7 +351,7 @@ public final class MorphiaPlugin extends PlayPlugin {
             }
             try {
                 addrs.add(new ServerAddress(host, port));
-            } catch (UnknownHostException e) {
+            } catch (Exception e) {
                 error(e, "error creating mongo connection to %s:%s", host, port);
             }
         }
@@ -366,7 +367,7 @@ public final class MorphiaPlugin extends PlayPlugin {
     private final MongoClient connect_(MongoClientURI mongoURI) {
         try {
             return new MongoClient(mongoURI);
-        } catch (UnknownHostException e) {
+        } catch (Exception e) {
             throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
         }
     }
@@ -521,16 +522,22 @@ public final class MorphiaPlugin extends PlayPlugin {
         String username = c.getProperty(PREFIX + "username");
         String password = c.getProperty(PREFIX + "password");
 
+        if (!S.empty(username) && !S.empty(password)) {
+            Logger.warn(String.format("username and password properties in application.conf are currently unsupported. Please configure [%surl] instead to include them both.", PREFIX));
+        }
+
+        MongoClientURI mongoClientURI;
+
         if (!S.empty(url)) {
-            MongoURI mongoURI = new MongoURI(url);
-            dbName = mongoURI.getDatabase();
-            // overwrite these if set via url
-            if (mongoURI.getUsername() != null) {
-                username = mongoURI.getUsername();
-            }
-            if (mongoURI.getPassword() != null) {
-                password = new String(mongoURI.getPassword());
-            }
+            mongoClientURI = new MongoClientURI(url);
+            dbName= mongoClientURI.getDatabase();
+            // overwrite these if set via url (deprecated)
+//            if (mongoClientURI.getUsername() != null) {
+//                username = mongoClientURI.getUsername();
+//            }
+//            if (mongoClientURI.getPassword() != null) {
+//                password = new String(mongoClientURI.getPassword());
+//            }
         }
 
         if (null == dbName) {
@@ -538,13 +545,14 @@ public final class MorphiaPlugin extends PlayPlugin {
             dbName = "test";
         }
 
-        DB db = mongo_.getDB(dbName);
-
-        if (!S.empty(username) && !S.empty(password)) {
-            if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
-                throw new RuntimeException("MongoDB authentication failed: " + dbName);
-            }
-        }
+        //(deprecated authentication check)
+//        DB db = mongo_.getDB(dbName);
+//
+//        if (!S.empty(username) && !S.empty(password)) {
+//            if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
+//                throw new RuntimeException("MongoDB authentication failed: " + dbName);
+//            }
+//        }
 
         String loggerClass = c.getProperty("morphia.logger");
         Class<? extends LoggerFactory> loggerClazz = SilentLoggerFactory.class;
@@ -779,7 +787,7 @@ public final class MorphiaPlugin extends PlayPlugin {
 
     @Override
     public void onInvocationException(Throwable e) {
-        if (e instanceof MongoException.Network) {
+        if (e instanceof MongoSocketException) {
             error("MongoException.Network encountered. Trying to restart mongo...");
             configureConnection_();
             initMorphia_();
