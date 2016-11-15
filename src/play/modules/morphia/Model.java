@@ -291,7 +291,7 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public String getIdAsStr() {
-        return String.valueOf(getId());
+        return String.valueOf((Object) getId());
     }
 
     public final void setId(Object id) {
