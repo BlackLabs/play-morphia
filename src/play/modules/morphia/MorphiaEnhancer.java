@@ -2,11 +2,13 @@ package play.modules.morphia;
 
 import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.AttributeInfo;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.*;
 import org.mongodb.morphia.annotations.*;
 import org.mongodb.morphia.utils.IndexDirection;
+import org.mongodb.morphia.utils.IndexType;
 import org.osgl._;
 import org.osgl.storage.KeyGenerator;
 import org.osgl.util.C;
@@ -228,27 +230,128 @@ public class MorphiaEnhancer extends Enhancer {
             ClassFile classFile = ctClass.getClassFile();
             ConstPool cp = classFile.getConstPool();
             AnnotationsAttribute attribute = new AnnotationsAttribute(cp, AnnotationsAttribute.visibleTag);
-            Annotation indexAnnotation = new Annotation(cp, ClassPool.getDefault().get("org.mongodb.morphia.annotations.Indexed"));
+            Annotation indexAnnotationOld = new Annotation(cp, ClassPool.getDefault().get("org.mongodb.morphia.annotations.Indexed"));
+            //Default expireAfterSeconds should be [-1], not the initial value for int [0]
+//            indexAnnotationOld.addMemberValue("expireAfterSeconds", new IntegerMemberValue(cp, -1));
             EnumMemberValue val = new EnumMemberValue(cp);
             val.setType(IndexDirection.class.getName());
             val.setValue(IndexDirection.DESC.name());
-            indexAnnotation.addMemberValue("value", val);
-            attribute.addAnnotation(indexAnnotation);
+            indexAnnotationOld.addMemberValue("value", val);
+            attribute.addAnnotation(indexAnnotationOld);
 
         	Logger.trace("create timestamp fields automatically");
         	CtField createdField = new CtField(CtClass.longType, "_created", ctClass);
-        	createdField.getFieldInfo().addAttribute(attribute);
+            //@Indexed annotation is deprecated
+//        	createdField.getFieldInfo().addAttribute(attribute);
         	createdField.setModifiers(Modifier.PUBLIC);
         	enhanceCRUDField(createdField, ctClass);
         	ctClass.addField(createdField);
 
         	CtField modifiedField = new CtField(CtClass.longType, "_modified", ctClass);
-        	modifiedField.getFieldInfo().addAttribute(attribute);
+            //@Indexed annotation is deprecated
+//        	modifiedField.getFieldInfo().addAttribute(attribute);
         	modifiedField.setModifiers(Modifier.PUBLIC);
             enhanceCRUDField(modifiedField, ctClass);
         	ctClass.addField(modifiedField);
 
-        	CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
+            final String indexesClassName = Indexes.class.getName();
+            final String indexClassName = Index.class.getName();
+            final String fieldClassName = Field.class.getName();
+
+            Annotation indexesAnnotation = null;
+            AnnotationsAttribute aaFromClassFile = (AnnotationsAttribute) classFile.getAttribute(AnnotationsAttribute.visibleTag);
+            Annotation[] annotations = aaFromClassFile.getAnnotations();
+            List<Annotation> newAnnotations = new ArrayList<>();
+            for (Annotation ann : annotations) {
+                if (ann.getTypeName().equals(indexesClassName)) {
+                    indexesAnnotation = ann;
+                } else {
+                    newAnnotations.add(ann);
+                }
+            }
+            if (indexesAnnotation == null) {
+                indexesAnnotation = new Annotation(indexesClassName, cp);
+            }
+            // TODO: 11/14/16 add try/catch for safety (?)
+            ArrayMemberValue indexedAnnotationValue = (ArrayMemberValue) indexesAnnotation.getMemberValue("value");
+
+            //get original values from indexedAnnotationValue
+            MemberValue[] originalIndexAnnotations;
+            try {
+                originalIndexAnnotations = indexedAnnotationValue.getValue();
+            } catch (Exception e) {
+                originalIndexAnnotations = new MemberValue[0];
+            }
+            //TODO: Check if index for _created or _modified exists with the same value
+
+
+            //create a new Index for each of the new fields (_created and _modified)
+
+            //EnumMemberValue for @Field(type = IndexType.DESC)
+            EnumMemberValue indexTypeMemberValue = new EnumMemberValue(cp);
+            indexTypeMemberValue.setType(IndexType.class.getName());
+            indexTypeMemberValue.setValue(IndexType.DESC.name());
+
+            //AnnotationMemberValue of Field (_created) for @Index#fields() = { @Field(type = IndexType.DESC, value = "_created") }
+            Annotation createdIndexFieldAnnotation = new Annotation(fieldClassName, cp);
+            createdIndexFieldAnnotation.addMemberValue("type", indexTypeMemberValue);
+            createdIndexFieldAnnotation.addMemberValue("value", new StringMemberValue("_created", cp));
+
+            AnnotationMemberValue createdFieldAnnotationMemberValue = new AnnotationMemberValue(cp);
+            createdFieldAnnotationMemberValue.setValue(createdIndexFieldAnnotation);
+
+            //AnnotationMemberValue of Field (_modified) for @Index#fields() = { @Field(type = IndexType.DESC, value = "_modified") }
+            Annotation modifiedIndexFieldAnnotation = new Annotation(fieldClassName, cp);
+            modifiedIndexFieldAnnotation.addMemberValue("type", indexTypeMemberValue);
+            modifiedIndexFieldAnnotation.addMemberValue("value", new StringMemberValue("_modified", cp));
+
+            AnnotationMemberValue modifiedFieldAnnotationMemberValue = new AnnotationMemberValue(cp);
+            modifiedFieldAnnotationMemberValue.setValue(modifiedIndexFieldAnnotation);
+
+            //ArrayMemberValue of (_created) for @Index#fields()
+            ArrayMemberValue createdIndexFieldsArrayMemberValue = new ArrayMemberValue(cp);
+            createdIndexFieldsArrayMemberValue.setValue(new MemberValue[]{createdFieldAnnotationMemberValue});
+
+            //ArrayMemberValue of (_modified) for @Index#fields()
+            ArrayMemberValue modifiedIndexFieldsArrayMemberValue = new ArrayMemberValue(cp);
+            modifiedIndexFieldsArrayMemberValue.setValue(new MemberValue[]{modifiedFieldAnnotationMemberValue});
+
+            //AnnotationMemberValue of (_created) for @Index
+            Annotation createdIndexAnnotation = new Annotation(indexClassName, cp);
+            createdIndexAnnotation.addMemberValue("fields", createdIndexFieldsArrayMemberValue);
+
+            AnnotationMemberValue createdIndexAnnotationMemberValue = new AnnotationMemberValue(cp);
+            createdIndexAnnotationMemberValue.setValue(createdIndexAnnotation);
+
+            //AnnotationMemberValue of (_modified) for @Index
+            Annotation modifiedIndexAnnotation = new Annotation(indexClassName, cp);
+            modifiedIndexAnnotation.addMemberValue("fields", modifiedIndexFieldsArrayMemberValue);
+
+            AnnotationMemberValue modifiedIndexAnnotationMemberValue = new AnnotationMemberValue(cp);
+            modifiedIndexAnnotationMemberValue.setValue(modifiedIndexAnnotation);
+
+
+            //add values to @Indexes#values()
+            int initialIndexAnnotationsCount = originalIndexAnnotations.length;
+            MemberValue[] newIndexAnnotations = new MemberValue[initialIndexAnnotationsCount + 2];
+            for (int i = 0; i < initialIndexAnnotationsCount; i++) {
+                newIndexAnnotations[i] = originalIndexAnnotations[i];
+            }
+            newIndexAnnotations[initialIndexAnnotationsCount] = createdIndexAnnotationMemberValue;
+            newIndexAnnotations[initialIndexAnnotationsCount + 1] = modifiedIndexAnnotationMemberValue;
+
+
+            ArrayMemberValue newIndexesValueArrayMemberValue = new ArrayMemberValue(cp);
+            newIndexesValueArrayMemberValue.setValue(newIndexAnnotations);
+            indexesAnnotation.addMemberValue("value", newIndexesValueArrayMemberValue);
+
+            newAnnotations.add(indexesAnnotation);
+
+            aaFromClassFile.setAnnotations(newAnnotations.toArray(new Annotation[newAnnotations.size()]));
+
+            classFile.addAttribute(aaFromClassFile);
+
+            CtMethod persistTs = CtMethod.make("void _updateTimestamp() { long now = System.currentTimeMillis(); if (0 == _created) {_created = now;} ;_modified = now;}", ctClass);
             AnnotationsAttribute aa = new AnnotationsAttribute(ctClass.getClassFile().getConstPool(),
                     AnnotationsAttribute.visibleTag);
             Annotation prePersistAnn = new Annotation(PrePersist.class.getName(), ctClass.getClassFile().getConstPool());
