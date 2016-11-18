@@ -532,7 +532,7 @@ public class MorphiaEnhancer extends Enhancer {
         sb = new StringBuilder("protected boolean loadBlobs() {");
         sb.append("\n\tboolean needsave = false;");
         for (String blob : blobs.keySet()) {
-            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());save();needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
+            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
         }
         sb.append("\n\tblobFieldsTracker.clear();\nreturn needsave;}");
         method = CtMethod.make(sb.toString(), ctClass);
