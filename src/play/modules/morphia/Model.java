@@ -4,6 +4,7 @@ import com.mongodb.*;
 import com.mongodb.gridfs.GridFS;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
+import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.DatastoreImpl;
 import org.mongodb.morphia.Key;
@@ -30,9 +31,7 @@ import play.mvc.Scope.Params;
 
 import java.io.Serializable;
 import java.lang.annotation.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -417,7 +416,7 @@ public class Model implements Serializable, play.db.Model {
             return this;
         }
         public <T extends Model> T commit() {
-            o.update(new MorphiaQuery(m.getClass()).filter("_id", m.getId()));
+            o.update(new MorphiaQuery(m.getClass()).disableValidation().filter("_id", m.getId()));
             return (T)m;
         }
     }
@@ -1065,7 +1064,18 @@ public class Model implements Serializable, play.db.Model {
         // used by enhander
         return false;
     }
-    
+
+    public Blob loadBlob(String fieldName) {
+        String key = __getBlobKey(fieldName);
+        if (key == null || key.isEmpty()) {
+            key = getBlobFileName(fieldName);
+        }
+        return play.modules.morphia.Blob.load(
+                key,
+                bss(fieldName)
+        );
+    }
+
     protected BlobStorageService bss(String fieldName) {
         throw toBeEnhanced();
     }
@@ -1083,6 +1093,23 @@ public class Model implements Serializable, play.db.Model {
 
     protected String __getBlobKey(String field) {
         E.NPE(field);
+        if (__blobs == null || __blobs.isEmpty()) {
+            //TODO: A better solution
+            MorphiaQuery q = null;
+            try {
+                q = (MorphiaQuery) this.getClass().getMethod("q", new Class[]{}).invoke(null);
+            } catch (Exception e) {
+            }
+            if (q != null) {
+                Model reloaded = q.disableValidation().filter("_id", ObjectId.class.cast(this.getId())).retrievedFields(true, "__blobs").first();
+                if (reloaded != null) {
+                    __blobs = reloaded.__blobs;
+                }
+            }
+            if (__blobs == null || __blobs.isEmpty()) {
+                __blobs = C.newMap();
+            }
+        }
         return __blobs.get(field);
     }
 
@@ -1990,6 +2017,12 @@ public class Model implements Serializable, play.db.Model {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.METHOD })
     public @interface BatchDeleted {
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.FIELD})
+    public @interface BlobLoading {
+        boolean autoload() default true;
     }
 
     

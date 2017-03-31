@@ -6,6 +6,7 @@ import javassist.bytecode.AttributeInfo;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.*;
+import net.sf.oval.exception.FieldNotFoundException;
 import org.mongodb.morphia.annotations.*;
 import org.mongodb.morphia.utils.IndexDirection;
 import org.mongodb.morphia.utils.IndexType;
@@ -531,8 +532,28 @@ public class MorphiaEnhancer extends Enhancer {
         // -- loadBlobs
         sb = new StringBuilder("protected boolean loadBlobs() {");
         sb.append("\n\tboolean needsave = false;");
+        CtField blobField;
+        BlobLoading blAnnotation;
+        boolean loadBlobs;
         for (String blob : blobs.keySet()) {
-            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
+            //Check if autoload is disabled for field
+            blAnnotation = null;
+            try {
+                blobField = ctClass.getField(blob);
+                blAnnotation = getAnnotation(blobField, BlobLoading.class.getName());
+            } catch (Exception e) {
+            }
+            loadBlobs = blAnnotation == null || blAnnotation.autoload();
+            if (loadBlobs) {
+                sb.append(
+                    String.format(
+                        "\n\t{\n\t\t%1$s = loadBlob(\"%1$s\");\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());needsave = true;}\n\t}",
+                        blob,
+                        Blob.class.getName(),
+                        _.class.getName()
+                    )
+                );
+            }
         }
         sb.append("\n\tblobFieldsTracker.clear();\nreturn needsave;}");
         method = CtMethod.make(sb.toString(), ctClass);
