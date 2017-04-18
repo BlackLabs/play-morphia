@@ -583,7 +583,7 @@ public class MorphiaEnhancer extends Enhancer {
             CtClass ctReturnType = cf.getType();
             if (ctReturnType != null && ctReturnType.getName().equals("play.modules.morphia.Blob") && cf.getDeclaringClass().getName().equals(ctClass.getName())) {
                 createAnnotation(getAnnotations(cf), Transient.class);
-                KeyGenerator kg = KeyGenerator.BY_DATE;
+                KeyGenerator kg = KeyGenerator.PLAIN;
                 BlobStorageService.KeyGen annKG = getAnnotation(cf, BlobStorageService.KeyGen.class.getName());
                 if (null != annKG) {
                     kg = annKG.value(); 

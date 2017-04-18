@@ -273,7 +273,13 @@ public class BlobStorageService extends StorageServiceBase implements IStorageSe
 
     public String getKey(String hostId, String fieldName, Blob blob) {
         String legacy = getLegacyKey(hostId, fieldName);
-        return newKey(legacy, blob);
+        // There's an issue with the new key generation. When models are loaded, there's currently a blob key 
+        // autosave feature. However, blob keys might be permanently lost if said feature overwrites the keys, since 
+        // keys include the date of blob creation and its file type. These are only known if you have access to the 
+        // files collection, to which you only have access if you have the key. So you need the document to create the 
+        // key, and you need the key to find the document.
+//        return newKey(legacy, blob);
+        return legacy;
     }
 
     public String newKey(String legacy, Blob blob) {

@@ -1094,18 +1094,24 @@ public class Model implements Serializable, play.db.Model {
     protected String __getBlobKey(String field) {
         E.NPE(field);
         if (__blobs == null || __blobs.isEmpty()) {
-            //TODO: A better solution
-            MorphiaQuery q = null;
-            try {
-                q = (MorphiaQuery) this.getClass().getMethod("q", new Class[]{}).invoke(null);
-            } catch (Exception e) {
-            }
-            if (q != null) {
-                Model reloaded = q.disableValidation().filter("_id", ObjectId.class.cast(this.getId())).retrievedFields(true, "__blobs").first();
-                if (reloaded != null) {
-                    __blobs = reloaded.__blobs;
+            //TODO: A better solution to avoid recursive calls to Model#_h_Loaded()
+            BasicDBObject query = new BasicDBObject("_id", ObjectId.class.cast(this.getId()));
+            BasicDBObject projection = new BasicDBObject("__blobs", 1);
+            DBCursor cursor = MorphiaPlugin.ds().getCollection(this.getClass()).find(query, projection);
+            if (cursor.hasNext()) {
+                BasicDBObject reloaded = (BasicDBObject) cursor.next();
+                BasicDBObject blobsDBObject = (BasicDBObject) reloaded.get("__blobs");
+                if (blobsDBObject != null && !blobsDBObject.isEmpty()) {
+                    Map<String, String> newBlobsMap = C.newMap();
+                    for (Map.Entry<String, Object> entry : blobsDBObject.entrySet()) {
+                        if (entry.getValue() instanceof String) {
+                            newBlobsMap.put(entry.getKey(), (String) entry.getValue());
+                        }
+                    }
+                    __blobs = newBlobsMap;
                 }
             }
+
             if (__blobs == null || __blobs.isEmpty()) {
                 __blobs = C.newMap();
             }
