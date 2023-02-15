@@ -60,8 +60,6 @@ require:
 repositories:
     - sonatype:
         type: iBiblio
-        #root: "https://repository.jboss.org/"
-        #root: "https://repo.asap-soft.com/artifactory/libs-snapshot/"
         root:  "https://oss.sonatype.org/content/repositories/snapshots/"
         contains:
             - org.osgl -> *
