@@ -10,7 +10,6 @@ import javassist.bytecode.annotation.EnumMemberValue;
 import javassist.bytecode.annotation.MemberValue;
 import org.mongodb.morphia.annotations.*;
 import org.mongodb.morphia.utils.IndexDirection;
-import org.osgl._;
 import org.osgl.storage.KeyGenerator;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -18,6 +17,7 @@ import org.osgl.util.S;
 import play.Logger;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
+import play.libs.F.T2;
 import play.modules.morphia.Model.*;
 
 import java.util.ArrayList;
@@ -392,12 +392,12 @@ public class MorphiaEnhancer extends Enhancer {
         CtMethod deleteAll = CtMethod.make("public static long deleteAll() { return delete(all()); }",ctClass);
         ctClass.addMethod(deleteAll);
 
-        // add @Transient to all blobs automatically
-        Map<String, _.T2<KeyGenerator, String>> blobs = processFields(ctClass);
-        boolean hasBlobField = blobs.size() > 0;
-
-        // enhance blob methods: save, delete, batchDelete, load and setters
-        if (hasBlobField) enhanceBlobMethods(ctClass, blobs);
+//        // add @Transient to all blobs automatically
+//        Map<String, _.T2<KeyGenerator, String>> blobs = processFields(ctClass);
+//        boolean hasBlobField = blobs.size() > 0;
+//
+//        // enhance blob methods: save, delete, batchDelete, load and setters
+//        if (hasBlobField) enhanceBlobMethods(ctClass, blobs);
 
         // add lifecycle handling code
         addLifeCycleMethods(ctClass);
@@ -407,44 +407,44 @@ public class MorphiaEnhancer extends Enhancer {
         ctClass.defrost();
     }
 
-    private void enhanceBlobMethods(CtClass ctClass, Map<String, _.T2<KeyGenerator, String>> blobs) throws CannotCompileException, NotFoundException {
-        // -- get blob storage service
-        StringBuilder sb = S.builder("protected play.modules.morphia.BlobStorageService bss(String field) {");
-        for (String blob : blobs.keySet()) {
-            _.T2<KeyGenerator, String> anno = blobs.get(blob);
-            sb.append(S.fmt("\nif (\"%s\".equals(field)) {\n\treturn play.modules.morphia.MorphiaPlugin.bss(%s, \"%s\");\n}", blob, KeyGenerator.class.getName() + "." + anno._1.name(), anno._2));
-        }
-        sb.append("\nthrow new java.lang.IllegalArgumentException(\"unknown blob field: \" + field);\n}");
-        
-        CtMethod method = CtMethod.make(sb.toString(), ctClass);
-        ctClass.addMethod(method);
-
-        // -- saveBlobs
-        sb = S.builder("protected void saveBlobs() {");
-        for (String blob : blobs.keySet()) {
-            sb.append(String.format("\n\t{\n\t\tBlob blob = %1$s; \n\t\tif (null != blob && __blobChanged(\"%1$s\")) {\n\t\t\tString key = blob.createKey(getIdAsStr(), \"%1$s\", bss(\"%1$s\")); \n\t\t\tblob.save(key, bss(\"%1$s\")); \n\t\t\t__setBlobKey(\"%1$s\", key);\n\t\t}\n\t}", blob));
-        }
-        sb.append("\n\tblobFieldsTracker.clear();}");
-        method = CtMethod.make(sb.toString(), ctClass);
-        ctClass.addMethod(method);
-
-        // -- loadBlobs
-        sb = new StringBuilder("protected boolean loadBlobs() {");
-        sb.append("\n\tboolean needsave = false;");
-        for (String blob : blobs.keySet()) {
-            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());save();needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
-        }
-        sb.append("\n\tblobFieldsTracker.clear();\nreturn needsave;}");
-        method = CtMethod.make(sb.toString(), ctClass);
-        ctClass.addMethod(method);
-
-        // -- blob setters
-        for (String blob : blobs.keySet()) {
-            String setter = "set" + S.capFirst(blob);
-            CtMethod ctMethod = ctClass.getDeclaredMethod(setter);
-            ctMethod.insertAfter(String.format("__setBlobChanged(\"%s\");", blob));
-        }
-    }
+//    private void enhanceBlobMethods(CtClass ctClass, Map<String, _.T2<KeyGenerator, String>> blobs) throws CannotCompileException, NotFoundException {
+//        // -- get blob storage service
+//        StringBuilder sb = S.builder("protected play.modules.morphia.BlobStorageService bss(String field) {");
+//        for (String blob : blobs.keySet()) {
+//            T2<KeyGenerator, String> anno = blobs.get(blob);
+//            sb.append(S.fmt("\nif (\"%s\".equals(field)) {\n\treturn play.modules.morphia.MorphiaPlugin.bss(%s, \"%s\");\n}", blob, KeyGenerator.class.getName() + "." + anno._1.name(), anno._2));
+//        }
+//        sb.append("\nthrow new java.lang.IllegalArgumentException(\"unknown blob field: \" + field);\n}");
+//        
+//        CtMethod method = CtMethod.make(sb.toString(), ctClass);
+//        ctClass.addMethod(method);
+//
+//        // -- saveBlobs
+//        sb = S.builder("protected void saveBlobs() {");
+//        for (String blob : blobs.keySet()) {
+//            sb.append(String.format("\n\t{\n\t\tBlob blob = %1$s; \n\t\tif (null != blob && __blobChanged(\"%1$s\")) {\n\t\t\tString key = blob.createKey(getIdAsStr(), \"%1$s\", bss(\"%1$s\")); \n\t\t\tblob.save(key, bss(\"%1$s\")); \n\t\t\t__setBlobKey(\"%1$s\", key);\n\t\t}\n\t}", blob));
+//        }
+//        sb.append("\n\tblobFieldsTracker.clear();}");
+//        method = CtMethod.make(sb.toString(), ctClass);
+//        ctClass.addMethod(method);
+//
+//        // -- loadBlobs
+//        sb = new StringBuilder("protected boolean loadBlobs() {");
+//        sb.append("\n\tboolean needsave = false;");
+//        for (String blob : blobs.keySet()) {
+//            sb.append(String.format("\n\t{\n\t\t%1$s = %2$s.load((String)%3$s.ensureGet(__getBlobKey(\"%1$s\"), getBlobFileName(\"%1$s\")), bss(\"%1$s\"));\n\t\tif (null == __getBlobKey(\"%1$s\") && null != %1$s) {__setBlobKey(\"%1$s\", %1$s.getKey());save();needsave = true;}\n\t}", blob, Blob.class.getName(), _.class.getName()));
+//        }
+//        sb.append("\n\tblobFieldsTracker.clear();\nreturn needsave;}");
+//        method = CtMethod.make(sb.toString(), ctClass);
+//        ctClass.addMethod(method);
+//
+//        // -- blob setters
+//        for (String blob : blobs.keySet()) {
+//            String setter = "set" + S.capFirst(blob);
+//            CtMethod ctMethod = ctClass.getDeclaredMethod(setter);
+//            ctMethod.insertAfter(String.format("__setBlobChanged(\"%s\");", blob));
+//        }
+//    }
 
     /*
      * 1. Add @Transparent to all Blob field
@@ -452,11 +452,11 @@ public class MorphiaEnhancer extends Enhancer {
      * 3. Convert @play.data.validation.Unique to @play.modules.morphia.validation.Unique
      * 3. Return a list of names of Blob fields
      */
-    private Map<String, _.T2<KeyGenerator, String>> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
+    private Map<String, T2<KeyGenerator, String>> processFields(CtClass ctClass) throws NotFoundException, ClassNotFoundException {
         List<CtField> fields  = new ArrayList<CtField>();
         fields.addAll(Arrays.asList(ctClass.getDeclaredFields()));
         fields.addAll(Arrays.asList(ctClass.getFields()));
-        Map<String, _.T2<KeyGenerator, String>> blobs = C.newMap();
+        Map<String, T2<KeyGenerator, String>> blobs = C.newMap();
         List<MemberValue> converterList = new ArrayList<MemberValue>();
         for (CtField cf: fields) {
             CtClass ctReturnType = cf.getType();
@@ -479,7 +479,7 @@ public class MorphiaEnhancer extends Enhancer {
                         ss = storage;
                     }
                 }
-                blobs.put(cf.getName(), _.T2(kg, ss));
+                blobs.put(cf.getName(), new T2(kg, ss));
                 continue;
             }
 
