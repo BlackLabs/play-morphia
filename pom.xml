@@ -42,7 +42,7 @@ under the License.
         <repository>
             <id>com.google.code.maven-play-plugin</id>
             <name>Maven Play Plugin - releases</name>
-            <url>http://maven-play-plugin.googlecode.com/svn/mavenrepo/releases</url>
+            <url>https://maven-play-plugin.googlecode.com/svn/mavenrepo/releases</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -50,7 +50,7 @@ under the License.
         <repository>
             <id>com.google.code.maven-play-plugin-snapshots</id>
             <name>Maven Play Plugin - snapshots</name>
-            <url>http://maven-play-plugin.googlecode.com/svn/mavenrepo/snapshots</url>
+            <url>https://maven-play-plugin.googlecode.com/svn/mavenrepo/snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
