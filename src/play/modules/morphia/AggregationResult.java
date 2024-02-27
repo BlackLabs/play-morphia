@@ -1,9 +1,14 @@
 package play.modules.morphia;
 
-import org.osgl.util.S;
-import com.mongodb.BasicDBObject;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import org.apache.commons.lang.StringUtils;
+
+import com.mongodb.BasicDBObject;
 
 public class AggregationResult {
     private List<BasicDBObject> r_ = null;
@@ -29,7 +34,7 @@ public class AggregationResult {
     }
 
     public Long getResult(String groupKeys, Object... groupValues) {
-        if (S.empty(groupKeys)) {
+    if (StringUtils.isBlank(groupKeys)) {
             if (groupValues.length == 0) return getResult();
             throw new IllegalArgumentException("the number of group keys does not match the number of group values");
         }
