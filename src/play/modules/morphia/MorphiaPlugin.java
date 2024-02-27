@@ -51,7 +51,7 @@ import play.modules.morphia.utils.SilentLoggerFactory;
  */
 public final class MorphiaPlugin extends PlayPlugin {
 
-    public static final String VERSION = "1.5.0";
+    public static final String VERSION = "1.5.1";
 
     public static void info(String msg, Object... args) {
         Logger.info(msg_(msg, args));
@@ -108,7 +108,9 @@ public final class MorphiaPlugin extends PlayPlugin {
 
     public static final String PREFIX = "morphia.db.";
 
-    private MorphiaEnhancer e_ = new MorphiaEnhancer();
+    private final MorphiaEnhancer e_ = new MorphiaEnhancer();
+    
+    private static MongoCredential credential_ = null;
 
     private static Morphia morphia_ = null;
     private static Datastore ds_ = null;
@@ -305,71 +307,76 @@ public final class MorphiaPlugin extends PlayPlugin {
      * Connect using conf - morphia.db.host=host1,host2... -
      * morphia.db.port=port1,port2...
      */
-    private final MongoClient connect_(String host, String port, MongoClientOptions options) {
+    private final MongoClient connect_(String host, String port, MongoClientOptions options, MongoCredential creds) {
         String[] ha = host.split("[,\\s;]+");
         String[] pa = port.split("[,\\s;]+");
         int len = ha.length;
         if (len != pa.length)
-            throw new ConfigurationException(
-                    "host and ports number does not match");
+           throw new ConfigurationException("host and ports number does not match");
         if (1 == len) {
-            try {
-                return new MongoClient(new ServerAddress(ha[0], Integer.parseInt(pa[0])), options);
-            } catch (Exception e) {
-                throw new ConfigurationException(String.format("Cannot connect to mongodb at %s:%s", host, port));
-            }
+           try {
+              return new MongoClient(new ServerAddress(ha[0], Integer.parseInt(pa[0])), options);
+           } catch (Exception e) {
+              throw new ConfigurationException(String.format("Cannot connect to mongodb at %s:%s", host, port));
+           }
         }
         List<ServerAddress> addrs = new ArrayList<ServerAddress>(ha.length);
         for (int i = 0; i < len; ++i) {
-            try {
-                addrs.add(new ServerAddress(ha[i], Integer.parseInt(pa[i])));
-            } catch (Exception e) {
-                error(e, "Error creating mongo connection to %s:%s", host, port);
-            }
+           try {
+              addrs.add(new ServerAddress(ha[i], Integer.parseInt(pa[i])));
+           } catch (Exception e) {
+              error(e, "Error creating mongo connection to %s:%s", host, port);
+           }
         }
         if (addrs.isEmpty()) {
-            throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
+           throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new MongoClient(addrs, options);
-    }
+        if (creds != null)
+           return new MongoClient(addrs, Arrays.asList(creds), options);
+        else
+           return new MongoClient(addrs, options);
+     }
 
     /*
      * Connect using conf morphia.db.seeds=host1[:port1];host2[:port2]...
      */
-    private final MongoClient connect_(String seeds, MongoClientOptions options) {
+    private final MongoClient connect_(String seeds, MongoClientOptions options, MongoCredential creds) {
         String[] sa = seeds.split("[;,\\s]+");
         List<ServerAddress> addrs = new ArrayList<ServerAddress>(sa.length);
         for (String s : sa) {
-            String[] hp = s.split(":");
-            if (0 == hp.length)
-                continue;
-            String host = hp[0];
-            int port = 27017;
-            if (hp.length > 1) {
-                port = Integer.parseInt(hp[1]);
-            }
-            try {
-                addrs.add(new ServerAddress(host, port));
-            } catch (UnknownHostException e) {
-                error(e, "error creating mongo connection to %s:%s", host, port);
-            }
+           String[] hp = s.split(":");
+           if (0 == hp.length)
+              continue;
+           String host = hp[0];
+           int port = 27017;
+           if (hp.length > 1) {
+              port = Integer.parseInt(hp[1]);
+           }
+           try {
+              addrs.add(new ServerAddress(host, port));
+           } catch (Exception e) {
+              error(e, "error creating mongo connection to %s:%s", host, port);
+           }
         }
         if (addrs.isEmpty()) {
-            throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
+           throw new ConfigurationException("Cannot connect to mongodb: no replica can be connected");
         }
-        return new MongoClient(addrs, options);
-    }
+        if (creds != null)
+           return new MongoClient(addrs, Arrays.asList(creds), options);
+        else
+           return new MongoClient(addrs, options);
+     }
 
     /*
      * Connect using conf morphia.db.url=mongodb://fred:foobar@host:port/db
      */
     private final MongoClient connect_(MongoClientURI mongoURI) {
         try {
-            return new MongoClient(mongoURI);
-        } catch (UnknownHostException e) {
-            throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
+           return new MongoClient(mongoURI);
+        } catch (Exception e) {
+           throw new ConfigurationException("Error creating mongo connection to " + mongoURI);
         }
-    }
+     }
 
     public static BlobStorageService bss(KeyGenerator keygen, String ss) {
         return BlobStorageService.valueOf(keygen, ss);
@@ -471,46 +478,52 @@ public final class MorphiaPlugin extends PlayPlugin {
 
         String url = c.getProperty(PREFIX + "url");
         String seeds = c.getProperty(PREFIX + "seeds");
-        if (!S.empty(url)) {
-            MongoClientURI mongoURI = new MongoClientURI(url);
-            mongo_ = connect_(mongoURI);
-        } else if (!S.empty(seeds)) {
-            mongo_ = connect_(seeds, options);
-        } else {
-            String host = c.getProperty(PREFIX + "host", "localhost");
-            String port = c.getProperty(PREFIX + "port", "27017");
-            mongo_ = connect_(host, port, options);
+        String dbName = c.getProperty(PREFIX + "name");
+        String username = c.getProperty(PREFIX + "username");
+        String password = c.getProperty(PREFIX + "password");
+
+        if (!S.empty(username) && !S.empty(password)) {
+           credential_ = MongoCredential.createCredential(username, dbName, password.toCharArray());
         }
-    }
+
+        if (!S.empty(url)) {
+           MongoClientURI mongoURI = new MongoClientURI(url);
+           mongo_ = connect_(mongoURI);
+        } else if (!S.empty(seeds)) {
+           mongo_ = connect_(seeds, options, credential_);
+        } else {
+           String host = c.getProperty(PREFIX + "host", "localhost");
+           String port = c.getProperty(PREFIX + "port", "27017");
+           mongo_ = connect_(host, port, options, credential_);
+        }
+     }
 
     private static MongoClientOptions readMongoOptions(Properties c) {
-        MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
+        MongoClientOptions.Builder builder = MongoClientOptions.builder();
         for (Method method : MongoClientOptions.Builder.class.getMethods()) {
-            String property = c.getProperty("morphia.driver." + method.getName());
-            if (StringUtils.isEmpty(property))
-                continue;
+           String property = c.getProperty("morphia.driver." + method.getName());
+           if (StringUtils.isEmpty(property))
+              continue;
 
-            Class fieldType = method.getParameterTypes()[0];
-
-            Object value = null;
-            try {
-                if (fieldType == int.class) {
-                    method.invoke(builder, Integer.parseInt(property));
-                } else if (fieldType == long.class){
-                    method.invoke(builder,Long.parseLong(property));
-                } else if (fieldType == String.class){
-                    method.invoke(builder,property);
-                } else if (fieldType == Double.class){
-                    method.invoke(builder,Double.parseDouble(property));
-                } else if (fieldType == boolean.class){
-                    method.invoke(builder,Boolean.parseBoolean(property));
-                }
-            } catch (Exception e) {
-                error(e, "error setting mongo option " + method.getName());
-            }
+           Class<?> fieldType = method.getParameterTypes()[0];
+           Object value = null;
+           try {
+              if (fieldType == int.class)
+                 method.invoke(builder, Integer.parseInt(property));
+              else if (fieldType == long.class)
+                 method.invoke(builder, Long.parseLong(property));
+              else if (fieldType == String.class)
+                 method.invoke(builder, property);
+              else if (fieldType == Double.class)
+                 method.invoke(builder, Double.parseDouble(property));
+              else if (fieldType == boolean.class)
+                 method.invoke(builder, Boolean.parseBoolean(property));
+           } catch (Exception e) {
+              error(e, "error setting mongo option " + method.getName());
+           }
         }
         return builder.build();
-    }
+     }
 
     @SuppressWarnings("unchecked")
     private void initMorphia_() {
@@ -522,44 +535,36 @@ public final class MorphiaPlugin extends PlayPlugin {
         String password = c.getProperty(PREFIX + "password");
 
         if (!S.empty(url)) {
-            MongoURI mongoURI = new MongoURI(url);
-            dbName = mongoURI.getDatabase();
-            // overwrite these if set via url
-            if (mongoURI.getUsername() != null) {
-                username = mongoURI.getUsername();
-            }
-            if (mongoURI.getPassword() != null) {
-                password = new String(mongoURI.getPassword());
-            }
+           MongoClientURI mongoURI = new MongoClientURI(url);
+           dbName = mongoURI.getDatabase();
+           // overwrite these if set via url
+           if (mongoURI.getUsername() != null) {
+              username = mongoURI.getUsername();
+           }
+           if (mongoURI.getPassword() != null) {
+              password = new String(mongoURI.getPassword());
+           }
         }
 
         if (null == dbName) {
-            warn("mongodb name not configured! using [test] db");
-            dbName = "test";
-        }
-
-        DB db = mongo_.getDB(dbName);
-
-        if (!S.empty(username) && !S.empty(password)) {
-            if (!db.isAuthenticated() && !db.authenticate(username, password.toCharArray())) {
-                throw new RuntimeException("MongoDB authentication failed: " + dbName);
-            }
+           warn("mongodb name not configured! using [test] db");
+           dbName = "test";
         }
 
         String loggerClass = c.getProperty("morphia.logger");
         Class<? extends LoggerFactory> loggerClazz = SilentLoggerFactory.class;
         if (null != loggerClass) {
-            final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes|on)", Pattern.CASE_INSENSITIVE);
-            final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no|off)", Pattern.CASE_INSENSITIVE);
-            if (P_PLAY.matcher(loggerClass).matches()) {
-                loggerClazz = PlayLoggerFactory.class;
-            } else if (!P_SILENT.matcher(loggerClass).matches()) {
-                try {
-                    loggerClazz = (Class<? extends LoggerFactory>) Class.forName(loggerClass);
-                } catch (Exception e) {
-                    warn("Cannot init morphia logger factory using %s. Use PlayLoggerFactory instead", loggerClass);
-                }
-            }
+           final Pattern P_PLAY = Pattern.compile("(play|enable|true|yes|on)", Pattern.CASE_INSENSITIVE);
+           final Pattern P_SILENT = Pattern.compile("(silent|disable|false|no|off)", Pattern.CASE_INSENSITIVE);
+           if (P_PLAY.matcher(loggerClass).matches()) {
+              loggerClazz = PlayLoggerFactory.class;
+           } else if (!P_SILENT.matcher(loggerClass).matches()) {
+              try {
+                 loggerClazz = (Class<? extends LoggerFactory>) Class.forName(loggerClass);
+              } catch (Exception e) {
+                 warn("Cannot init morphia logger factory using %s. Use PlayLoggerFactory instead", loggerClass);
+              }
+           }
         }
         loggerRegistered_ = false;
         MorphiaLoggerFactory.reset();
@@ -573,24 +578,24 @@ public final class MorphiaPlugin extends PlayPlugin {
         gridfs = new GridFS(MorphiaPlugin.ds().getDB(), uploadCollection);
 
         morphia_.getMapper().addInterceptor(new AbstractEntityInterceptor() {
-            @Override
-            public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
-                if (ent instanceof Model) {
-                    PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
-                    ((Model) ent)._h_OnLoad();
-                }
-            }
+           @Override
+           public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
+              if (ent instanceof Model) {
+                 Model m = (Model) ent;
+                 PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
+                 m._h_Loaded();
+              }
+           }
 
-            @Override
-            public void postLoad(Object ent, DBObject dbObj, Mapper mapr) {
-                if (ent instanceof Model) {
-                    Model m = (Model) ent;
-                    PlayPlugin.postEvent(MorphiaEvent.LOADED.getId(), ent);
-                    m._h_Loaded();
-                }
-            }
+           @Override
+           public void preLoad(Object ent, DBObject dbObj, Mapper mapr) {
+              if (ent instanceof Model) {
+                 PlayPlugin.postEvent(MorphiaEvent.ON_LOAD.getId(), ent);
+                 ((Model) ent)._h_OnLoad();
+              }
+           }
         });
-    }
+     }
 
     private static void initStringIdGenerator_() {
         if (null != stringIdGenerator_) {
@@ -779,12 +784,12 @@ public final class MorphiaPlugin extends PlayPlugin {
 
     @Override
     public void onInvocationException(Throwable e) {
-        if (e instanceof MongoException.Network) {
-            error("MongoException.Network encountered. Trying to restart mongo...");
-            configureConnection_();
-            initMorphia_();
+        if (e instanceof MongoException) {
+           error("MongoException.Network encountered. Trying to restart mongo...");
+           configureConnection_();
+           initMorphia_();
         }
-    }
+     }
 
     private void configureDs_() {
 //        List<Class<?>> pending = new ArrayList<Class<?>>();
@@ -882,12 +887,12 @@ public final class MorphiaPlugin extends PlayPlugin {
 
         private static Map<Class<? extends Model>, Model.Factory> m_ = new HashMap<Class<? extends Model>, Factory>();
 
-        private Class<? extends Model> clazz;
+        private final Class<? extends Model> clazz;
 
         private MorphiaModelLoader(Class<? extends Model> clazz) {
             this.clazz = clazz;
             m_.put(clazz, this);
-        }
+         }
 
         public static Model.Factory getFactory(Class<? extends Model> clazz) {
             synchronized (m_) {
@@ -1059,35 +1064,36 @@ public final class MorphiaPlugin extends PlayPlugin {
             }
         }
 
+        @Override
         public void deleteAll() {
-            ds().delete(ds().createQuery(clazz));
+           ds().delete(ds().createQuery(clazz));
         }
 
+        @Override
         public List<Model.Property> listProperties() {
-            List<Model.Property> properties = new ArrayList<Model.Property>();
-            Set<Field> fields = new HashSet<Field>();
-            Class<?> tclazz = clazz;
-            while (!tclazz.equals(Object.class)) {
-                Collections.addAll(fields, tclazz.getDeclaredFields());
-                tclazz = tclazz.getSuperclass();
-            }
-            for (Field f : fields) {
-                if (Modifier.isTransient(f.getModifiers())) {
-                    continue;
-                }
-                if (Modifier.isStatic(f.getModifiers())) {
-                    continue;
-                }
-                if (f.isAnnotationPresent(Transient.class)
-                        && !f.getType().equals(Blob.class)) {
-                    continue;
-                }
-                Model.Property mp = buildProperty(f);
-                if (mp != null) {
-                    properties.add(mp);
-                }
-            }
-            return properties;
+           List<Model.Property> properties = new ArrayList<Model.Property>();
+           Set<Field> fields = new HashSet<Field>();
+           Class<?> tclazz = clazz;
+           while (!tclazz.equals(Object.class)) {
+              Collections.addAll(fields, tclazz.getDeclaredFields());
+              tclazz = tclazz.getSuperclass();
+           }
+           for (Field f : fields) {
+              if (Modifier.isTransient(f.getModifiers())) {
+                 continue;
+              }
+              if (Modifier.isStatic(f.getModifiers())) {
+                 continue;
+              }
+              if (f.isAnnotationPresent(Transient.class) && !f.getType().equals(Blob.class)) {
+                 continue;
+              }
+              Model.Property mp = buildProperty(f);
+              if (mp != null) {
+                 properties.add(mp);
+              }
+           }
+           return properties;
         }
 
         // enumerable all searchable fields including embedded recursively
@@ -1136,11 +1142,13 @@ public final class MorphiaPlugin extends PlayPlugin {
             }
         }
 
+        @Override
         public String keyName() {
-            Field f = keyField();
-            return (f == null) ? null : f.getName();
+           Field f = keyField();
+           return (f == null) ? null : f.getName();
         }
 
+        @Override
         public Class<?> keyType() {
             return keyField().getType();
         }
@@ -1183,61 +1191,63 @@ public final class MorphiaPlugin extends PlayPlugin {
             modelProperty.type = field.getType();
             modelProperty.field = field;
             if (Model.class.isAssignableFrom(field.getType())) {
-                if (field.isAnnotationPresent(Embedded.class)) {
-                    modelProperty.isRelation = true;
-                    modelProperty.relationType = field.getType();
-                    modelProperty.choices = new Model.Choices() {
-                        @SuppressWarnings("unchecked")
-                        public List<Object> list() {
-                            // it doesn't make sense to compose choice list for
-                            // embedded field
-                            return Collections.EMPTY_LIST;
-                        }
-                    };
-                }
-                if (field.isAnnotationPresent(Reference.class)) {
-                    modelProperty.isRelation = true;
-                    modelProperty.relationType = field.getType();
-                    modelProperty.choices = new Model.Choices() {
-                        @SuppressWarnings({"unchecked"})
-                        public List<Object> list() {
-                            return (List<Object>) ds().createQuery(
-                                    field.getType()).asList();
-                        }
-                    };
-                }
+               if (field.isAnnotationPresent(Embedded.class)) {
+                  modelProperty.isRelation = true;
+                  modelProperty.relationType = field.getType();
+                  modelProperty.choices = new Model.Choices() {
+                     @Override
+                     @SuppressWarnings("unchecked")
+                     public List<Object> list() {
+                        // it doesn't make sense to compose choice list for
+                        // embedded field
+                        return Collections.EMPTY_LIST;
+                     }
+                  };
+               }
+               if (field.isAnnotationPresent(Reference.class)) {
+                  modelProperty.isRelation = true;
+                  modelProperty.relationType = field.getType();
+                  modelProperty.choices = new Model.Choices() {
+                     @Override
+                     @SuppressWarnings({ "unchecked" })
+                     public List<Object> list() {
+                        return (List<Object>) ds().createQuery(field.getType()).asList();
+                     }
+                  };
+               }
             }
             if (Collection.class.isAssignableFrom(field.getType())) {
-                final Class<?> fieldType = (Class<?>) ((ParameterizedType) field
-                        .getGenericType()).getActualTypeArguments()[0];
-                if (field.isAnnotationPresent(Reference.class)) {
-                    modelProperty.isRelation = true;
-                    modelProperty.isMultiple = true;
-                    modelProperty.relationType = fieldType;
-                    modelProperty.choices = new Model.Choices() {
-                        @SuppressWarnings("unchecked")
-                        public List<Object> list() {
-                            return (List<Object>) ds().createQuery(fieldType)
-                                    .asList();
-                        }
-                    };
-                }
+               final Class<?> fieldType = (Class<?>) ((ParameterizedType) field.getGenericType())
+                     .getActualTypeArguments()[0];
+               if (field.isAnnotationPresent(Reference.class)) {
+                  modelProperty.isRelation = true;
+                  modelProperty.isMultiple = true;
+                  modelProperty.relationType = fieldType;
+                  modelProperty.choices = new Model.Choices() {
+                     @Override
+                     @SuppressWarnings("unchecked")
+                     public List<Object> list() {
+                        return (List<Object>) ds().createQuery(fieldType).asList();
+                     }
+                  };
+               }
             }
             if (field.getType().isEnum()) {
-                modelProperty.choices = new Model.Choices() {
+               modelProperty.choices = new Model.Choices() {
 
-                    @SuppressWarnings("unchecked")
-                    public List<Object> list() {
-                        return (List<Object>) Arrays.asList(field.getType().getEnumConstants());
-                    }
-                };
+                  @Override
+                  @SuppressWarnings("unchecked")
+                  public List<Object> list() {
+                     return (List<Object>) Arrays.asList(field.getType().getEnumConstants());
+                  }
+               };
             }
             modelProperty.name = field.getName();
             if (field.getType().equals(String.class)) {
-                modelProperty.isSearchable = true;
+               modelProperty.isSearchable = true;
             }
             return modelProperty;
-        }
+         }
 
     }
 
