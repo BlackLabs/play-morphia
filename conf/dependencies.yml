@@ -1,7 +1,7 @@
 # History
 # 1.7     - Support for Mongo 7.0
 #         - dependencies updates
-#         - mongo-java-driver to mongodb-driver-sync 4.11.1
+#         - mongo-java-driver 4.11.1
 #         - morphia 1.3.2
 # 1.6.1   - Fixed the morphia.driver.<param> lookup
 # 1.6.0   - Forked by QW
@@ -64,8 +64,6 @@ require:
 repositories:
     - sonatype:
         type: iBiblio
-        #root: "https://repository.jboss.org/"
-        #root: "https://repo.asap-soft.com/artifactory/libs-snapshot/"
         root:  "https://oss.sonatype.org/content/repositories/snapshots/"
         contains:
             - org.osgl -> *
