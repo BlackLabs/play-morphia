@@ -231,7 +231,7 @@ public class MorphiaEnhancer extends Enhancer {
             ClassFile classFile = ctClass.getClassFile();
             ConstPool cp = classFile.getConstPool();
             AnnotationsAttribute attribute = new AnnotationsAttribute(cp, AnnotationsAttribute.visibleTag);
-            Annotation indexAnnotation = new Annotation(cp, ClassPool.getDefault().get("org.mongodb.morphia.annotations.Indexed"));
+            Annotation indexAnnotation = new Annotation("org.mongodb.morphia.annotations.Indexed", cp); //https://stackoverflow.com/questions/6999365/unexpected-nullpointerexception-using-javassist
             EnumMemberValue val = new EnumMemberValue(cp);
             val.setType(IndexDirection.class.getName());
             val.setValue(IndexDirection.DESC.name());

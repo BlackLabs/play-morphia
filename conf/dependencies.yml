@@ -1,4 +1,10 @@
 # History
+# 1.7     - Support for Mongo 7.0
+#         - dependencies updates
+#         - mongo-java-driver 4.11.1
+#         - morphia 1.3.2
+# 1.6.1   - Fixed the morphia.driver.<param> lookup
+# 1.6.0   - Forked by QW
 # 1.5.0a  - add missing osgl-logging.jar to dist
 # 1.5.0   - dependencies updates
 #         - osgl-tool 0.3-SNAPSHOT
@@ -47,19 +53,17 @@
 #        - trim value when processing where statement in Factory.fetch
 # 1.2.5 - mavenize project
 # 1.2.4d - Add BlobGsonAdapter and ModelFactoryGsonAdapter utilities
-self: play -> morphia 1.5.0b
+self: play -> morphia 1.7.0
 require:
-    - play 1.2
-    - org.mongodb -> mongo-java-driver 2.13.1
-    - org.mongodb.morphia -> morphia 0.111
+    - play 1.4.4
+    - org.mongodb -> mongo-java-driver 3.12.14
+    - org.mongodb.morphia -> morphia 1.3.2
     - org.osgl -> osgl-tool 0.3-SNAPSHOT
     - org.osgl -> osgl-logging 0.3-SNAPSHOT
     - org.osgl -> osgl-storage 0.3-SNAPSHOT
-
 repositories:
     - sonatype:
-        type:       iBiblio
-        root:       "https://oss.sonatype.org/content/repositories/snapshots/"
+        type: iBiblio
+        root:  "https://oss.sonatype.org/content/repositories/snapshots/"
         contains:
             - org.osgl -> *
-

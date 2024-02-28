@@ -1,7 +1,27 @@
 package play.modules.morphia;
 
-import com.mongodb.*;
-import com.mongodb.gridfs.GridFS;
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.CodeWScope;
 import org.mongodb.morphia.Datastore;
@@ -12,11 +32,30 @@ import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.mapping.Mapper;
-import org.mongodb.morphia.query.*;
+import org.mongodb.morphia.query.Criteria;
+import org.mongodb.morphia.query.CriteriaContainer;
+import org.mongodb.morphia.query.CriteriaContainerImpl;
+import org.mongodb.morphia.query.FieldEnd;
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.QueryImpl;
+import org.mongodb.morphia.query.UpdateOperations;
+import org.mongodb.morphia.query.UpdateOpsImpl;
+import org.mongodb.morphia.query.UpdateResults;
 import org.osgl.exception.UnsupportedException;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MapReduceCommand;
+import com.mongodb.MapReduceOutput;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
+import com.mongodb.gridfs.GridFS;
+
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -27,14 +66,6 @@ import play.data.validation.Validation;
 import play.exceptions.UnexpectedException;
 import play.modules.morphia.utils.IdGenerator;
 import play.mvc.Scope.Params;
-
-import java.io.Serializable;
-import java.lang.annotation.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * This class provides the abstract declarations for all Models. Implementations
@@ -248,6 +279,7 @@ public class Model implements Serializable, play.db.Model {
      * @deprecated
      * @return
      */
+  @Deprecated
     protected boolean isEmbedded_() {
         return false;
     }
@@ -402,8 +434,8 @@ public class Model implements Serializable, play.db.Model {
     }
 
     public static class MorphiaBatchUpdates<T extends Model> {
-        private MorphiaUpdateOperations o;
-        private Model m;
+    private final MorphiaUpdateOperations o;
+    private final Model m;
         private <T extends Model> MorphiaBatchUpdates(T model) {
             o = new MorphiaUpdateOperations(model.getClass());
             m = model;
@@ -1414,7 +1446,7 @@ public class Model implements Serializable, play.db.Model {
 
         public MorphiaQuery(Class<? extends Model> clazz) {
             // super(clazz, ds().getCollection(clazz), ds());
-            q_ = (QueryImpl<? extends Model>) ds().createQuery(clazz);
+      q_ = ds().createQuery(clazz);
             c_ = clazz;
         }
 
@@ -1725,6 +1757,10 @@ public class Model implements Serializable, play.db.Model {
             return (FieldEnd<? extends Query<T>>) q_.field(field);
         }
 
+    public <T extends Model> FieldEnd<? extends Query<T>> search(String text) {
+      return (FieldEnd<? extends Query<T>>) q_.search(text);
+    }
+
         public <T extends Model> Iterable<Key<T>> fetchKeys() {
             return ((Query<T>) q_).fetchKeys();
         }
@@ -1776,6 +1812,11 @@ public class Model implements Serializable, play.db.Model {
             return this;
         }
         
+    @Deprecated
+    public <T extends Model> MorphiaQuery skip(int value) {
+      return this;
+    }
+
         public <T extends Model> MorphiaQuery enableValidation() {
             q_.enableValidation();
             return this;
@@ -1807,6 +1848,7 @@ public class Model implements Serializable, play.db.Model {
             return this;
         }
 
+    @Deprecated
         public <T extends Model> MorphiaQuery queryNonPrimary() {
             q_.queryNonPrimary();
             return this;

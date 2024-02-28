@@ -12,3 +12,6 @@ lib
 *.iml
 *.eml
 *.ipl
+/eclipse/
+/tmp/
+.settings
